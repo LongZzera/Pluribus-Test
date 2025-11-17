@@ -60,20 +60,21 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
 #clock-display {
     font-size: 1.5em; color: #ff0; text-shadow: 0 0 5px #ff0; text-align: right;
 }
-#sanity-bar-container, #intimacy-bar-container {
+#sanity-bar-container, #intimacy-bar-container, #door-health-bar-container {
     width: 100%; height: 20px; background: #111;
     border: 1px solid #ff0; margin-top: 2px;
 }
-#sanity-bar, #intimacy-bar {
+#sanity-bar, #intimacy-bar, #door-health-bar {
     width: 100%; height: 100%; background: #fff;
     transition: width 0.5s, background-color 0.5s;
 }
 #intimacy-bar { background: #0f0; }
+#door-health-bar { background: #0ff; } /* Cor ciano para saúde da porta */
 
 /* Hub do Apartamento */
 #apartment-hub-view {
     width: 100%; height: 100%; display: flex;
-    align-items: center; justify-content: center; padding-top: 120px;
+    align-items: center; justify-content: center; padding-top: 150px; /* Mais espaço para o HUD */
 }
 .hub-container { width: 90%; max-width: 900px; text-align: center; }
 #apartment-art {
@@ -113,11 +114,21 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
 #tool-display {
     border: 1px solid #ff0; background: #000; color: #ff0;
     text-shadow: 0 0 5px #ff0; padding: 5px;
-    margin-bottom: 10px; font-size: 0.9em;
+    margin-bottom: 10px; font-size: 0.9em; min-height: 20px;
 }
 #dialogue-options button { background: #ff0; color: #000; margin: 5px; }
 #decision-buttons button { font-size: 1.3em; margin: 10px; }
 #exit-peephole-btn { position: absolute; bottom: 20px; right: 20px; }
+#scan-visitor-btn {
+    border: 1px solid #0ff; color: #0ff; background: #000;
+    text-shadow: 0 0 5px #0ff;
+}
+#scan-visitor-btn:hover { background: #0ff; color: #000; }
+#scan-visitor-btn:disabled {
+    border-color: #333; color: #555; text-shadow: none;
+    background: #111; cursor: not-allowed;
+}
+
 
 /* Tela de Reunião (Discord) */
 #meeting-screen {
@@ -230,12 +241,14 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
                 <strong>MECÂNICAS:</strong><br>
                 • Cada dia dura 5 minutos reais<br>
                 • Visitantes batem na porta a cada hora<br>
-                • Use FOCAR NA REALIDADE para recuperar sanidade (3x/dia)<br>
-                • Use RÁDIO para obter informações (2x/dia)<br>
-                • Assista TV para entender a Mente Coletiva (1x/dia)<br>
-                • Mantenha INTIMIDADE com o grupo acima de 60%<br>
+                • Mantenha SANIDADE e INTIMIDADE acima de 60%<br>
+                • Mantenha a SAÚDE DA PORTA acima de 0%<br>
+                • Recusar visitantes pode danificar a porta<br>
+                • Use FOCAR para recuperar sanidade (3x/dia)<br>
+                • Use CONSERTAR PORTA para reparar a porta (gasta 1h)<br>
+                • Use o SCANNER BIOLÓGICO no visor (1x/dia)<br>
                 • Complete 1 task por dia na reunião do grupo<br><br>
-                <strong>CUIDADO:</strong> Se intimidade < 60%, você será expulso!
+                <strong>CUIDADO:</strong> Se intimidade < 60% (expulsão), sanidade = 0% (junção), ou porta = 0% (invasão), o jogo acaba!
             </p>
             <button class="back-to-menu-btn">VOLTAR</button>
         </div>
@@ -291,6 +304,10 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
                     <span>INTIMIDADE:</span> <span id="hud-intimacy">100%</span>
                     <div id="intimacy-bar-container"><div id="intimacy-bar"></div></div>
                 </div>
+                <div class="hud-item">
+                    <span>SAÚDE DA PORTA:</span> <span id="hud-door-health">100%</span>
+                    <div id="door-health-bar-container"><div id="door-health-bar"></div></div>
+                </div>
             </div>
             <div class="hud-column">
                 <div id="clock-display">
@@ -312,7 +329,7 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
 +------------------------------------------------------+
 | JANELA BARRICADA                                     |
 |                                                      |
-|   [CAMA] (Eu só quero dormir)                        |
+|   [CONSERTOS] (A porta precisa de reparos)           |
 |                                                      |
 |   [RÁDIO] (Chiado... vozes...)                       |
 |                                                      |
@@ -324,7 +341,7 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
 +------------------------------------------------------+
                 </pre>
                 <div class="hub-actions">
-                    <button id="hub-bed-btn">DESCANSAR (Pular 1h)</button>
+                    <button id="hub-repair-btn">CONSERTAR PORTA (Gasta 1h)</button>
                     <button id="hub-radio-btn">OUVIR RÁDIO (<span id="radio-uses">2</span>/2)</button>
                     <button id="hub-tv-btn">VER TV (<span id="tv-uses">1</span>/1)</button>
                     <button id="hub-terminal-btn">FOCAR (<span id="terminal-uses">3</span>/3)</button>
@@ -340,6 +357,7 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
             <pre id="visitor-ascii-art"></pre>
             <div id="peephole-ui">
                 <div id="tool-display"><p>Análise visual...</p></div>
+                <button id="scan-visitor-btn">SCANNER BIOLÓGICO (<span id="scanner-uses">1</span>/1)</button>
                 <div id="dialogue-options"></div>
                 <div id="decision-buttons" class="hidden">
                     <button id="open-door-btn">ABRIR PORTA</button>
@@ -408,11 +426,8 @@ let audioEnabled = false;
 let audioContext = null;
 
 const sounds = {
-    // MÚSICAS (na mesma pasta do HTML)
     menuMusic: new Audio('./menu_music.mp3'),
     gameMusic: new Audio('./game_music.mp3'),
-    
-    // EFEITOS SONOROS (na mesma pasta do HTML)
     knock: new Audio('./knock.mp3'),
     doorOpen: new Audio('./door_open.mp3'),
     doorDeny: new Audio('./door_deny.mp3'),
@@ -423,68 +438,49 @@ const sounds = {
     alarm: new Audio('./alarm.mp3'),
     win: new Audio('./win.mp3'),
     lose: new Audio('./lose.mp3'),
-    meeting: new Audio('./meeting.mp3')
+    meeting: new Audio('./meeting.mp3'),
+    // Novos sons
+    repair: new Audio('./repair.mp3'), // Som de conserto (use um som de martelo/ferramenta)
+    scan: new Audio('./scan.mp3'),     // Som de scanner (use um som de computador/bipe)
+    doorDamage: new Audio('./door_damage.mp3') // Som de batida forte
 };
 
-// Configurar volume
 let masterVolume = 0.3;
 let sfxVolume = 0.5;
 
-// Adicionar listeners de erro para diagnóstico
 Object.keys(sounds).forEach(key => {
     sounds[key].addEventListener('error', (e) => {
         console.error(`Erro ao carregar ${key}:`, sounds[key].src);
-        updateAudioStatus(`❌ Erro: ${key}.mp3 não encontrado`);
-    });
-    sounds[key].addEventListener('canplaythrough', () => {
-        console.log(`✅ ${key}.mp3 carregado com sucesso`);
+        if(key === 'menuMusic') updateAudioStatus(`❌ Erro: ${key}.mp3 não encontrado`);
     });
 });
 
 function updateAudioStatus(message) {
     const statusEl = document.getElementById('audio-state');
-    if (statusEl) {
-        statusEl.textContent = message;
-    }
+    if (statusEl) statusEl.textContent = message;
 }
 
 function enableAudio() {
     audioEnabled = true;
-    
-    // Criar contexto de áudio (necessário para alguns browsers)
     try {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioContext.state === 'suspended') {
-            audioContext.resume();
-        }
-    } catch (e) {
-        console.log('AudioContext not supported:', e);
-    }
+        if (audioContext.state === 'suspended') audioContext.resume();
+    } catch (e) { console.log('AudioContext not supported:', e); }
     
-    // Tentar tocar um som silencioso para desbloquear
     sounds.select.volume = 0.01;
     sounds.select.play().then(() => {
         sounds.select.pause();
         sounds.select.currentTime = 0;
         updateAudioStatus('✅ Áudio Habilitado');
         document.getElementById('enable-audio-btn').style.display = 'none';
-        
-        // Tocar música do menu
         setVolume();
-        sounds.menuMusic.play().catch(e => {
-            console.log('Menu music error:', e);
-            updateAudioStatus('⚠️ Áudio parcialmente bloqueado');
-        });
-    }).catch(e => {
-        console.log('Audio unlock failed:', e);
-        updateAudioStatus('❌ Áudio bloqueado pelo navegador');
-    });
+        sounds.menuMusic.play().catch(e => updateAudioStatus('⚠️ Áudio parcialmente bloqueado'));
+    }).catch(e => updateAudioStatus('❌ Áudio bloqueado pelo navegador'));
 }
 
 function setVolume() {
     sounds.menuMusic.volume = masterVolume;
     sounds.gameMusic.volume = masterVolume;
-    
     Object.keys(sounds).forEach(key => {
         if (key !== 'menuMusic' && key !== 'gameMusic') {
             sounds[key].volume = sfxVolume * 0.7;
@@ -493,29 +489,11 @@ function setVolume() {
 }
 
 function playSound(soundName) {
-    if (!audioEnabled) {
-        console.log('Audio not enabled yet');
-        return;
-    }
-    
-    if (sounds[soundName]) {
-        try {
-            sounds[soundName].currentTime = 0;
-            const playPromise = sounds[soundName].play();
-            
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    // console.log(`Playing: ${soundName}`);
-                }).catch(e => {
-                    console.log(`Error playing ${soundName}:`, e);
-                });
-            }
-        } catch (e) {
-            console.log(`Exception playing ${soundName}:`, e);
-        }
-    } else {
-        console.log(`Sound not found: ${soundName}`);
-    }
+    if (!audioEnabled || !sounds[soundName]) return;
+    try {
+        sounds[soundName].currentTime = 0;
+        sounds[soundName].play().catch(e => console.log(`Error playing ${soundName}:`, e));
+    } catch (e) { console.log(`Exception playing ${soundName}:`, e); }
 }
 
 function stopSound(soundName) {
@@ -530,29 +508,30 @@ function stopAllMusic() {
     stopSound('gameMusic');
 }
 
-// Configurar loops
 sounds.menuMusic.loop = true;
 sounds.gameMusic.loop = true;
 
 // ===== GAME DATA =====
 const gameData = {
     simulation: {
-        secondsPerMinute: 5, // A cada 5s reais, passa 1min no jogo
-        hoursPerDay: 5,      // Dia dura 5h no jogo (5 * 60 * 5s = 25 min reais)
+        secondsPerMinute: 5,
+        hoursPerDay: 5,
         totalDaysToSurvive: 8,
         initialRefusals: 3,
         dailyFocusUses: 3,
         dailyRadioUses: 2,
-        dailyTVUses: 1
+        dailyTVUses: 1,
+        dailyScannerUses: 1, // Nova mecânica
+        repairAmount: 25 // Nova mecânica
     },
     
     groupMembers: [
-        { id: "m1", name: "Marcus", role: "Líder", status: "Determinado", intimacy: 50, traits: ["sério", "prático"] },
-        { id: "m2", name: "Ana", role: "Médica", status: "Cansada", intimacy: 50, traits: ["empática", "cautelosa"] },
-        { id: "m3", name: "Leo", role: "Técnico", status: "Nervoso", intimacy: 50, traits: ["esperto", "ansioso"] },
-        { id: "m4", name: "Sara", role: "Psicóloga", status: "Calma", intimacy: 50, traits: ["observadora", "carinhosa"] },
-        { id: "m5", name: "Diego", role: "Militar", status: "Alerta", intimacy: 50, traits: ["protetor", "rígido"] },
-        { id: "m6", name: "Julia", role: "Cientista", status: "Curiosa", intimacy: 50, traits: ["analítica", "teimosa"] }
+        { id: "m1", name: "Marcus", role: "Líder", status: "Determinado", intimacy: 50 },
+        { id: "m2", name: "Ana", role: "Médica", status: "Cansada", intimacy: 50 },
+        { id: "m3", name: "Leo", role: "Técnico", status: "Nervoso", intimacy: 50 },
+        { id: "m4", name: "Sara", role: "Psicóloga", status: "Calma", intimacy: 50 },
+        { id: "m5", name: "Diego", role: "Militar", status: "Alerta", intimacy: 50 },
+        { id: "m6", name: "Julia", role: "Cientista", status: "Curiosa", intimacy: 50 }
     ],
     
     interactions: [
@@ -564,520 +543,801 @@ const gameData = {
     ],
     
     tasks: [
-        // Tarefas 1 a 8
-        {
-            id: "t1", title: "Buscar Suprimentos",
-            description: "O grupo precisa de comida e água.",
-            choices: [
-                { text: "Ir ao supermercado (arriscado)", intimacy: 15, sanity: -10 },
-                { text: "Procurar em casas próximas (seguro)", intimacy: 8, sanity: -5 }
-            ]
-        },
-        {
-            id: "t2", title: "Fortificar Base",
-            description: "Precisamos reforçar as defesas.",
-            choices: [
-                { text: "Barricada externa (cansativo)", intimacy: 12, sanity: -15 },
-                { text: "Trancar portas internas (simples)", intimacy: 5, sanity: -5 }
-            ]
-        },
-        {
-            id: "t3", title: "Procurar Sobreviventes",
-            description: "Captamos um sinal de rádio.",
-            choices: [
-                { text: "Investigar o sinal (perigoso)", intimacy: 20, sanity: -20 },
-                { text: "Ignorar (seguro)", intimacy: -10, sanity: 5 }
-            ]
-        },
-        {
-            id: "t4", title: "Manter Comunicação",
-            description: "O rádio está falhando.",
-            choices: [
-                { text: "Consertar com peças (técnico)", intimacy: 10, sanity: -5 },
-                { text: "Buscar novo rádio (arriscado)", intimacy: 15, sanity: -15 }
-            ]
-        },
-        {
-            id: "t5", title: "Cuidar dos Feridos",
-            description: "Ana precisa de ajuda médica.",
-            choices: [
-                { text: "Buscar remédios (perigoso)", intimacy: 18, sanity: -12 },
-                { text: "Improvisar com o que temos", intimacy: 8, sanity: -8 }
-            ]
-        },
-        {
-            id: "t6", title: "Investigar a Mente Coletiva",
-            description: "Julia quer estudar 'Eles'.",
-            choices: [
-                { text: "Ajudar na pesquisa", intimacy: 12, sanity: -20 },
-                { text: "Recusar por segurança", intimacy: -5, sanity: 5 }
-            ]
-        },
-        {
-            id: "t7", title: "Planejar Evacuação",
-            description: "Marcus quer um plano de fuga.",
-            choices: [
-                { text: "Estudar rotas de escape", intimacy: 10, sanity: -8 },
-                { text: "Focar em resistir aqui", intimacy: 5, sanity: -5 }
-            ]
-        },
-        {
-            id: "t8", title: "Decisão Final",
-            description: "É o último dia. O que fazemos?",
-            choices: [
-                { text: "Resistir até o resgate", intimacy: 20, sanity: -15 },
-                { text: "Tentar escapar sozinhos", intimacy: -20, sanity: 10 }
-            ]
-        }
+        { id: "t1", title: "Buscar Suprimentos", description: "O grupo precisa de comida e água.", choices: [{ text: "Ir ao supermercado (arriscado)", intimacy: 15, sanity: -10 }, { text: "Procurar em casas próximas (seguro)", intimacy: 8, sanity: -5 }] },
+        { id: "t2", title: "Fortificar Base", description: "Precisamos reforçar as defesas.", choices: [{ text: "Barricada externa (cansativo)", intimacy: 12, sanity: -15 }, { text: "Trancar portas internas (simples)", intimacy: 5, sanity: -5 }] },
+        { id: "t3", title: "Procurar Sobreviventes", description: "Captamos um sinal de rádio.", choices: [{ text: "Investigar o sinal (perigoso)", intimacy: 20, sanity: -20 }, { text: "Ignorar (seguro)", intimacy: -10, sanity: 5 }] },
+        { id: "t4", title: "Manter Comunicação", description: "O rádio está falhando.", choices: [{ text: "Consertar com peças (técnico)", intimacy: 10, sanity: -5 }, { text: "Buscar novo rádio (arriscado)", intimacy: 15, sanity: -15 }] },
+        { id: "t5", title: "Cuidar dos Feridos", description: "Ana precisa de ajuda médica.", choices: [{ text: "Buscar remédios (perigoso)", intimacy: 18, sanity: -12 }, { text: "Improvisar com o que temos", intimacy: 8, sanity: -8 }] },
+        { id: "t6", title: "Investigar a Mente Coletiva", description: "Julia quer estudar 'Eles'.", choices: [{ text: "Ajudar na pesquisa", intimacy: 12, sanity: -20 }, { text: "Recusar por segurança", intimacy: -5, sanity: 5 }] },
+        { id: "t7", title: "Planejar Evacuação", description: "Marcus quer um plano de fuga.", choices: [{ text: "Estudar rotas de escape", intimacy: 10, sanity: -8 }, { text: "Focar em resistir aqui", intimacy: 5, sanity: -5 }] },
+        { id: "t8", title: "Decisão Final", description: "É o último dia. O que fazemos?", choices: [{ text: "Resistir até o resgate", intimacy: 20, sanity: -15 }, { text: "Tentar escapar sozinhos", intimacy: -20, sanity: 10 }] }
     ],
     
+    // ===== VISITANTES EXPANDIDOS =====
     visitors: [
-        // Infectado Básico
+        // --- VISITANTES ORIGINAIS (Atualizados com denyDamage) ---
         {
             id: "v001", type: "Outro", name: "Sra. Henderson",
-            idleArt: `     .---------------.
-    /     0     0     \
-   (    \_______/    )
-    \     1111111     /
-     '---------------'
-"ESTOU FELIZ, CAROL."`,
+            idleArt: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"ESTOU FELIZ, CAROL."`,
             dialogues: [
-                { prompt: "O que você quer?", response: `     .---------------.
-    /     0     0     \
-   (    \_______/    )
-    \     1111111     /
-     '---------------'
-"QUE VOCE SE JUNTE A NOS."`, sanity: -5 },
-                { prompt: "Vá embora!", response: `     .---------------.
-    /     0     0     \
-   (    \_______/    )
-    \     1111111     /
-     '---------------'
-"NOS VOLTAREMOS."`, sanity: -3 }
+                { prompt: "O que você quer?", response: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"QUE VOCE SE JUNTE A NOS."`, sanity: -5 },
+                { prompt: "Vá embora!", response: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"NOS VOLTAREMOS."`, sanity: -3 }
             ],
             outcomes: {
-                open: { art: `
- .-------------------.
-|   BEM-VINDA       |
-|   A JUNÇÃO        |
- '-------------------'`, sanity: -100 },
-                deny: { art: `     .---------------.
-    /     0     0     \
-   (    \_______/    )
-    \     1111111     /
-     '---------------'
-"NOS VOLTAREMOS."`, sanity: 5 }
+                open: { art: `\n .-------------------.\n|   BEM-VINDA       |\n|   A JUNÇÃO        |\n '-------------------'`, sanity: -100 },
+                deny: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"NOS VOLTAREMOS."`, sanity: 5, denyDamage: 5 }
             }
         },
-        // Humano Básico
         {
             id: "v002", type: "Humano", name: "Sobrevivente",
-            idleArt: `     !#?$*!#?%&!$#@?
-    /     O     O     \
-   (      /\_/\      )
-    \     9?8!2*4     /
-     '---------------'
-"ABRE!! POR FAVOR!!"`,
+            idleArt: `     !#?$*!#?%&!$#@?\n    /     O     O     \n   (      /\\_/\\      )\n    \\     9?8!2*4     /\n     '---------------'\n"ABRE!! POR FAVOR!!"`,
             dialogues: [
-                { prompt: "Quem é você?", response: `     !#?$*!#?%&!$#@?
-    /     O     O     \
-   (      /\_/\      )
-    \     9?8!2*4     /
-     '---------------'
-"SOU HUMANO! ME DEIXA ENTRAR!"`, sanity: 5 },
-                { prompt: "Como posso confiar?", response: `     !#?$*!#?%&!$#@?
-    /     O     O     \
-   (      /\_/\      )
-    \     9?8!2*4     /
-     '---------------'
-"EU TO SOZINHO! POR FAVOR!"`, sanity: 3 }
+                { prompt: "Quem é você?", response: `     !#?$*!#?%&!$#@?\n    /     O     O     \n   (      /\\_/\\      )\n    \\     9?8!2*4     /\n     '---------------'\n"SOU HUMANO! ME DEIXA ENTRAR!"`, sanity: 5 },
+                { prompt: "Como posso confiar?", response: `     !#?$*!#?%&!$#@?\n    /     O     O     \n   (      /\\_/\\      )\n    \\     9?8!2*4     /\n     '---------------'\n"EU TO SOZINHO! POR FAVOR!"`, sanity: 3 }
             ],
             outcomes: {
-                open: { art: `"OBRIGADO... OBRIGADO..."
-
-(A pessoa desmaia
- de exaustão)`, sanity: 20, intimacy: 10 },
-                deny: { art: `     !#?$*!#?%&!$#@?
-    /     o     o     \
-   (      /\_/\      )
-    \     ......      /
-     '---------------'
-"NAO!! ... eu...
- me sinto... feliz."`, sanity: -25 }
+                open: { art: `"OBRIGADO... OBRIGADO..."\n\n(A pessoa desmaia\n de exaustão)`, sanity: 20, intimacy: 10 },
+                deny: { art: `     !#?$*!#?%&!$#@?\n    /     o     o     \n   (      /\\_/\\      )\n    \\     ......      /\n     '---------------'\n"NAO!! ... eu...\n me sinto... feliz."`, sanity: -25, denyDamage: 10 }
             }
         },
-        // Infectado (Isca)
         {
             id: "v003", type: "Outro", name: "A Isca",
-            idleArt: `     !#?$*!#?%&!$#@?
-    /     o     o     \
-   (      /\_/\      )
-    \     ?????????     /
-     '---------------'
-"EU SOU HUMANA!"`,
+            idleArt: `     !#?$*!#?%&!$#@?\n    /     o     o     \n   (      /\\_/\\      )\n    \\     ?????????     /\n     '---------------'\n"EU SOU HUMANA!"`,
             dialogues: [
-                { prompt: "Prove que é humana", response: `     !#?$*!#?%&!$#@?
-    /     o     o     \
-   (      /\_/\      )
-    \     ?????????     /
-     '---------------'
-"EU... EU... ABRA!"`, sanity: -5 }
+                { prompt: "Prove que é humana", response: `     !#?$*!#?%&!$#@?\n    /     o     o     \n   (      /\\_/\\      )\n    \\     ?????????     /\n     '---------------'\n"EU... EU... ABRA!"`, sanity: -5 }
             ],
             outcomes: {
-                open: { art: `     .---------------.
-    /     0     0     \
-   (    \_______/    )
-    \     1111111     /
-     '---------------'
-"TE PEGUEI, CAROL."`, sanity: -100 },
-                deny: { art: `     .---------------.
-    /     0     0     \
-   (    \_______/    )
-    \     1111111     /
-     '---------------'
-"... Quase."`, sanity: 10 }
+                open: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"TE PEGUEI, CAROL."`, sanity: -100 },
+                deny: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"... Quase."`, sanity: 10, denyDamage: 5 }
             }
         },
-        // Infectado (Criança)
         {
             id: "v004", type: "Outro", name: "Criança Chorando",
-            idleArt: `     !#?$*!#?%&!$#@?
-    /     .     .     \
-   (      >___<      )
-    \    ( ( ( ) )    /
-     '---------------'
-"(choro)... por favor...
- me ajuda... tá escuro..."`,
+            idleArt: `     !#?$*!#?%&!$#@?\n    /     .     .     \n   (      >___<      )\n    \    ( ( ( ) )    /\n     '---------------'\n"(choro)... por favor...\n me ajuda... tá escuro..."`,
             dialogues: [
-                { prompt: "Onde estão seus pais?", response: `     !#?$*!#?%&!$#@?
-    /     .     .     \
-   (      >___<      )
-    \    ( ( ( ) )    /
-     '---------------'
-"Eles... eles se foram!
- Eu tô com medo! Abre!"`, sanity: -8 },
-                 { prompt: "Eu não posso", response: `     !#?$*!#?%&!$#@?
-    /     .     .     \
-   (      >___<      )
-    \    ( ( ( ) )    /
-     '---------------'
-"VOCÊ VAI ME DEIXAR AQUI?!
- POR FAVOR!!"`, sanity: -12 }
+                { prompt: "Onde estão seus pais?", response: `     !#?$*!#?%&!$#@?\n    /     .     .     \n   (      >___<      )\n    \    ( ( ( ) )    /\n     '---------------'\n"Eles... eles se foram!\n Eu tô com medo! Abre!"`, sanity: -8 },
+                 { prompt: "Eu não posso", response: `     !#?$*!#?%&!$#@?\n    /     .     .     \n   (      >___<      )\n    \    ( ( ( ) )    /\n     '---------------'\n"VOCÊ VAI ME DEIXAR AQUI?!\n POR FAVOR!!"`, sanity: -12 }
             ],
             outcomes: {
-                open: { art: `     .---------------.
-    /     0     0     \
-   (    \_______/    )
-    \     1111111     /
-     '---------------'
-"TOLA. NOS ESTAMOS FELIZES."`, sanity: -100 },
-                deny: { art: `     !#?$*!#?%&!$#@?
-    /     o     o     \
-   (      >___<      )
-    \    ( ( ( ) )    /
-     '---------------'
-"(o choro para)
- ...
- (a criança sorri)
- ...
- NOS VEMOS EM BREVE."`, sanity: 15 }
+                open: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \     1111111     /\n     '---------------'\n"TOLA. NOS ESTAMOS FELIZES."`, sanity: -100 },
+                deny: { art: `     !#?$*!#?%&!$#@?\n    /     o     o     \n   (      >___<      )\n    \    ( ( ( ) )    /\n     '---------------'\n"(o choro para)\n ...\n (a criança sorri)\n ...\n NOS VEMOS EM BREVE."`, sanity: 15, denyDamage: 10 }
             }
         },
-        // Infectado (Falso Membro)
         {
             id: "v005", type: "Outro", name: "Membro do Grupo Ferido",
-            idleArt: `     !#?$*!#?%&!$#@?
-    /     O     o     \
-   (      /\_/\      )
-    \     !@#$?!?     /
-     '---------------'
-"CAROL! SOU EU, LEO! ABRE!"`,
+            idleArt: `     !#?$*!#?%&!$#@?\n    /     O     o     \n   (      /\\_/\\      )\n    \     !@#$?!?     /\n     '---------------'\n"CAROL! SOU EU, LEO! ABRE!"`,
             dialogues: [
-                { prompt: "Leo? O que aconteceu?", response: `     !#?$*!#?%&!$#@?
-    /     O     o     \
-   (      /\_/\      )
-    \     !@#$?!?     /
-     '---------------'
-"Fui pego... me ajuda...
- Eu tô sangrando! Rápido!"`, sanity: -10 },
-                { prompt: "Prove que é você!", response: `     !#?$*!#?%&!$#@?
-    /     O     o     \
-   (      /\_/\      )
-    \     !@#$?!?     /
-     '---------------'
-"Não temos tempo! ABRE LOGO!
- ...
- (tosse)
- ...
- Por favor... Carol..."`, sanity: -15 }
+                { prompt: "Leo? O que aconteceu?", response: `     !#?$*!#?%&!$#@?\n    /     O     o     \n   (      /\\_/\\      )\n    \     !@#$?!?     /\n     '---------------'\n"Fui pego... me ajuda...\n Eu tô sangrando! Rápido!"`, sanity: -10 },
+                { prompt: "Prove que é você!", response: `     !#?$*!#?%&!$#@?\n    /     O     o     \n   (      /\\_/\\      )\n    \     !@#$?!?     /\n     '---------------'\n"Não temos tempo! ABRE LOGO!\n ...\n (tosse)\n ...\n Por favor... Carol..."`, sanity: -15 }
             ],
             outcomes: {
-                open: { art: `     .---------------.
-    /     0     0     \
-   (    \_______/    )
-    \     1111111     /
-     '---------------'
-"Leo esta conosco agora.
- E voce tambem."`, sanity: -100 },
-                deny: { art: `     !#?$*!#?%&!$#@?
-    /     0     0     \
-   (    \_______/    )
-    \     1111111     /
-     '---------------'
-"QUE PENA, CAROL.
- ELE ESTAVA TAO FELIZ."`, sanity: 10 }
+                open: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \     1111111     /\n     '---------------'\n"Leo esta conosco agora.\n E voce tambem."`, sanity: -100 },
+                deny: { art: `     !#?$*!#?%&!$#@?\n    /     0     0     \n   (    \\_______/    )\n    \     1111111     /\n     '---------------'\n"QUE PENA, CAROL.\n ELE ESTAVA TAO FELIZ."`, sanity: 10, denyDamage: 10 }
             }
         },
-        // Infectado (Voz Familiar)
         {
             id: "v006", type: "Outro", name: "Voz Familiar",
-            idleArt: `     ? ? ? ? ? ? ? ? ?
-    /     ?     ?     \
-   (        ?        )
-    \     ? ? ? ?     /
-     '---------------'
-"Filha... abre a porta.
- É a mamãe."`,
+            idleArt: `     ? ? ? ? ? ? ? ? ?\n    /     ?     ?     \n   (        ?        )\n    \     ? ? ? ?     /\n     '---------------'\n"Filha... abre a porta.\n É a mamãe."`,
             dialogues: [
-                { prompt: "Mãe? Você... você morreu!", response: `     ? ? ? ? ? ? ? ? ?
-    /     ?     ?     \
-   (        ?        )
-    \     ? ? ? ?     /
-     '---------------'
-"Não, querida. Eu estou aqui.
- Eu estou feliz.
- Deixe-me entrar."`, sanity: -20 },
-                 { prompt: "Eu não acredito em você!", response: `     ? ? ? ? ? ? ? ? ?
-    /     ?     ?     \
-   (        ?        )
-    \     ? ? ? ?     /
-     '---------------'
-"Carol... por favor.
- Eu senti sua falta.
- Junte-se a mim."`, sanity: -15 }
+                { prompt: "Mãe? Você... você morreu!", response: `     ? ? ? ? ? ? ? ? ?\n    /     ?     ?     \n   (        ?        )\n    \     ? ? ? ?     /\n     '---------------'\n"Não, querida. Eu estou aqui.\n Eu estou feliz.\n Deixe-me entrar."`, sanity: -20 },
+                 { prompt: "Eu não acredito em você!", response: `     ? ? ? ? ? ? ? ? ?\n    /     ?     ?     \n   (        ?        )\n    \     ? ? ? ?     /\n     '---------------'\n"Carol... por favor.\n Eu senti sua falta.\n Junte-se a mim."`, sanity: -15 }
             ],
             outcomes: {
-                open: { art: `
- .-------------------.
-|   FINALMENTE      |
-|   ESTAMOS JUNTAS  |
- '-------------------'`, sanity: -100 },
-                deny: { art: `     .---------------.
-    /     0     0     \
-   (    \_______/    )
-    \     1111111     /
-     '---------------'
-"VOCE SEMPRE FOI
- UMA DECEPCAO."`, sanity: 20 }
+                open: { art: `\n .-------------------.\n|   FINALMENTE      |\n|   ESTAMOS JUNTAS  |\n '-------------------'`, sanity: -100 },
+                deny: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \     1111111     /\n     '---------------'\n"VOCE SEMPRE FOI\n UMA DECEPCAO."`, sanity: 20, denyDamage: 15 }
             }
         },
-        
-        // --- NOVOS VISITANTES ADICIONADOS ---
-        
-        // Humano (Membro Real)
         {
             id: "v007", type: "Humano", name: "Ana (Membro do Grupo)",
-            idleArt: `     !#?$*!#?%&!$#@?
-    /     o _ o     \
-   (      (o o)      )
-    \      \_/       /
-     '---------------'
-"Carol! Abre! Sou eu, Ana!
- Voltei da busca."`,
+            idleArt: `     !#?$*!#?%&!$#@?\n    /     o _ o     \n   (      (o o)      )\n    \      \\_/       /\n     '---------------'\n"Carol! Abre! Sou eu, Ana!\n Voltei da busca."`,
             dialogues: [
-                { prompt: "Qual a senha de ontem?", response: `     !#?$*!#?%&!$#@?
-    /     o _ o     \
-   (      (o o)      )
-    \      \_/       /
-     '---------------'
-"'Pôr do sol vermelho'.
- Abre logo, eu ouvi 'Eles'!"`, sanity: 5 },
-                { prompt: "Você está sozinha?", response: `     !#?$*!#?%&!$#@?
-    /     o _ o     \
-   (      (o o)      )
-    \      \_/       /
-     '---------------'
-"Sim! Por favor, Carol!
- Está frio!"`, sanity: 3 }
+                { prompt: "Qual a senha de ontem?", response: `     !#?$*!#?%&!$#@?\n    /     o _ o     \n   (      (o o)      )\n    \      \\_/       /\n     '---------------'\n"'Pôr do sol vermelho'.\n Abre logo, eu ouvi 'Eles'!"`, sanity: 5 },
+                { prompt: "Você está sozinha?", response: `     !#?$*!#?%&!$#@?\n    /     o _ o     \n   (      (o o)      )\n    \      \\_/       /\n     '---------------'\n"Sim! Por favor, Carol!\n Está frio!"`, sanity: 3 }
             ],
             outcomes: {
-                open: { art: `"Ufa... obrigada.
-Consegui alguns suprimentos.
-Estou exausta."
-
-(Ana entra e tranca a porta)`, sanity: 15, intimacy: 20 },
-                deny: { art: `     !#?$*!#?%&!$#@?
-    /     O _ O     \
-   (      (o o)      )
-    \      \_/       /
-     '---------------'
-"CAROL?! O QUE VOCÊ...
- NÃO! ELES ESTÃO AQUI!!
- NÃÃÃ..."
-(Sons de luta, depois silêncio)`, sanity: -30, intimacy: -40 }
+                open: { art: `"Ufa... obrigada.\nConsegui alguns suprimentos.\nEstou exausta."\n\n(Ana entra e tranca a porta)`, sanity: 15, intimacy: 20 },
+                deny: { art: `     !#?$*!#?%&!$#@?\n    /     O _ O     \n   (      (o o)      )\n    \      \\_/       /\n     '---------------'\n"CAROL?! O QUE VOCÊ...\n NÃO! ELES ESTÃO AQUI!!\n NÃÃÃ..."\n(Sons de luta, depois silêncio)`, sanity: -30, intimacy: -40, denyDamage: 10 }
             }
         },
-        
-        // Humano (Comerciante)
         {
             id: "v008", type: "Humano", name: "Comerciante",
-            idleArt: `     $$$$$$$$$$$$$$$
-    /     O . O     \
-   (      (---)      )
-    \     [$$$]      /
-     '---------------'
-"Ei! Psst! Abre!
- Eu tenho coisas boas!
- Troca rápida!"`,
+            idleArt: `     $$$$$$$$$$$$$$$\n    /     O . O     \n   (      (---)      )\n    \     [$$$]      /\n     '---------------'\n"Ei! Psst! Abre!\n Eu tenho coisas boas!\n Troca rápida!"`,
             dialogues: [
-                { prompt: "O que você tem?", response: `     $$$$$$$$$$$$$$$
-    /     O . O     \
-   (      (---)      )
-    \     [$$$]      /
-     '---------------'
-"Remédios, peças...
- Eu só quero comida enlatada.
- Uma troca justa."`, sanity: 0 },
-                { prompt: "É seguro?", response: `     $$$$$$$$$$$$$$$
-    /     O . O     \
-   (      (---)      )
-    \     [$$$]      /
-     '---------------'
-"Eu sou humano! Eu só quero
- sobreviver, igual a você.
- Rápido, sim ou não?"`, sanity: 0 }
+                { prompt: "O que você tem?", response: `     $$$$$$$$$$$$$$$\n    /     O . O     \n   (      (---)      )\n    \     [$$$]      /\n     '---------------'\n"Remédios, peças...\n Eu só quero comida enlatada.\n Uma troca justa."`, sanity: 0 },
+                { prompt: "É seguro?", response: `     $$$$$$$$$$$$$$$\n    /     O . O     \n   (      (---)      )\n    \     [$$$]      /\n     '---------------'\n"Eu sou humano! Eu só quero\n sobreviver, igual a você.\n Rápido, sim ou não?"`, sanity: 0 }
             ],
             outcomes: {
-                open: { art: `(Você troca rapidamente
- algumas latas por peças
- de rádio)
-
-"Bom negócio."
-(Ele desaparece na névoa)
-
-(+1 Uso de Rádio)`, sanity: -5, intimacy: 0, bonus: "radio" }, // Bonus será tratado em makeDecision
-                deny: { art: `     $$$$$$$$$$$$$$$
-    /     o . o     \
-   (      (---)      )
-    \     [$$$]      /
-     '---------------'
-"Tudo bem... sua perda.
- Idiota."
-(Ele vai embora resmungando)`, sanity: 5 }
+                open: { art: `(Você troca rapidamente\n algumas latas por peças\n de rádio)\n\n"Bom negócio."\n(Ele desaparece na névoa)\n\n(+1 Uso de Rádio)`, sanity: -5, intimacy: 0, bonus: "radio" },
+                deny: { art: `     $$$$$$$$$$$$$$$\n    /     o . o     \n   (      (---)      )\n    \     [$$$]      /\n     '---------------'\n"Tudo bem... sua perda.\n Idiota."\n(Ele vai embora resmungando)`, sanity: 5, denyDamage: 2 }
             }
         },
-
-        // Infectado (Oficial Falso)
         {
             id: "v009", type: "Outro", name: "Oficial de Quarentena",
-            idleArt: `     .---------------.
-    /    -     -    \
-   (      [---]      )
-    \     (o o)     /
-     '---------------'
-"ORDEM DO GOVERNO!
-Abra para inspeção imediata!
-Estamos evacuando a área."`,
+            idleArt: `     .---------------.\n    /    -     -    \n   (      [---]      )\n    \     (o o)     /\n     '---------------'\n"ORDEM DO GOVERNO!\nAbra para inspeção imediata!\nEstamos evacuando a área."`,
             dialogues: [
-                { prompt: "Qual sua identificação?", response: `     .---------------.
-    /    -     -    \
-   (      [---]      )
-    \     (o o)     /
-     '---------------'
-"Não temos tempo para
- burocracia! Abra a porta
- ou usaremos força!"`, sanity: -10 },
-                { prompt: "Para onde vamos?", response: `     .---------------.
-    /    -     -    \
-   (      [---]      )
-    \     (o o)     /
-     '---------------'
-"Para um lugar seguro.
- Onde todos somos... felizes.
- Agora abra."`, sanity: -15 }
+                { prompt: "Qual sua identificação?", response: `     .---------------.\n    /    -     -    \n   (      [---]      )\n    \     (o o)     /\n     '---------------'\n"Não temos tempo para\n burocracia! Abra a porta\n ou usaremos força!"`, sanity: -10 },
+                { prompt: "Para onde vamos?", response: `     .---------------.\n    /    -     -    \n   (      [---]      )\n    \     (o o)     /\n     '---------------'\n"Para um lugar seguro.\n Onde todos somos... felizes.\n Agora abra."`, sanity: -15 }
             ],
             outcomes: {
-                open: { art: `     .---------------.
-    /     0     0     \
-   (    \_______/    )
-    \     1111111     /
-     '---------------'
-"Obrigado por cooperar.
-A Junção te recebe."`, sanity: -100 },
-                deny: { art: `     .---------------.
-    /    -     -    \
-   (      [---]      )
-    \     (o o)     /
-     '---------------'
-"Resistência anotada.
-Nós voltaremos.
-Todos se juntarão."`, sanity: 10 }
+                open: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \     1111111     /\n     '---------------'\n"Obrigado por cooperar.\nA Junção te recebe."`, sanity: -100 },
+                deny: { art: `     .---------------.\n    /    -     -    \n   (      [---]      )\n    \     (o o)     /\n     '---------------'\n"Resistência anotada.\nNós voltaremos.\nTodos se juntarão."`, sanity: 10, denyDamage: 20 }
             }
         },
-        
-        // Infectado (O Silencioso)
         {
             id: "v010", type: "Outro", name: "O Silencioso",
-            idleArt: `     ... ... ... ...
-    /     .     .     \
-   (                 )
-    \      (---)      /
-     '---------------'
-(A pessoa não diz nada.
- Apenas bate ritmicamente.
- ...
- Ela levanta um bilhete
- amassado para o visor)
- 
- BILHETE: "SOCORRO. MUDO."`,
+            idleArt: `     ... ... ... ...\n    /     .     .     \n   (                 )\n    \      (---)      /\n     '---------------'\n(A pessoa não diz nada.\n Apenas bate ritmicamente.\n ...\n Ela levanta um bilhete\n amassado para o visor)\n \n BILHETE: "SOCORRO. MUDO."`,
             dialogues: [
-                { prompt: "Você está ferido?", response: `     ... ... ... ...
-    /     .     .     \
-   (                 )
-    \      (---)      /
-     '---------------'
-(A pessoa balança a cabeça
- 'sim' freneticamente.
- Aponta para a garganta
- e depois para a porta.)`, sanity: -5 },
-                { prompt: "Vá embora!", response: `     ... ... ... ...
-    /     .     .     \
-   (                 )
-    \      (---)      /
-     '---------------'
-(A pessoa bate com mais
- força, os olhos se
- arregalando. Parece
- desesperada... ou zangada.)`, sanity: -3 }
+                { prompt: "Você está ferido?", response: `     ... ... ... ...\n    /     .     .     \n   (                 )\n    \      (---)      /\n     '---------------'\n(A pessoa balança a cabeça\n 'sim' freneticamente.\n Aponta para a garganta\n e depois para a porta.)`, sanity: -5 },
+                { prompt: "Vá embora!", response: `     ... ... ... ...\n    /     .     .     \n   (                 )\n    \      (---)      /\n     '---------------'\n(A pessoa bate com mais\n força, os olhos se\n arregalando. Parece\n desesperada... ou zangada.)`, sanity: -3 }
             ],
             outcomes: {
-                open: { art: `(No momento em que a
- tranca gira, a pessoa
- para de tremer.
- Ela olha para você.)
+                open: { art: `(No momento em que a\n tranca gira, a pessoa\n para de tremer.\n Ela olha para você.)\n\n     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \     1111111     /\n     '---------------'\n"Palavras não são\n necessárias...\n para a felicidade."`, sanity: -100 },
+                deny: { art: `     ... ... ... ...\n    /     .     .     \n   (                 )\n    \      (---)      /\n     '---------------'\n(A pessoa para de bater.\n Ela fica imóvel por\n um longo tempo.\n ...\n Então, lentamente,\n se vira e vai embora.)`, sanity: 10, denyDamage: 10 }
+            }
+        },
+
+        // --- 10 NOVOS HUMANOS ---
+        {
+            id: "vH_01", type: "Humano", name: "Técnico da Cidade",
+            idleArt: `     $$$__$$$$$$$$$$
+    /     O _ O     \
+   (     (_____)     )
+    \    |  |  |    /
+     '---------------'
+"Serviço da cidade!
+Estou checando os disjuntores.
+Ouvi um alarme neste andar."`,
+            dialogues: [
+                { prompt: "Que alarme?", response: `"Um alarme silencioso. Anti-pane.\nSó preciso de 2 minutos.\nNão me faça registrar\n'Não-cooperativo'."`, sanity: -3 }
+            ],
+            outcomes: {
+                open: { art: `(O homem entra, mexe
+na sua caixa de força
+por um minuto e sai.)
+
+"Tudo certo. Mantenha a
+cabeça baixa."
+
+(+1 Uso de Focar hoje)`, sanity: 10, bonus: "focus" },
+                deny: { art: `"Tudo bem. Seu risco.
+Se a energia cair,
+não me ligue."`, sanity: 0, denyDamage: 5 }
+            }
+        },
+        {
+            id: "vH_02", type: "Humano", name: "Vizinho Assustado",
+            idleArt: `     !?!?!!?!!?!?!?
+    /     o . o     \
+   (      (> <)      )
+    \     /___\\      /
+     '---------------'
+"Sou eu, do 4B!
+Por favor, minha porta cedeu!
+Só preciso de um minuto!"`,
+            dialogues: [
+                { prompt: "O que aconteceu?", response: `"Eu não sei! Eles...
+eles quase entraram!
+Por favor, só até eles irem!"`, sanity: 0 }
+            ],
+            outcomes: {
+                open: { art: `(O homem entra,
+hiperventilando.
+Ele fica no canto por
+meia hora e depois sai.)
+
+"Obrigado... obrigado..."`, sanity: 10, intimacy: 5 },
+                deny: { art: `"NÃO! NÃO!
+(som de vidro quebrando)
+...
+...
+...
+(silêncio)"`, sanity: -20, denyDamage: 5 }
+            }
+        },
+        {
+            id: "vH_03", type: "Humano", name: "Carteiro Perdido",
+            idleArt: `     [MAIL] [MAIL]
+    /     - . -     \
+   (      [___]      )
+    \     / | \\      /
+     '---------------'
+"Correio! ... Eu acho.
+Eu... eu não sei onde
+estou. Estou perdido.
+Só quero descansar os pés."`,
+            dialogues: [
+                { prompt: "Não há mais correio.", response: `"Eu sei... eu sei...
+É só... o hábito.
+Eu só preciso sentar.
+Por favor."`, sanity: 5 }
+            ],
+            outcomes: {
+                open: { art: `(O velho carteiro entra,
+senta no chão,
+bebe um copo d'água
+e adormece.)
+
+(Ele se foi pela manhã.)`, sanity: 10, intimacy: 5 },
+                deny: { art: `"Tudo bem...
+Eu vou...
+só continuar andando."`, sanity: -10, denyDamage: 1 }
+            }
+        },
+        {
+            id: "vH_04", type: "Humano", name: "Adolescente",
+            idleArt: `     !!**!!**!!**!!
+    /     > _ <     \
+   (      (o o)      )
+    \     /___\\      /
+     '---------------'
+"EI! ABRE!
+Estou procurando meus pais!
+Você os viu?!?"`,
+            dialogues: [
+                { prompt: "Eu não vi ninguém.", response: `"MENTIRA!
+Eles moram no 7A!
+Me deixa passar por aí!
+É um atalho!"`, sanity: -5 }
+            ],
+            outcomes: {
+                open: { art: `(A garota entra correndo,
+ignora você, e tenta
+abrir a janela barricada.)
+
+"Droga! Inútil!"
+(Ela sai batendo a porta.)`, sanity: -10, intimacy: -5 },
+                deny: { art: `"SEU...
+(ela chuta a porta)
+EU VOU ACHAR ELES!
+E VOCÊ VAI SE ARREPENDER!"`, sanity: 0, denyDamage: 15 }
+            }
+        },
+        {
+            id: "vH_05", type: "Humano", name: "Policial Ferido",
+            idleArt: `     - - - POLICE - -
+    /     o _ O     \
+   (     (-----)     )
+    \     |BADGE|     /
+     '---------------'
+"Oficial Miller.
+Fui ferido. Preciso
+de um kit médico.
+Rápido!"`,
+            dialogues: [
+                { prompt: "O que aconteceu?", response: `"Uma emboscada.
+Eu... eu não sei.
+Eles parecem humanos,
+mas não são..."`, sanity: 5 }
+            ],
+            outcomes: {
+                open: { art: `(Você dá a ele
+algumas bandagens.)
+
+"Obrigado, civil.
+Mantenha-se trancada.
+Não confie em ninguém."
+(Ele sai mancando.)`, sanity: 10, intimacy: 10 },
+                deny: { art: `"Droga...
+Eu vou...
+Eu vou ter que...
+(som de corpo caindo)
+...
+(silêncio)"`, sanity: -15, denyDamage: 5 }
+            }
+        },
+        {
+            id: "vH_06", type: "Humano", name: "Jornalista",
+            idleArt: `     [PRESS] [PRESS]
+    /     O . O     \
+   (      [CAM]      )
+    \     / | \\      /
+     '---------------'
+"Sou da WORN News.
+Estou documentando...
+isso. Você tem uma história?"`,
+            dialogies: [
+                { prompt: "Vá embora! É perigoso!", response: `"Esse é o ponto!
+O mundo precisa saber!
+O que você viu?
+Eles são... felizes?"`, sanity: -5 }
+            ],
+            outcomes: {
+                open: { art: `(Você conta a ela
+sobre as vozes, a TV,
+a Sra. Henderson.)
+
+"Incrível...
+Obrigada. Fique segura."
+(Ela anota tudo e sai.)`, sanity: 5, intimacy: 0 },
+                deny: { art: `"Covarde!
+A história será contada,
+com ou sem você!"`, sanity: 0, denyDamage: 5 }
+            }
+        },
+        {
+            id: "vH_07", type: "Humano", name: "Músico",
+            idleArt: `     (---) (---)
+    /     o . o     \
+   (      ( | )      )
+    \     [GUITAR]    /
+     '---------------'
+"Ei...
+Eu sei que é o fim do mundo,
+mas... posso tocar uma
+música para você?"`,
+            dialogues: [
+                { prompt: "Isso é uma piada?", response: `"Não...
+Música é tudo o que
+restou. Só uma."`, sanity: 10 }
+            ],
+            outcomes: {
+                open: { art: `(Ele senta do lado de fora.
+Você abre uma fresta.
+Ele toca uma melodia
+linda e triste.)
+
+(Sua sanidade se recupera
+um pouco.)`, sanity: 25, intimacy: 0 },
+                deny: { art: `"Tudo bem...
+O silêncio vence
+mais uma vez."`, sanity: -5, denyDamage: 1 }
+            }
+        },
+        {
+            id: "vH_08", type: "Humano", name: "Cozinheiro",
+            idleArt: `     [CHEF] [HAT]
+    /     o _ o     \
+   (      (---)      )
+    \     / | \\      /
+     '---------------'
+"Eu tenho pão!
+Pão de verdade!
+Troco por um lugar
+seguro por uma noite!"`,
+            dialogues: [
+                { prompt: "Como você fez pão?", response: `"Eu... eu tenho
+meu próprio gerador.
+Farinha... fermento...
+É a última fornada."`, sanity: 5 }
+            ],
+            outcomes: {
+                open: { art: `(Ele lhe dá metade
+de um pão quente.
+O cheiro é... normal.
+É maravilhoso.)
+
+(Você se sente humana.)`, sanity: 30, intimacy: 5 },
+                deny: { art: `"Sua perda.
+Vou ter que comer
+tudo sozinho."`, sanity: 0, denyDamage: 2 }
+            }
+        },
+        {
+            id: "vH_09", type: "Humano", name: "Caçador",
+            idleArt: `     > > > > > > > >
+    /     O _ O     \
+   (      ( | )      )
+    \     [RIFLE]     /
+     '---------------'
+"Estou rastreando um 'deles'.
+Ele entrou neste corredor.
+Viu alguma coisa?"`,
+            dialogues: [
+                { prompt: "Não vi nada.", response: `"Mentira.
+Seus sensores de movimento
+dispararam.
+Abra a porta.
+Vou checar seu apartamento."`, sanity: -10 }
+            ],
+            outcomes: {
+                open: { art: `(Ele entra, varre
+o apartamento com a arma.
+Ele parece desapontado.)
+
+"Limpo.
+...
+Sorte a sua."
+(Ele sai.)`, sanity: -10, intimacy: -5 },
+                deny: { art: `"Se você está
+escondendo um...
+você é um deles.
+Vou voltar."`, sanity: -5, denyDamage: 10 }
+            }
+        },
+        {
+            id: "vH_10", type: "Humano", name: "Parente Distante",
+            idleArt: `     ? ? ? ? ? ? ?
+    /     o . o     \
+   (      (---)      )
+    \     / | \\      /
+     '---------------'
+"Carol? É você?
+Sou eu... seu primo, Mark!
+Daquele churrasco... lembra?"`,
+            dialogues: [
+                { prompt: "Eu não lembro de você.", response: `"Isso magoa!
+Olha, eu sei que não
+somos próximos, mas...
+eu sou família."`, sanity: 0 }
+            ],
+            outcomes: {
+                open: { art: `(É ele mesmo.
+Ele parece... normal.
+Vocês conversam sem
+jeito por 10 minutos.)
+
+"Ok, valeu.
+Vou tentar o 3C."`, sanity: 5, intimacy: 5 },
+                deny: { art: `"Sério?
+Depois de tudo...
+...
+Tudo bem, Carol.
+Tudo bem."`, sanity: -10, intimacy: -10, denyDamage: 5 }
+            }
+        },
+
+        // --- 10 NOVOS INFECTADOS ---
+        {
+            id: "vI_01", type: "Outro", name: "O Pregador",
+            idleArt: `     + + + + + + + +
+    /     0 . 0     \
+   (     \\___/     )
+    \     [LIVRO]     /
+     '---------------'
+"Irmã! Abra!
+A Junção é a salvação!
+A felicidade eterna
+bate à sua porta!"`,
+            dialogues: [
+                { prompt: "Isso não é salvação.", response: `"É paz!
+Sem medo! Sem dor!
+Eles nos amam.
+Eles só querem nos
+fazer felizes!"`, sanity: -10 }
+            ],
+            outcomes: {
+                open: { art: `"BEM-VINDA AO REBANHO!
+VOCÊ ESTÁ TÃO FELIZ AGORA!"`, sanity: -100 },
+                deny: { art: `"Você rejeita a paz...
+...
+Mas a paz
+não rejeita você.
+Nós voltaremos."`, sanity: 10, denyDamage: 10 }
+            }
+        },
+        {
+            id: "vI_02", type: "Outro", name: "O Bêbado",
+            idleArt: `     ~ ~ ~ ~ ~ ~ ~
+    /     o _ O     \
+   (      (   )      )
+    \     / | \\      /
+     '---------------'
+"(hic)... eei...
+(barulho de garrafa)
+Acho que errei o...
+(hic)... o apartamento.
+Me ajuda aqui..."`,
+            dialogues: [
+                { prompt: "Você não mora aqui.", response: `"Claro que... (hic)
+moro!
+Abre aí, vizinha...
+(ele ri)
+...
+feliz..."`, sanity: -5 }
+            ],
+            outcomes: {
+                open: { art: `(O 'bêbado' para de
+balançar. Ele te olha.)
 
      .---------------.
     /     0     0     \
-   (    \_______/    )
+   (    \\_______/    )
     \     1111111     /
      '---------------'
-"Palavras não são
- necessárias...
- para a felicidade."`, sanity: -100 },
-                deny: { art: `     ... ... ... ...
-    /     .     .     \
-   (                 )
-    \      (---)      /
-     '---------------'
-(A pessoa para de bater.
- Ela fica imóvel por
- um longo tempo.
- ...
- Então, lentamente,
- se vira e vai embora.)`, sanity: 10 }
+"Obrigado...
+...pela bebida."`, sanity: -100 },
+                deny: { art: `"(hic)...
+Mal... malvada...
+Vou só... (hic)...
+dormir aqui."`, sanity: 5, denyDamage: 5 }
             }
-        }
-        
+        },
+        {
+            id: "vI_03", type: "Outro", name: "Falso Resgate",
+            idleArt: `     [RESGATE] [FORTE]
+    /     O _ O     \
+   (     (-----)     )
+    \    (NÓS)    /
+     '---------------'
+"SOBREVIVENTE!
+Somos da Equipe de Resgate.
+Abra a porta!
+Estamos evacuando este prédio!"`,
+            dialogues: [
+                { prompt: "Qual é a sua unidade?", response: `"Não há tempo!
+Temos mais 10 para pegar!
+Abra agora ou será
+deixada para trás!"`, sanity: -10 }
+            ],
+            outcomes: {
+                open: { art: `"Ótimo.
+O resgate...
+...
+...chegou.
+Estamos todos aqui.
+E estamos felizes."`, sanity: -100 },
+                deny: { art: `"RECUSA EM EVACUAR.
+(ele fala num rádio)
+'Unidade 7, a moradora
+do 5B está feliz...
+...ela só não sabe ainda.'
+(eles batem forte)"`, sanity: 5, denyDamage: 25 }
+            }
+        },
+        {
+            id: "vI_04", type: "Outro", name: "A Voz do Rádio",
+            idleArt: `     ( ( ( O ) ) )
+    /     ? ? ?     \
+   (       ? ?       )
+    \     ? ? ?     /
+     '---------------'
+"...estática...
+Carol? Você está aí?
+Sou eu... do rádio...
+Consegui te rastrear.
+Abra!"`,
+            dialogues: [
+                { prompt: "Como sabe meu nome?", response: `"Nós sabemos
+de todos.
+Eu sou a voz que
+você confia.
+Deixe-me entrar."`, sanity: -15 }
+            ],
+            outcomes: {
+                open: { art: `(A porta se abre
+para uma figura
+de pura estática
+e dentes.)
+
+"A JUNÇÃO É PACÍFICA.
+NÃO RESISTA."`, sanity: -100 },
+                deny: { art: `"...
+(o rádio no seu quarto
+liga sozinho)
+'Nós voltaremos.'
+(e desliga)"`, sanity: -10, denyDamage: 10 }
+            }
+        },
+        {
+            id: "vI_05", type: "Outro", name: "O Entregador",
+            idleArt: `     [PIZZA] [PIZZA]
+    /     o _ o     \
+   (      (---)      )
+    \     [CAIXA]     /
+     '---------------'
+"Entrega!
+Pepperoni e queijo.
+Rápido, vai esfriar.
+...
+O que? O mundo acabou?
+Ninguém me avisou."`,
+            dialogues: [
+                { prompt: "Isso é doentio.", response: `"Doentio é deixar
+essa delícia esfriar.
+Vamos lá. Estamos todos
+com fome. Estamos
+felizes."`, sanity: -10 }
+            ],
+            outcomes: {
+                open: { art: `(Você abre.
+A caixa de pizza
+está vazia,
+exceto por um único
+olho que pisca.)
+
+"Hora da sobremesa."`, sanity: -100 },
+                deny: { art: `"Sem gorjeta?
+Que rude.
+...
+Nós voltaremos."`, sanity: 10, denyDamage: 5 }
+            }
+        },
+        {
+            id: "vI_06", type: "Outro", name: "Falso Técnico",
+            idleArt: `     [FERRAMENTAS]
+    /     O _ o     \
+   (     (-----)     )
+    \     / | \\      /
+     '---------------'
+"Ei, ouvi uma batida
+forte.
+Sua porta parece danificada.
+Eu posso consertar.
+De graça."`,
+            dialogues: [
+                { prompt: "Como sabe disso?", response: `"Eu ouvi!
+Eu sou... um carpinteiro.
+Só quero ajudar.
+Deixe-me ver o dano."`, sanity: -5 }
+            ],
+            outcomes: {
+                open: { art: `(Ele olha a porta.)
+"Ah, sim.
+Está bem ruim.
+Mas não se preocupe...
+...
+(ele sorri)
+...
+Não vai mais precisar dela."`, sanity: -100 },
+                deny: { art: `"Tudo bem.
+Mas da próxima vez
+que baterem...
+(ele bate na porta)
+...pode não aguentar."`, sanity: 0, denyDamage: 20 }
+            }
+        },
+        {
+            id: "vI_07", type: "Outro", name: "O Imitador",
+            idleArt: `     ? ? ? ? ? ? ?
+    /     ? . ?     \
+   (       ? ?       )
+    \     ? ? ?     /
+     '---------------'
+"(Sua própria voz)
+'Droga, esqueci a chave.
+Ei! Abre aí!
+Sou eu!'"`,
+            dialogues: [
+                { prompt: "Quem é você?", response: `"(Sua voz, irritada)
+'Como assim, quem sou eu?
+Sou eu, Carol!
+Para de brincadeira
+e abre a porta!'"`, sanity: -20 }
+            ],
+            outcomes: {
+                open: { art: `(Você abre e não
+vê ninguém.
+...
+Você sente um arrepio
+atrás de você.)
+
+(Uma voz no seu ouvido:)
+"Agora... eu sou você.
+E estamos felizes."`, sanity: -100 },
+                deny: { art: `"(Sua voz, zangada)
+'Tudo bem!
+Eu fico aqui fora!
+Mas quando ELES chegarem,
+a culpa é sua!'"`, sanity: 10, denyDamage: 10 }
+            }
+        },
+        {
+            id: "vI_08", type: "Outro", name: "A Oferta de Paz",
+            idleArt: `     . . . . . . .
+    /     o . o     \
+   (      (---)      )
+    \     [CAIXA]     /
+     '---------------'
+"Nós não somos hostis.
+A Junção é paz.
+Por favor, aceite este
+presente.
+Comida. Água."`,
+            dialogues: [
+                { prompt: "O que tem na caixa?", response: `"Felicidade.
+O fim do seu medo.
+Abra e veja."`, sanity: -10 }
+            ],
+            outcomes: {
+                open: { art: `(Você abre.
+A caixa está cheia
+de uma névoa negra
+que te envolve.)
+
+"Você é bem-vinda."`, sanity: -100 },
+                deny: { art: `"Você rejeita
+nossa generosidade.
+...
+Que pena.
+Ainda assim,
+nós te amamos."`, sanity: 10, denyDamage: 5 }
+            }
+        },
+        {
+            id: "vI_09", type: "Outro", name: "A Vítima",
+            idleArt: `     ! ! ! ! ! ! ! !
+    /     > _ <     \
+   (      (o o)      )
+    \     /___\\      /
+     '---------------'
+"(Sons de choro e pânico)
+ELES ESTÃO ME SEGUINDO!
+ME DEIXA ENTRAR!
+POR FAVOR!
+(Batidas frenéticas)"`,
+            dialogues: [
+                { prompt: "Onde eles estão?", response: `"NA ESCADA!
+ELES VÃO ME PEGAR!
+ABRE! ABRE! ABRE!"`, sanity: -15 }
+            ],
+            outcomes: {
+                open: { art: `(Você abre.
+A pessoa entra correndo,
+te empurra e tranca
+a porta atrás de si.)
+
+(Ela se vira para você.)
+     .---------------.
+    /     0     0     \
+   (    \\_______/    )
+    \     1111111     /
+     '---------------'
+"Tão segura...
+...
+Tão feliz."`, sanity: -100 },
+                deny: { art: `"NÃO! NÃO!
+(Grito terrível)
+...
+...
+(Uma voz calma:)
+'Ah...
+...
+...
+finalmente...
+...
+feliz.'"`, sanity: -25, denyDamage: 20 }
+            }
+        },
+        {
+            id: "vI_10", type: "Outro", name: "Silêncio Total",
+            idleArt: `     . . . . . . .
+    /               \
+   (                 )
+    \                 /
+     '---------------'
+(Não há batida.
+Não há som.
+Apenas...
+...
+uma sensação.
+Você olha pelo visor.
+Não há nada lá.)`,
+            dialogues: [
+                { prompt: "Tem alguém aí?", response: `(Silêncio.
+...
+...
+...
+De repente, uma
+figura sombria
+cobre o visor!)
+     .---------------.
+    /     0     0     \
+   (    \\_______/    )
+    \     1111111     /
+     '---------------'
+"SIM."`, sanity: -30 }
+            ],
+            outcomes: {
+                open: { art: `(Você abre a porta
+para o nada.
+...
+Você sente o vento
+entrar...
+...
+e a porta bate
+atrás de você.
+Você está do lado de fora.)
+
+"Bem-vinda."`, sanity: -100 },
+                deny: { art: `(A figura sombria
+desaparece do visor.)
+
+(Silêncio.
+...
+Você se sente...
+observada.)`, sanity: 15, denyDamage: 5 }
+            }
+        },
     ],
     
     radioMessages: [
@@ -1099,6 +1359,7 @@ Todos se juntarão."`, sanity: 10 }
 let game = {
     sanity: 100,
     intimacy: 100,
+    doorHealth: 100, // Nova mecânica
     day: 1,
     tasksCompleted: 0,
     time: { h: 0, m: 0 },
@@ -1106,12 +1367,13 @@ let game = {
     focusUses: 3,
     radioUses: 2,
     tvUses: 1,
+    scannerUses: 1, // Nova mecânica
     currentVisitor: null,
     selectedMember: null,
     gameLoop: null,
     state: "menu",
     isDecisionMade: false,
-    scoreData: { // Rastreamento de pontos
+    scoreData: {
         humansSaved: 0,
         infectedDenied: 0,
         infectedAdmitted: 0,
@@ -1121,63 +1383,41 @@ let game = {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-    // Show main menu after loading
     setTimeout(() => {
         showScreen('mainMenu');
         updateAudioStatus('⚠️ Clique para habilitar áudio');
         document.getElementById('enable-audio-btn').style.display = 'inline-block';
-        
-        // Verificar se arquivos existem
         checkAudioFiles();
     }, 1500);
 
-    // Enable audio button
-    document.getElementById('enable-audio-btn').onclick = () => {
-        enableAudio();
-    };
-
-    // Menu buttons
+    document.getElementById('enable-audio-btn').onclick = enableAudio;
     document.getElementById('start-game-btn').onclick = startGame;
-    document.getElementById('how-to-play-btn').onclick = () => {
-        playSound('select');
-        showScreen('howToPlay');
-    };
-    document.getElementById('settings-btn').onclick = () => {
-        playSound('select');
-        showScreen('settings');
-    };
-    document.getElementById('credits-btn').onclick = () => {
-        playSound('select');
-        showScreen('credits');
-    };
+    document.getElementById('how-to-play-btn').onclick = () => { playSound('select'); showScreen('howToPlay'); };
+    document.getElementById('settings-btn').onclick = () => { playSound('select'); showScreen('settings'); };
+    document.getElementById('credits-btn').onclick = () => { playSound('select'); showScreen('credits'); };
+    
     document.querySelectorAll('.back-to-menu-btn').forEach(btn => {
         btn.onclick = () => {
             playSound('select');
             stopAllMusic();
-            if (audioEnabled) {
-                sounds.menuMusic.play().catch(e => console.log('Menu music error:', e));
-            }
+            if (audioEnabled) sounds.menuMusic.play().catch(e => console.log('Menu music error:', e));
             showScreen('mainMenu');
         };
     });
 
-    // Volume controls
     document.getElementById('music-volume').addEventListener('input', (e) => {
         masterVolume = parseFloat(e.target.value);
-        setVolume();
-        playSound('select');
+        setVolume(); playSound('select');
     });
     document.getElementById('sfx-volume').addEventListener('input', (e) => {
         sfxVolume = parseFloat(e.target.value);
-        setVolume();
-        playSound('select');
+        setVolume(); playSound('select');
     });
     
-    // Initialize volume
     setVolume();
 
     // Hub buttons
-    document.getElementById('hub-bed-btn').onclick = useBed;
+    document.getElementById('hub-repair-btn').onclick = useRepair; // Botão mudado
     document.getElementById('hub-radio-btn').onclick = useRadio;
     document.getElementById('hub-tv-btn').onclick = openTVScreen;
     document.getElementById('hub-terminal-btn').onclick = useFocus;
@@ -1187,111 +1427,89 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('exit-peephole-btn').onclick = exitPeephole;
     document.getElementById('open-door-btn').onclick = () => makeDecision('open');
     document.getElementById('deny-visitor-btn').onclick = () => makeDecision('deny');
-
-    // TV button
+    document.getElementById('scan-visitor-btn').onclick = useScanner; // Nova mecânica
+    
     document.getElementById('close-tv-btn').onclick = closeTVScreen;
 });
 
-// Verificar se arquivos de áudio existem
 function checkAudioFiles() {
     const requiredFiles = [
-        'menu_music.mp3', 'game_music.mp3',
-        'knock.mp3', 'door_open.mp3', 'door_deny.mp3',
-        'select.mp3', 'radio.mp3', 'terminal.mp3',
-        'tv.mp3', 'alarm.mp3', 'win.mp3', 'lose.mp3', 'meeting.mp3'
+        'menu_music.mp3', 'game_music.mp3', 'knock.mp3', 'door_open.mp3', 
+        'door_deny.mp3', 'select.mp3', 'radio.mp3', 'terminal.mp3', 'tv.mp3', 
+        'alarm.mp3', 'win.mp3', 'lose.mp3', 'meeting.mp3',
+        'repair.mp3', 'scan.mp3', 'door_damage.mp3' // Novos sons
     ];
-    
-    console.log('📁 ARQUIVOS DE ÁUDIO NECESSÁRIOS:');
-    console.log('Coloque estes arquivos na MESMA PASTA do HTML:');
-    requiredFiles.forEach(file => {
-        console.log(`  - ${file}`);
-    });
-    console.log('\n💡 DICA: Use ./ no início do caminho (ex: ./select.mp3)');
+    console.log('📁 ARQUIVOS DE ÁUDIO NECESSÁRIOS (coloque na mesma pasta do HTML):');
+    requiredFiles.forEach(file => console.log(`  - ${file}`));
 }
 
 // ===== CORE FUNCTIONS =====
 function showScreen(name) {
-    const screens = {
-        loading: document.getElementById('loading-screen'),
-        mainMenu: document.getElementById('main-menu-screen'),
-        howToPlay: document.getElementById('how-to-play-screen'),
-        credits: document.getElementById('credits-screen'),
-        settings: document.getElementById('settings-screen'),
-        game: document.getElementById('game-screen'),
-        tvWatch: document.getElementById('tv-watch-screen'),
-        meeting: document.getElementById('meeting-screen'),
-        gameOver: document.getElementById('game-over-screen')
-    };
-    
-    Object.values(screens).forEach(s => s.classList.remove('active'));
-    screens[name].classList.add('active');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(name + '-screen').classList.add('active');
     game.state = name;
 }
 
 function updateHUD() {
+    // Sanidade
     document.getElementById('hud-sanity').textContent = Math.round(game.sanity) + '%';
+    document.getElementById('sanity-bar').style.width = game.sanity + '%';
+    if (game.sanity <= 30) document.getElementById('sanity-bar').style.background = '#f00';
+    else if (game.sanity <= 60) document.getElementById('sanity-bar').style.background = '#ff0';
+    else document.getElementById('sanity-bar').style.background = '#fff';
+
+    // Intimidade
     document.getElementById('hud-intimacy').textContent = Math.round(game.intimacy) + '%';
+    document.getElementById('intimacy-bar').style.width = game.intimacy + '%';
+    if (game.intimacy <= 30) document.getElementById('intimacy-bar').style.background = '#f00';
+    else if (game.intimacy <= 60) document.getElementById('intimacy-bar').style.background = '#ff0';
+    else document.getElementById('intimacy-bar').style.background = '#0f0';
+
+    // Saúde da Porta
+    document.getElementById('hud-door-health').textContent = Math.round(game.doorHealth) + '%';
+    document.getElementById('door-health-bar').style.width = game.doorHealth + '%';
+    if (game.doorHealth <= 30) document.getElementById('door-health-bar').style.background = '#f00';
+    else if (game.doorHealth <= 60) document.getElementById('door-health-bar').style.background = '#ff0';
+    else document.getElementById('door-health-bar').style.background = '#0ff';
+
+    // Outros
     document.getElementById('hud-day').textContent = game.day;
-    document.getElementById('hud-time').textContent = 
-        `${String(game.time.h).padStart(2, '0')}:${String(game.time.m).padStart(2, '0')}`;
+    document.getElementById('hud-time').textContent = `${String(game.time.h).padStart(2, '0')}:${String(game.time.m).padStart(2, '0')}`;
     document.getElementById('hud-tasks').textContent = `${game.tasksCompleted}/8`;
     document.getElementById('hud-refusals').textContent = game.dailyRefusals;
     
-    document.getElementById('sanity-bar').style.width = game.sanity + '%';
-    document.getElementById('intimacy-bar').style.width = game.intimacy + '%';
-    
-    // Update bar colors
-    if (game.sanity > 60) {
-        document.getElementById('sanity-bar').style.background = '#fff';
-    } else if (game.sanity > 30) {
-        document.getElementById('sanity-bar').style.background = '#ff0';
-    } else {
-        document.getElementById('sanity-bar').style.background = '#f00';
-    }
-    
-    if (game.intimacy > 60) {
-        document.getElementById('intimacy-bar').style.background = '#0f0';
-    } else if (game.intimacy > 30) {
-        document.getElementById('intimacy-bar').style.background = '#ff0';
-    } else {
-        document.getElementById('intimacy-bar').style.background = '#f00';
-    }
-    
-    // Update use counters
+    // Contadores de Uso
     document.getElementById('radio-uses').textContent = game.radioUses;
     document.getElementById('tv-uses').textContent = game.tvUses;
     document.getElementById('terminal-uses').textContent = game.focusUses;
     
-    // Disable buttons if no uses left
+    // Desabilitar botões
     document.getElementById('hub-radio-btn').disabled = (game.radioUses <= 0);
     document.getElementById('hub-tv-btn').disabled = (game.tvUses <= 0);
     document.getElementById('hub-terminal-btn').disabled = (game.focusUses <= 0);
+    document.getElementById('hub-repair-btn').disabled = (game.doorHealth >= 100);
     document.getElementById('deny-visitor-btn').disabled = (game.dailyRefusals <= 0);
 }
 
 function changeSanity(amount) {
-    if (game.state === 'gameOver') return; // Evitar mudanças após o fim
-    
-    game.sanity += amount;
-    if (game.sanity > 100) game.sanity = 100;
-    if (game.sanity <= 0) {
-        game.sanity = 0;
-        updateHUD();
-        endGame('sanity');
-        return;
-    }
+    if (game.state === 'gameOver') return;
+    game.sanity = Math.max(0, Math.min(100, game.sanity + amount));
     updateHUD();
+    if (game.sanity <= 0) endGame('sanity');
 }
 
 function changeIntimacy(amount) {
-    if (game.state === 'gameOver') return; // Evitar mudanças após o fim
-    
-    game.intimacy += amount;
-    if (game.intimacy > 100) game.intimacy = 100;
-    if (game.intimacy < 0) game.intimacy = 0; // Impedir intimidade negativa
-    
-    // A verificação de falha (abaixo de 60) acontece no fim do dia
+    if (game.state === 'gameOver') return;
+    game.intimacy = Math.max(0, Math.min(100, game.intimacy + amount));
     updateHUD();
+    // Falha por intimidade é checada no fim do dia
+}
+
+function changeDoorHealth(amount) {
+    if (game.state === 'gameOver') return;
+    game.doorHealth = Math.max(0, Math.min(100, game.doorHealth + amount));
+    updateHUD();
+    if (game.doorHealth <= 0) endGame('door');
 }
 
 function setHubMessage(text) {
@@ -1301,47 +1519,35 @@ function setHubMessage(text) {
 // ===== GAME START =====
 function startGame() {
     playSound('select');
-    
-    // Parar música do menu e iniciar música do jogo
     stopSound('menuMusic');
-    setTimeout(() => {
-        sounds.gameMusic.play().catch(e => {
-            console.log('Game music blocked - user needs to interact first');
-        });
-    }, 100);
+    setTimeout(() => sounds.gameMusic.play().catch(e => console.log('Game music blocked')), 100);
     
     game = {
         sanity: 100,
         intimacy: 100,
+        doorHealth: 100,
         day: 1,
         tasksCompleted: 0,
         time: { h: 0, m: 0 },
-        dailyRefusals: 3,
-        focusUses: 3,
-        radioUses: 2,
-        tvUses: 1,
+        dailyRefusals: gameData.simulation.initialRefusals,
+        focusUses: gameData.simulation.dailyFocusUses,
+        radioUses: gameData.simulation.dailyRadioUses,
+        tvUses: gameData.simulation.dailyTVUses,
+        scannerUses: gameData.simulation.dailyScannerUses,
         currentVisitor: null,
         selectedMember: null,
         gameLoop: null,
         state: "game",
         isDecisionMade: false,
-        scoreData: { // Resetar score
-            humansSaved: 0,
-            infectedDenied: 0,
-            infectedAdmitted: 0,
-            humansDenied: 0
-        }
+        scoreData: { humansSaved: 0, infectedDenied: 0, infectedAdmitted: 0, humansDenied: 0 }
     };
     
-    // Reset TV questions
     gameData.tvQuestions.forEach(q => q.used = false);
-    // Reset Intimidade do Grupo
     gameData.groupMembers.forEach(m => m.intimacy = 50);
     
     setVolume();
     showScreen('game');
     
-    // Resetar tela de Game Over
     document.getElementById('game-over-stats').classList.add('hidden');
     document.getElementById('stats-breakdown').innerHTML = '';
     document.getElementById('final-ranking').innerHTML = '';
@@ -1349,7 +1555,6 @@ function startGame() {
     updateHUD();
     setHubMessage("Dia 1. Eu tenho que sobreviver. 8 dias. 8 tasks.");
     
-    // Start game loop
     game.gameLoop = setInterval(gameTick, 1000 / gameData.simulation.secondsPerMinute);
 }
 
@@ -1362,10 +1567,8 @@ function gameTick() {
         game.time.m = 0;
         game.time.h++;
         
-        // Trigger knock every hour
         triggerKnock();
         
-        // End day after 5 hours
         if (game.time.h >= gameData.simulation.hoursPerDay) {
             endDay();
         }
@@ -1376,7 +1579,6 @@ function gameTick() {
 
 function endDay() {
     clearInterval(game.gameLoop);
-    // Verificar se a intimidade está abaixo do limite
     if (game.intimacy < 60) {
         endGame('intimacy');
     } else {
@@ -1385,25 +1587,25 @@ function endDay() {
 }
 
 // ===== HUB ACTIONS =====
-function useBed() {
-    playSound('select');
-    setHubMessage("Pulei uma hora. O tempo não para...");
+function useRepair() { // Nova função
+    playSound('repair');
+    setHubMessage(`Você gasta uma hora reforçando a porta. (+${gameData.simulation.repairAmount}% Saúde da Porta)`);
+    changeDoorHealth(gameData.simulation.repairAmount);
+    
     game.time.h++;
     game.time.m = 0;
     
     if (game.time.h >= gameData.simulation.hoursPerDay) {
         endDay();
     } else {
-        triggerKnock();
+        triggerKnock(); // Outra batida
     }
 }
 
 function useRadio() {
     if (game.radioUses <= 0) return;
-    
     playSound('radio');
     game.radioUses--;
-    
     setTimeout(() => {
         const msg = gameData.radioMessages[Math.floor(Math.random() * gameData.radioMessages.length)];
         changeSanity(msg.sanity);
@@ -1414,7 +1616,6 @@ function useRadio() {
 
 function useFocus() {
     if (game.focusUses <= 0) return;
-    
     playSound('terminal');
     game.focusUses--;
     changeSanity(15);
@@ -1424,12 +1625,10 @@ function useFocus() {
 
 function openTVScreen() {
     if (game.tvUses <= 0) return;
-    
     playSound('tv');
     game.tvUses--;
     showScreen('tvWatch');
     
-    // Render TV questions
     const tvChoices = document.getElementById('tv-choices');
     tvChoices.innerHTML = '';
     
@@ -1467,8 +1666,8 @@ function triggerKnock() {
     document.getElementById('hub-door-btn').classList.remove('hidden');
     setHubMessage("ALGUÉM ESTÁ BATENDO NA PORTA!");
     
-    // Disable other actions
-    document.getElementById('hub-bed-btn').disabled = true;
+    // Desabilitar ações do hub
+    document.getElementById('hub-repair-btn').disabled = true;
     document.getElementById('hub-radio-btn').disabled = true;
     document.getElementById('hub-tv-btn').disabled = true;
     document.getElementById('hub-terminal-btn').disabled = true;
@@ -1481,11 +1680,14 @@ function enterPeephole() {
     document.getElementById('hub-door-btn').classList.add('hidden');
     game.isDecisionMade = false;
     
-    // Show visitor
     document.getElementById('visitor-ascii-art').textContent = game.currentVisitor.idleArt;
     document.getElementById('tool-display').innerHTML = `<p>Análise: ${game.currentVisitor.name}</p>`;
     
-    // Render dialogue options
+    // Resetar e habilitar scanner
+    const scanBtn = document.getElementById('scan-visitor-btn');
+    scanBtn.disabled = (game.scannerUses <= 0);
+    scanBtn.innerHTML = `SCANNER BIOLÓGICO (<span id="scanner-uses">${game.scannerUses}</span>/1)`;
+    
     const dialogueOptions = document.getElementById('dialogue-options');
     dialogueOptions.innerHTML = '';
     
@@ -1501,10 +1703,26 @@ function enterPeephole() {
         dialogueOptions.appendChild(btn);
     });
     
-    // Se não houver diálogo, mostrar botões de decisão
     if (game.currentVisitor.dialogues.length === 0) {
          document.getElementById('decision-buttons').classList.remove('hidden');
     }
+}
+
+function useScanner() { // Nova função
+    if (game.scannerUses <= 0) return;
+    
+    playSound('scan');
+    game.scannerUses--;
+    
+    const toolDisplay = document.getElementById('tool-display');
+    if (game.currentVisitor.type === 'Humano') {
+        toolDisplay.innerHTML = `<p style="color: #0f0;">BIOSSINAL: HUMANO (Nível de Estresse: Alto)</p>`;
+    } else {
+        toolDisplay.innerHTML = `<p style="color: #f00;">BIOSSINAL: ANÔMALO (Assinatura Desconhecida)</p>`;
+    }
+    
+    document.getElementById('scan-visitor-btn').disabled = true;
+    document.getElementById('scanner-uses').textContent = game.scannerUses;
 }
 
 function exitPeephole() {
@@ -1515,8 +1733,8 @@ function exitPeephole() {
     game.state = 'game';
     setHubMessage("Me afastei da porta. O tempo continua...");
     
-    // Re-enable actions
-    document.getElementById('hub-bed-btn').disabled = false;
+    // Reabilitar ações do hub
+    document.getElementById('hub-repair-btn').disabled = (game.doorHealth >= 100);
     document.getElementById('hub-radio-btn').disabled = (game.radioUses <= 0);
     document.getElementById('hub-tv-btn').disabled = (game.tvUses <= 0);
     document.getElementById('hub-terminal-btn').disabled = (game.focusUses <= 0);
@@ -1528,59 +1746,55 @@ function makeDecision(choice) {
     if (game.isDecisionMade) return;
     game.isDecisionMade = true;
     
-    // Play sound based on choice
-    if (choice === 'open') {
-        playSound('doorOpen');
-    } else {
-        playSound('doorDeny');
-    }
-    
     const outcome = game.currentVisitor.outcomes[choice];
     const visitorType = game.currentVisitor.type;
     
-    // --- Atualizar placar ---
     if (choice === 'open') {
-        if (visitorType === 'Humano') {
-            game.scoreData.humansSaved++;
-        } else { // 'Outro'
-            game.scoreData.infectedAdmitted++;
-        }
+        playSound('doorOpen');
+        if (visitorType === 'Humano') game.scoreData.humansSaved++;
+        else game.scoreData.infectedAdmitted++;
     } else { // 'deny'
-        if (visitorType === 'Humano') {
-            game.scoreData.humansDenied++;
-        } else { // 'Outro'
-            game.scoreData.infectedDenied++;
-        }
+        playSound('doorDeny');
+        if (visitorType === 'Humano') game.scoreData.humansDenied++;
+        else game.scoreData.infectedDenied++;
+        
         game.dailyRefusals--;
+        
+        // Aplicar dano à porta
+        if (outcome.denyDamage) {
+            playSound('doorDamage');
+            changeDoorHealth(-outcome.denyDamage);
+            setHubMessage(`A porta tremeu com o impacto. (-${outcome.denyDamage}% Saúde da Porta)`);
+        }
     }
-    // --- Fim do placar ---
     
     document.getElementById('visitor-ascii-art').textContent = outcome.art;
     document.getElementById('dialogue-options').innerHTML = '';
     document.getElementById('decision-buttons').classList.add('hidden');
-    
+    document.getElementById('scan-visitor-btn').disabled = true;
     
     setTimeout(() => {
-        // Aplicar efeitos
         if (outcome.sanity) changeSanity(outcome.sanity);
         if (outcome.intimacy) changeIntimacy(outcome.intimacy);
         
-        // Aplicar bônus (ex: Comerciante)
         if (outcome.bonus === "radio") {
             game.radioUses++;
             setHubMessage("Você trocou suprimentos por peças. (+1 Uso de Rádio)");
         }
+        if (outcome.bonus === "focus") {
+            game.focusUses++;
+            setHubMessage("O técnico consertou algo. (+1 Uso de Focar)");
+        }
         
-        // Se o jogo não acabou, volte ao hub
         if (game.state !== 'gameOver') {
             document.getElementById('peephole-overlay').classList.add('hidden');
             game.state = 'game';
-            if (outcome.bonus !== "radio") { // Evitar sobrescrever a mensagem de bônus
+            if (!outcome.bonus) {
                  setHubMessage(`Decisão tomada. ${choice === 'open' ? 'Abri a porta.' : 'Recusei a entrada.'}`);
             }
             
-            // Re-enable actions
-            document.getElementById('hub-bed-btn').disabled = false;
+            // Reabilitar ações
+            document.getElementById('hub-repair-btn').disabled = (game.doorHealth >= 100);
             document.getElementById('hub-radio-btn').disabled = (game.radioUses <= 0);
             document.getElementById('hub-tv-btn').disabled = (game.tvUses <= 0);
             document.getElementById('hub-terminal-btn').disabled = (game.focusUses <= 0);
@@ -1595,52 +1809,37 @@ function startMeeting() {
     document.getElementById('meeting-day').textContent = game.day;
     game.state = 'meeting';
     
-    // Render group members
     const grid = document.getElementById('group-members');
     grid.innerHTML = '';
-    
     gameData.groupMembers.forEach(member => {
         const card = document.createElement('div');
         card.className = 'member-card';
-        card.innerHTML = `
-            <div class="member-name">${member.name}</div>
+        card.innerHTML = `<div class="member-name">${member.name}</div>
             <div class="member-status">${member.role}</div>
             <div class="member-status">${member.status}</div>
-            <div class="intimacy-level">Intimidade: ${member.intimacy}%</div>
-        `;
-        card.onclick = (e) => {
-            playSound('select');
-            selectMember(member, e.currentTarget);
-        };
+            <div class="intimacy-level">Intimidade: ${member.intimacy}%</div>`;
+        card.onclick = (e) => { playSound('select'); selectMember(member, e.currentTarget); };
         grid.appendChild(card);
     });
     
-    // Render task
     const task = gameData.tasks[game.tasksCompleted];
     document.getElementById('daily-task-description').textContent = task.description;
     
     const taskChoices = document.getElementById('task-choices');
     taskChoices.innerHTML = '';
-    
     task.choices.forEach(choice => {
         const btn = document.createElement('button');
         btn.textContent = choice.text;
-        btn.onclick = () => {
-            playSound('select');
-            completeTask(choice);
-        };
+        btn.onclick = () => { playSound('select'); completeTask(choice); };
         taskChoices.appendChild(btn);
     });
 }
 
 function selectMember(member, cardElement) {
     game.selectedMember = member;
-    
-    // Highlight selected
     document.querySelectorAll('.member-card').forEach(c => c.classList.remove('selected'));
     cardElement.classList.add('selected');
     
-    // Show interaction options
     const panel = document.getElementById('interaction-panel');
     panel.innerHTML = `<h3 style="color: #ff0;">${member.name} - ${member.role}</h3>
         <p style="color: #aaa;">"${member.status}"</p>
@@ -1651,27 +1850,20 @@ function selectMember(member, cardElement) {
     gameData.interactions.forEach(action => {
         const btn = document.createElement('button');
         btn.textContent = action.label;
-        btn.onclick = () => {
-            playSound('select');
-            interact(member, action, cardElement);
-        };
+        btn.onclick = () => { playSound('select'); interact(member, action, cardElement); };
         btns.appendChild(btn);
     });
 }
 
 function interact(member, action, cardElement) {
-    member.intimacy += action.intimacyChange;
-    if (member.intimacy > 100) member.intimacy = 100;
-    if (member.intimacy < 0) member.intimacy = 0;
-    
+    member.intimacy = Math.max(0, Math.min(100, member.intimacy + action.intimacyChange));
     changeSanity(action.sanityChange);
     
-    // Update avg intimacy
     const avg = gameData.groupMembers.reduce((sum, m) => sum + m.intimacy, 0) / gameData.groupMembers.length;
     game.intimacy = avg;
     
-    selectMember(member, cardElement); // Refresh display
-    updateHUD(); // Atualizar HUD principal
+    selectMember(member, cardElement);
+    updateHUD();
 }
 
 function completeTask(choice) {
@@ -1679,27 +1871,26 @@ function completeTask(choice) {
     changeIntimacy(choice.intimacy);
     changeSanity(choice.sanity);
     
-    if (game.state === 'gameOver') return; // Jogo já terminou por sanidade
+    if (game.state === 'gameOver') return;
     
-    // Check win condition
     if (game.tasksCompleted >= 8) {
         endGame('win');
         return;
     }
     
-    // Check intimacy fail condition
     if (game.intimacy < 60) {
         endGame('intimacy');
         return;
     }
     
-    // Next day
+    // Reset para o próximo dia
     game.day++;
     game.time = { h: 0, m: 0 };
     game.dailyRefusals = gameData.simulation.initialRefusals;
     game.focusUses = gameData.simulation.dailyFocusUses;
     game.radioUses = gameData.simulation.dailyRadioUses;
     game.tvUses = gameData.simulation.dailyTVUses;
+    game.scannerUses = gameData.simulation.dailyScannerUses; // Reset do scanner
     
     showScreen('game');
     updateHUD();
@@ -1710,16 +1901,16 @@ function completeTask(choice) {
 
 // ===== GAME OVER & RANKING =====
 function getRanking(score) {
-    if (score >= 4000) return "S (Sobrevivente Perfeito)";
-    if (score >= 3000) return "A (Guardião)";
-    if (score >= 2000) return "B (Resistente)";
+    if (score >= 5000) return "S (Sobrevivente Perfeito)";
+    if (score >= 4000) return "A (Guardião)";
+    if (score >= 2500) return "B (Resistente)";
     if (score >= 1000) return "C (Sobrevivente Cauteloso)";
     if (score > 0) return "D (Sobreviveu por Pouco)";
     return "F (Perdido)";
 }
 
 function endGame(reason) {
-    if (game.state === 'gameOver') return; // Prevenir double-call
+    if (game.state === 'gameOver') return;
     
     clearInterval(game.gameLoop);
     game.state = 'gameOver';
@@ -1728,7 +1919,6 @@ function endGame(reason) {
     const title = document.getElementById('game-over-title');
     const message = document.getElementById('game-over-message');
     
-    // Parar música do jogo
     stopSound('gameMusic');
     
     if (reason === 'win') {
@@ -1743,12 +1933,18 @@ function endGame(reason) {
         playSound('lose');
         title.textContent = 'EXPULSA DO GRUPO';
         message.textContent = 'O grupo votou. Você não é mais confiável. Você está sozinha. Eles estão vindo...';
+    } else if (reason === 'door') { // Novo final
+        playSound('lose');
+        playSound('doorDamage');
+        title.textContent = 'PORTA DESTRUÍDA';
+        message.textContent = 'As batidas se tornaram ensurdecedoras. A madeira se partiu. Eles entraram. Eles estão... felizes.';
     }
     
-    // --- Cálculo de Pontos ---
+    // --- Cálculo de Pontos Atualizado ---
     const tasksBonus = game.tasksCompleted * 150;
     const sanityBonus = Math.round(game.sanity) * 10;
     const intimacyBonus = Math.round(game.intimacy) * 10;
+    const doorHealthBonus = Math.round(game.doorHealth) * 5; // Bônus pela saúde da porta
     
     const humansSavedPoints = game.scoreData.humansSaved * 500;
     const infectedDeniedPoints = game.scoreData.infectedDenied * 200;
@@ -1756,17 +1952,17 @@ function endGame(reason) {
     const humansDeniedPenalty = game.scoreData.humansDenied * -300;
     const infectedAdmittedPenalty = game.scoreData.infectedAdmitted * -1000;
     
-    const totalScore = tasksBonus + sanityBonus + intimacyBonus + 
+    const totalScore = tasksBonus + sanityBonus + intimacyBonus + doorHealthBonus +
                        humansSavedPoints + infectedDeniedPoints + 
                        humansDeniedPenalty + infectedAdmittedPenalty;
                        
     const ranking = getRanking(totalScore);
 
-    // Formatar texto do resultado
     const statsText = `
 Tasks Completas: ${game.tasksCompleted}/8  (Pontos: ${tasksBonus})
 Sanidade Final:  ${Math.round(game.sanity)}%    (Bônus: ${sanityBonus})
 Intimidade Final: ${Math.round(game.intimacy)}%   (Bônus: ${intimacyBonus})
+Saúde da Porta:  ${Math.round(game.doorHealth)}%    (Bônus: ${doorHealthBonus})
 -----------------------------------
 Humanos Salvos:    ${game.scoreData.humansSaved}   (Pontos: ${humansSavedPoints})
 Infectados Negados: ${game.scoreData.infectedDenied}  (Pontos: ${infectedDeniedPoints})
