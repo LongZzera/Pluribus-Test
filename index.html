@@ -388,7 +388,7 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
 
     <div id="meeting-screen" class="screen">
         <div class="meeting-container">
-            <h2 class="meeting-title">REUNIÃO DO GRUPO - DIA <span id="meeting-day">1</span></h2>
+            <h2 class="meeting-title">REUNIÃO DO GRUPPO - DIA <span id="meeting-day">1</span></h2>
             <p style="color: #aaa;">Escolha um membro para interagir ou selecione uma task</p>
             
             <div class="group-grid" id="group-members"></div>
@@ -595,7 +595,7 @@ const gameData = {
             id: "v004", type: "Outro", name: "Criança Chorando",
             idleArt: `     !#?$*!#?%&!$#@?\n    /     .     .     \n   (      >___<      )\n    \    ( ( ( ) )    /\n     '---------------'\n"(choro)... por favor...\n me ajuda... tá escuro..."`,
             dialogues: [
-                { prompt: "Onde estão seus pais?", response: `     !#?$*!#?%&!$#@?\n    /     .     .     \n   (      >___<      )\n    \    ( ( ( ) )    /\n     '---------------'\n"Eles... eles se foram!\n Eu tô com medo! Abre!"`, sanity: -8 },
+                { prompt: "Onde estão seus pais?", response: `     !#?$*!!#?%&!$#@?\n    /     .     .     \n   (      >___<      )\n    \    ( ( ( ) )    /\n     '---------------'\n"Eles... eles se foram!\n Eu tô com medo! Abre!"`, sanity: -8 },
                  { prompt: "Eu não posso", response: `     !#?$*!#?%&!$#@?\n    /     .     .     \n   (      >___<      )\n    \    ( ( ( ) )    /\n     '---------------'\n"VOCÊ VAI ME DEIXAR AQUI?!\n POR FAVOR!!"`, sanity: -12 }
             ],
             outcomes: {
@@ -835,7 +835,8 @@ Eu vou ter que...
 "Sou da WORN News.
 Estou documentando...
 isso. Você tem uma história?"`,
-            dialogies: [
+            // ***** ERRO CORRIGIDO AQUI *****
+            dialogues: [ 
                 { prompt: "Vá embora! É perigoso!", response: `"Esse é o ponto!
 O mundo precisa saber!
 O que você viu?
