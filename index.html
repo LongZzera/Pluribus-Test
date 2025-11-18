@@ -238,7 +238,7 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
             <h2>COMO JOGAR</h2>
             <p style="text-align: left; max-width: 600px; margin: 20px auto;">
                 <strong>OBJETIVO:</strong> Sobreviva 8 dias e complete 8 tasks com seu grupo.<br><br>
-                <strong>MECÂNICAS:</strong><br>
+                <strong>MECÂNICA:</strong><br>
                 • Cada dia dura 5 minutos reais<br>
                 • Visitantes batem na porta a cada hora<br>
                 • Mantenha SANIDADE e INTIMIDADE acima de 60%<br>
@@ -388,7 +388,7 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
 
     <div id="meeting-screen" class="screen">
         <div class="meeting-container">
-            <h2 class="meeting-title">REUNIÃO DO GRUPPO - DIA <span id="meeting-day">1</span></h2>
+            <h2 class="meeting-title">REUNIÃO DO GRUPO - DIA <span id="meeting-day">1</span></h2>
             <p style="color: #aaa;">Escolha um membro para interagir ou selecione uma task</p>
             
             <div class="group-grid" id="group-members"></div>
@@ -835,8 +835,7 @@ Eu vou ter que...
 "Sou da WORN News.
 Estou documentando...
 isso. Você tem uma história?"`,
-            // ***** ERRO CORRIGIDO AQUI *****
-            dialogues: [ 
+            dialogues: [ // <-- Erro estava aqui ("dialogies")
                 { prompt: "Vá embora! É perigoso!", response: `"Esse é o ponto!
 O mundo precisa saber!
 O que você viu?
@@ -1385,7 +1384,7 @@ let game = {
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-        showScreen('mainMenu');
+        showScreen('mainMenu'); // Chamada
         updateAudioStatus('⚠️ Clique para habilitar áudio');
         document.getElementById('enable-audio-btn').style.display = 'inline-block';
         checkAudioFiles();
@@ -1393,16 +1392,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('enable-audio-btn').onclick = enableAudio;
     document.getElementById('start-game-btn').onclick = startGame;
-    document.getElementById('how-to-play-btn').onclick = () => { playSound('select'); showScreen('howToPlay'); };
-    document.getElementById('settings-btn').onclick = () => { playSound('select'); showScreen('settings'); };
-    document.getElementById('credits-btn').onclick = () => { playSound('select'); showScreen('credits'); };
+    document.getElementById('how-to-play-btn').onclick = () => { playSound('select'); showScreen('howToPlay'); }; // Chamada
+    document.getElementById('settings-btn').onclick = () => { playSound('select'); showScreen('settings'); }; // Chamada
+    document.getElementById('credits-btn').onclick = () => { playSound('select'); showScreen('credits'); }; // Chamada
     
     document.querySelectorAll('.back-to-menu-btn').forEach(btn => {
         btn.onclick = () => {
             playSound('select');
             stopAllMusic();
             if (audioEnabled) sounds.menuMusic.play().catch(e => console.log('Menu music error:', e));
-            showScreen('mainMenu');
+            showScreen('mainMenu'); // Chamada
         };
     });
 
@@ -1445,10 +1444,35 @@ function checkAudioFiles() {
 }
 
 // ===== CORE FUNCTIONS =====
+
+// ***** FUNÇÃO CORRIGIDA *****
+// Esta função agora usa um "mapa" de objetos para encontrar as telas.
+// Isso corrige o erro 'mainMenu-screen' vs 'main-menu-screen'.
 function showScreen(name) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(name + '-screen').classList.add('active');
-    game.state = name;
+    const screens = {
+        loading: document.getElementById('loading-screen'),
+        mainMenu: document.getElementById('main-menu-screen'),
+        howToPlay: document.getElementById('how-to-play-screen'),
+        credits: document.getElementById('credits-screen'),
+        settings: document.getElementById('settings-screen'),
+        game: document.getElementById('game-screen'),
+        tvWatch: document.getElementById('tv-watch-screen'),
+        meeting: document.getElementById('meeting-screen'),
+        gameOver: document.getElementById('game-over-screen')
+    };
+    
+    // Esconde todas as telas
+    Object.values(screens).forEach(s => {
+        if (s) s.classList.remove('active');
+    });
+    
+    // Mostra a tela correta
+    if (screens[name]) {
+        screens[name].classList.add('active');
+        game.state = name;
+    } else {
+        console.error("showScreen: Tela não encontrada:", name);
+    }
 }
 
 function updateHUD() {
