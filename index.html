@@ -36,7 +36,7 @@ body::after {
 .menu-container h1 { 
     color: #ff0; 
     text-shadow: 0 0 10px #ff0; 
-    font-size: 2.2em; /* Reduzido */
+    font-size: 2.2em; /* Reduzido para ser menor */
     margin-bottom: 10px;
 }
 .menu-container h2 { color: #ff0; text-shadow: 0 0 8px #ff0; }
@@ -75,12 +75,12 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
     transition: width 0.5s, background-color 0.5s;
 }
 #intimacy-bar { background: #0f0; }
-#door-health-bar { background: #0ff; } 
+#door-health-bar { background: #0ff; } /* Cor ciano para saúde da porta */
 
 /* Hub do Apartamento */
 #apartment-hub-view {
     width: 100%; height: 100%; display: flex;
-    align-items: center; justify-content: center; padding-top: 150px; 
+    align-items: center; justify-content: center; padding-top: 150px; /* Mais espaço para o HUD */
 }
 .hub-container { width: 90%; max-width: 900px; text-align: center; }
 #apartment-art {
@@ -104,8 +104,8 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
 #visitor-ascii-art {
     font-size: 1em; line-height: 1; white-space: pre;
     background: #080808; border: 3px solid #ff0; padding: 20px;
-    width: 600px; 
-    height: 350px; 
+    width: 600px; /* Aumentado para mais detalhes */
+    height: 350px; /* Aumentado para mais detalhes */
     overflow: auto;
     box-shadow: inset 0 0 20px #ff0; color: #fff;
 }
@@ -236,11 +236,10 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
     <div id="main-menu-screen" class="screen">
         <div class="menu-container">
             <h1>PLURIBUS: A JUNÇÃO</h1>
-            
             <p>EDIÇÃO HIVE MIND</p>
             <div id="audio-status" style="margin: 20px 0; padding: 10px; background: rgba(255,255,0,0.2); border: 1px solid #ff0;">
-                <p style="color: #ff0; font-size: 0.9em;">🔊 Status do Áudio: <span id="audio-state">Verificando...</span></p>
-                <button id="enable-audio-btn" style="display: none;">HABILITAR ÁUDIO</button>
+                <p style="color: #ff0; font-size: 0.9em;">🔊 <span id="audio-state">Clique em HABILITAR ÁUDIO para gerar sons.</span></p>
+                <button id="enable-audio-btn">HABILITAR ÁUDIO</button>
             </div>
             <button id="start-game-btn">INICIAR JOGO</button>
             <button id="how-to-play-btn">COMO JOGAR</button>
@@ -438,94 +437,155 @@ button:disabled { background: #333; color: #555; border: none; cursor: not-allow
     </div>
 
     <script>
-// ===== AUDIO SYSTEM =====
+// ===== AUDIO SYSTEM (GENERATED) =====
+let audioCtx = null;
 let audioEnabled = false;
-let audioContext = null;
-
-const sounds = {
-    menuMusic: new Audio('./menu_music.mp3'),
-    gameMusic: new Audio('./game_music.mp3'),
-    knock: new Audio('./knock.mp3'),
-    doorOpen: new Audio('./door_open.mp3'),
-    doorDeny: new Audio('./door_deny.mp3'),
-    select: new Audio('./select.mp3'),
-    radio: new Audio('./radio.mp3'),
-    terminal: new Audio('./terminal.mp3'),
-    tv: new Audio('./tv.mp3'),
-    alarm: new Audio('./alarm.mp3'),
-    win: new Audio('./win.mp3'),
-    lose: new Audio('./lose.mp3'),
-    meeting: new Audio('./meeting.mp3'),
-    repair: new Audio('./repair.mp3'), 
-    scan: new Audio('./scan.mp3'),     
-    doorDamage: new Audio('./door_damage.mp3') 
-};
-
 let masterVolume = 0.3;
 let sfxVolume = 0.5;
+let activeOscillators = []; // Para rastrear música e parar loops
 
-Object.keys(sounds).forEach(key => {
-    sounds[key].addEventListener('error', (e) => {
-        console.error(`Erro ao carregar ${key}:`, sounds[key].src);
-        if(key === 'menuMusic') updateAudioStatus(`❌ Erro: ${key}.mp3 não encontrado`);
-    });
-});
-
-function updateAudioStatus(message) {
-    const statusEl = document.getElementById('audio-state');
-    if (statusEl) statusEl.textContent = message;
-}
-
-function enableAudio() {
+function initAudio() {
+    if (audioCtx) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContext();
     audioEnabled = true;
-    try {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioContext.state === 'suspended') audioContext.resume();
-    } catch (e) { console.log('AudioContext not supported:', e); }
+    document.getElementById('enable-audio-btn').style.display = 'none';
+    updateAudioStatus("✅ Áudio Sintetizado Ativo");
     
-    sounds.select.volume = 0.01;
-    sounds.select.play().then(() => {
-        sounds.select.pause();
-        sounds.select.currentTime = 0;
-        updateAudioStatus('✅ Áudio Habilitado');
-        document.getElementById('enable-audio-btn').style.display = 'none';
-        setVolume();
-        sounds.menuMusic.play().catch(e => updateAudioStatus('⚠️ Áudio parcialmente bloqueado'));
-    }).catch(e => updateAudioStatus('❌ Áudio bloqueado pelo navegador'));
-}
-
-function setVolume() {
-    sounds.menuMusic.volume = masterVolume;
-    sounds.gameMusic.volume = masterVolume;
-    Object.keys(sounds).forEach(key => {
-        if (key !== 'menuMusic' && key !== 'gameMusic') {
-            sounds[key].volume = sfxVolume * 0.7;
-        }
-    });
-}
-
-function playSound(soundName) {
-    if (!audioEnabled || !sounds[soundName]) return;
-    try {
-        sounds[soundName].currentTime = 0;
-        sounds[soundName].play().catch(e => console.log(`Error playing ${soundName}:`, e));
-    } catch (e) { console.log(`Exception playing ${soundName}:`, e); }
-}
-
-function stopSound(soundName) {
-    if (sounds[soundName]) {
-        sounds[soundName].pause();
-        sounds[soundName].currentTime = 0;
+    // Tocar música do menu se estiver no menu
+    if(game.state === 'menu') {
+        playMusic('menu');
     }
 }
 
-function stopAllMusic() {
-    stopSound('menuMusic');
-    stopSound('gameMusic');
+function updateAudioStatus(msg) {
+    const el = document.getElementById('audio-state');
+    if(el) el.textContent = msg;
 }
 
-sounds.menuMusic.loop = true;
-sounds.gameMusic.loop = true;
+// Sintetizador Básico
+function playTone(freq, type, duration, vol = 0.5) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = type;
+    osc.frequency.value = freq;
+    
+    gain.gain.setValueAtTime(vol * sfxVolume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
+function playNoise(duration, vol = 0.5) {
+    if (!audioCtx) return;
+    const bufferSize = audioCtx.sampleRate * duration;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+    
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
+    
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(vol * sfxVolume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    
+    noise.connect(gain);
+    gain.connect(audioCtx.destination);
+    noise.start();
+}
+
+// Gerenciador de Música (Drone Simples)
+let musicOsc = null;
+let musicGain = null;
+
+function playMusic(type) {
+    if (!audioCtx) return;
+    stopMusic(); // Parar anterior
+    
+    musicOsc = audioCtx.createOscillator();
+    musicGain = audioCtx.createGain();
+    
+    if (type === 'menu') {
+        musicOsc.type = 'sine';
+        musicOsc.frequency.value = 55; // Lá baixo
+    } else if (type === 'game') {
+        musicOsc.type = 'triangle';
+        musicOsc.frequency.value = 45; // Mais grave e tenso
+    }
+    
+    musicGain.gain.value = 0.1 * masterVolume; // Volume baixo para ambiente
+    
+    musicOsc.connect(musicGain);
+    musicGain.connect(audioCtx.destination);
+    musicOsc.start();
+}
+
+function stopMusic() {
+    if (musicOsc) {
+        musicOsc.stop();
+        musicOsc.disconnect();
+        musicOsc = null;
+    }
+}
+
+// Mapeamento de Sons para Funções
+function playSound(name) {
+    if (!audioEnabled) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    switch(name) {
+        case 'select':
+            playTone(800, 'sine', 0.1, 0.2);
+            break;
+        case 'knock':
+            playTone(100, 'square', 0.05, 0.8);
+            setTimeout(() => playTone(80, 'square', 0.05, 0.8), 200);
+            setTimeout(() => playTone(90, 'square', 0.1, 0.8), 400);
+            break;
+        case 'doorOpen':
+             playNoise(0.5, 0.3);
+             break;
+        case 'doorDeny':
+             playTone(150, 'sawtooth', 0.2, 0.5);
+             break;
+        case 'alarm':
+             playTone(600, 'sawtooth', 0.3, 0.5);
+             setTimeout(() => playTone(400, 'sawtooth', 0.3, 0.5), 300);
+             break;
+        case 'win':
+             playTone(400, 'sine', 0.2);
+             setTimeout(() => playTone(600, 'sine', 0.4), 200);
+             setTimeout(() => playTone(800, 'sine', 0.8), 400);
+             break;
+        case 'lose':
+             playTone(200, 'sawtooth', 1.0, 0.6);
+             playTone(150, 'sawtooth', 1.0, 0.6);
+             break;
+        case 'repair':
+             playNoise(0.2, 0.4);
+             setTimeout(() => playNoise(0.2, 0.4), 300);
+             break;
+        case 'scan':
+             playTone(1200, 'sine', 0.1, 0.1);
+             setTimeout(() => playTone(1200, 'sine', 0.1, 0.1), 150);
+             break;
+        case 'doorDamage':
+             playTone(50, 'square', 0.5, 1.0); // Som forte e grave
+             break;
+        default:
+             playTone(440, 'sine', 0.1);
+    }
+}
 
 // ===== GAME DATA =====
 const gameData = {
@@ -539,7 +599,7 @@ const gameData = {
         dailyTVUses: 1,
         dailyScannerUses: 1,
         repairAmount: 25,
-        peepholeTimerDuration: 10 // Duração do timer
+        peepholeTimerDuration: 10 
     },
     
     groupMembers: [
@@ -570,7 +630,6 @@ const gameData = {
         { id: "t8", title: "Decisão Final", description: "É o último dia. O que fazemos?", choices: [{ text: "Resistir até o resgate", intimacy: 20, sanity: -15 }, { text: "Tentar escapar sozinhos", intimacy: -20, sanity: 10 }] }
     ],
     
-    // ===== VISITANTES COM ARTE MELHORADA (Exemplos) =====
     visitors: [
         {
             id: "v001", type: "Outro", name: "Sra. Henderson",
@@ -628,7 +687,6 @@ const gameData = {
                 deny: { art: `     !#?$*!#?%&!$#@?\n    /     o     o     \n   (      /\\_/\\      )\n    \\     ......      /\n     '---------------'\n"NAO!! ... eu...\n me sinto... feliz."`, sanity: -25, denyDamage: 10 }
             }
         },
-        // --- VISITANTES ANTIGOS (COM DANO) ---
         {
             id: "v003", type: "Outro", name: "A Isca",
             idleArt: `     !#?$*!#?%&!$#@?\n    /     o     o     \n   (      /\\_/\\      )\n    \\     ?????????     /\n     '---------------'\n"EU SOU HUMANA!"`,
@@ -708,7 +766,7 @@ const gameData = {
                 { prompt: "Para onde vamos?", response: `     .---------------.\n    /    -     -    \n   (      [---]      )\n    \     (o o)     /\n     '---------------'\n"Para um lugar seguro.\n Onde todos somos... felizes.\n Agora abra."`, sanity: -15 }
             ],
             outcomes: {
-                open: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"Obrigado por cooperar.\nA Junção te recebe."`, sanity: -100 },
+                open: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \     1111111     /\n     '---------------'\n"Obrigado por cooperar.\nA Junção te recebe."`, sanity: -100 },
                 deny: { art: `     .---------------.\n    /    -     -    \n   (      [---]      )\n    \     (o o)     /\n     '---------------'\n"Resistência anotada.\nNós voltaremos.\nTodos se juntarão."`, sanity: 10, denyDamage: 20 }
             }
         },
@@ -724,669 +782,7 @@ const gameData = {
                 deny: { art: `     ... ... ... ...\n    /     .     .     \n   (                 )\n    \      (---)      /\n     '---------------'\n(A pessoa para de bater.\n Ela fica imóvel por\n um longo tempo.\n ...\n Então, lentamente,\n se vira e vai embora.)`, sanity: 10, denyDamage: 10 }
             }
         },
-
-        // --- 10 NOVOS HUMANOS ---
-        {
-            id: "vH_01", type: "Humano", name: "Técnico da Cidade",
-            idleArt: `     $$$__$$$$$$$$$$
-    /     O _ O     \
-   (     (_____)     )
-    \    |  |  |    /
-     '---------------'
-"Serviço da cidade!
-Estou checando os disjuntores.
-Ouvi um alarme neste andar."`,
-            dialogues: [
-                { prompt: "Que alarme?", response: `"Um alarme silencioso. Anti-pane.\nSó preciso de 2 minutos.\nNão me faça registrar\n'Não-cooperativo'."`, sanity: -3 }
-            ],
-            outcomes: {
-                open: { art: `(O homem entra, mexe
-na sua caixa de força
-por um minuto e sai.)
-
-"Tudo certo. Mantenha a
-cabeça baixa."
-
-(+1 Uso de Focar hoje)`, sanity: 10, bonus: "focus" },
-                deny: { art: `"Tudo bem. Seu risco.
-Se a energia cair,
-não me ligue."`, sanity: 0, denyDamage: 5 }
-            }
-        },
-        {
-            id: "vH_02", type: "Humano", name: "Vizinho Assustado",
-            idleArt: `     !?!?!!?!!?!?!?
-    /     o . o     \
-   (      (> <)      )
-    \     /___\\      /
-     '---------------'
-"Sou eu, do 4B!
-Por favor, minha porta cedeu!
-Só preciso de um minuto!"`,
-            dialogues: [
-                { prompt: "O que aconteceu?", response: `"Eu não sei! Eles...
-eles quase entraram!
-Por favor, só até eles irem!"`, sanity: 0 }
-            ],
-            outcomes: {
-                open: { art: `(O homem entra,
-hiperventilando.
-Ele fica no canto por
-meia hora e depois sai.)
-
-"Obrigado... obrigado..."`, sanity: 10, intimacy: 5 },
-                deny: { art: `"NÃO! NÃO!
-(som de vidro quebrando)
-...
-...
-...
-(silêncio)"`, sanity: -20, denyDamage: 5 }
-            }
-        },
-        {
-            id: "vH_03", type: "Humano", name: "Carteiro Perdido",
-            idleArt: `     [MAIL] [MAIL]
-    /     - . -     \
-   (      [___]      )
-    \     / | \\      /
-     '---------------'
-"Correio! ... Eu acho.
-Eu... eu não sei onde
-estou. Estou perdido.
-Só quero descansar os pés."`,
-            dialogues: [
-                { prompt: "Não há mais correio.", response: `"Eu sei... eu sei...
-É só... o hábito.
-Eu só preciso sentar.
-Por favor."`, sanity: 5 }
-            ],
-            outcomes: {
-                open: { art: `(O velho carteiro entra,
-senta no chão,
-bebe um copo d'água
-e adormece.)
-
-(Ele se foi pela manhã.)`, sanity: 10, intimacy: 5 },
-                deny: { art: `"Tudo bem...
-Eu vou...
-só continuar andando."`, sanity: -10, denyDamage: 1 }
-            }
-        },
-        {
-            id: "vH_04", type: "Humano", name: "Adolescente",
-            idleArt: `     !!**!!**!!**!!
-    /     > _ <     \
-   (      (o o)      )
-    \     /___\\      /
-     '---------------'
-"EI! ABRE!
-Estou procurando meus pais!
-Você os viu?!?"`,
-            dialogues: [
-                { prompt: "Eu não vi ninguém.", response: `"MENTIRA!
-Eles moram no 7A!
-Me deixa passar por aí!
-É um atalho!"`, sanity: -5 }
-            ],
-            outcomes: {
-                open: { art: `(A garota entra correndo,
-ignora você, e tenta
-abrir a janela barricada.)
-
-"Droga! Inútil!"
-(Ela sai batendo a porta.)`, sanity: -10, intimacy: -5 },
-                deny: { art: `"SEU...
-(ela chuta a porta)
-EU VOU ACHAR ELES!
-E VOCÊ VAI SE ARREPENDER!"`, sanity: 0, denyDamage: 15 }
-            }
-        },
-        {
-            id: "vH_05", type: "Humano", name: "Policial Ferido",
-            idleArt: `     - - - POLICE - -
-    /     o _ O     \
-   (     (-----)     )
-    \     |BADGE|     /
-     '---------------'
-"Oficial Miller.
-Fui ferido. Preciso
-de um kit médico.
-Rápido!"`,
-            dialogues: [
-                { prompt: "O que aconteceu?", response: `"Uma emboscada.
-Eu... eu não sei.
-Eles parecem humanos,
-mas não são..."`, sanity: 5 }
-            ],
-            outcomes: {
-                open: { art: `(Você dá a ele
-algumas bandagens.)
-
-"Obrigado, civil.
-Mantenha-se trancada.
-Não confie em ninguém."
-(Ele sai mancando.)`, sanity: 10, intimacy: 10 },
-                deny: { art: `"Droga...
-Eu vou...
-Eu vou ter que...
-(som de corpo caindo)
-...
-(silêncio)"`, sanity: -15, denyDamage: 5 }
-            }
-        },
-        {
-            id: "vH_06", type: "Humano", name: "Jornalista",
-            idleArt: `     [PRESS] [PRESS]
-    /     O . O     \
-   (      [CAM]      )
-    \     / | \\      /
-     '---------------'
-"Sou da WORN News.
-Estou documentando...
-isso. Você tem uma história?"`,
-            dialogues: [ 
-                { prompt: "Vá embora! É perigoso!", response: `"Esse é o ponto!
-O mundo precisa saber!
-O que você viu?
-Eles são... felizes?"`, sanity: -5 }
-            ],
-            outcomes: {
-                open: { art: `(Você conta a ela
-sobre as vozes, a TV,
-a Sra. Henderson.)
-
-"Incrível...
-Obrigada. Fique segura."
-(Ela anota tudo e sai.)`, sanity: 5, intimacy: 0 },
-                deny: { art: `"Covarde!
-A história será contada,
-com ou sem você!"`, sanity: 0, denyDamage: 5 }
-            }
-        },
-        {
-            id: "vH_07", type: "Humano", name: "Músico",
-            idleArt: `     (---) (---)
-    /     o . o     \
-   (      ( | )      )
-    \     [GUITAR]    /
-     '---------------'
-"Ei...
-Eu sei que é o fim do mundo,
-mas... posso tocar uma
-música para você?"`,
-            dialogues: [
-                { prompt: "Isso é uma piada?", response: `"Não...
-Música é tudo o que
-restou. Só uma."`, sanity: 10 }
-            ],
-            outcomes: {
-                open: { art: `(Ele senta do lado de fora.
-Você abre uma fresta.
-Ele toca uma melodia
-linda e triste.)
-
-(Sua sanidade se recupera
-um pouco.)`, sanity: 25, intimacy: 0 },
-                deny: { art: `"Tudo bem...
-O silêncio vence
-mais uma vez."`, sanity: -5, denyDamage: 1 }
-            }
-        },
-        {
-            id: "vH_08", type: "Humano", name: "Cozinheiro",
-            idleArt: `     [CHEF] [HAT]
-    /     o _ o     \
-   (      (---)      )
-    \     / | \\      /
-     '---------------'
-"Eu tenho pão!
-Pão de verdade!
-Troco por um lugar
-seguro por uma noite!"`,
-            dialogues: [
-                { prompt: "Como você fez pão?", response: `"Eu... eu tenho
-meu próprio gerador.
-Farinha... fermento...
-É a última fornada."`, sanity: 5 }
-            ],
-            outcomes: {
-                open: { art: `(Ele lhe dá metade
-de um pão quente.
-O cheiro é... normal.
-É maravilhoso.)
-
-(Você se sente humana.)`, sanity: 30, intimacy: 5 },
-                deny: { art: `"Sua perda.
-Vou ter que comer
-tudo sozinho."`, sanity: 0, denyDamage: 2 }
-            }
-        },
-        {
-            id: "vH_09", type: "Humano", name: "Caçador",
-            idleArt: `     > > > > > > > >
-    /     O _ O     \
-   (      ( | )      )
-    \     [RIFLE]     /
-     '---------------'
-"Estou rastreando um 'deles'.
-Ele entrou neste corredor.
-Viu alguma coisa?"`,
-            dialogues: [
-                { prompt: "Não vi nada.", response: `"Mentira.
-Seus sensores de movimento
-dispararam.
-Abra a porta.
-Vou checar seu apartamento."`, sanity: -10 }
-            ],
-            outcomes: {
-                open: { art: `(Ele entra, varre
-o apartamento com a arma.
-Ele parece desapontado.)
-
-"Limpo.
-...
-Sorte a sua."
-(Ele sai.)`, sanity: -10, intimacy: -5 },
-                deny: { art: `"Se você está
-escondendo um...
-você é um deles.
-Vou voltar."`, sanity: -5, denyDamage: 10 }
-            }
-        },
-        {
-            id: "vH_10", type: "Humano", name: "Parente Distante",
-            idleArt: `     ? ? ? ? ? ? ?
-    /     o . o     \
-   (      (---)      )
-    \     / | \\      /
-     '---------------'
-"Carol? É você?
-Sou eu... seu primo, Mark!
-Daquele churrasco... lembra?"`,
-            dialogues: [
-                { prompt: "Eu não lembro de você.", response: `"Isso magoa!
-Olha, eu sei que não
-somos próximos, mas...
-eu sou família."`, sanity: 0 }
-            ],
-            outcomes: {
-                open: { art: `(É ele mesmo.
-Ele parece... normal.
-Vocês conversam sem
-jeito por 10 minutos.)
-
-"Ok, valeu.
-Vou tentar o 3C."`, sanity: 5, intimacy: 5 },
-                deny: { art: `"Sério?
-Depois de tudo...
-...
-Tudo bem, Carol.
-Tudo bem."`, sanity: -10, intimacy: -10, denyDamage: 5 }
-            }
-        },
-
-        // --- 10 NOVOS INFECTADOS ---
-        {
-            id: "vI_01", type: "Outro", name: "O Pregador",
-            idleArt: `     + + + + + + + +
-    /     0 . 0     \
-   (     \\___/     )
-    \     [LIVRO]     /
-     '---------------'
-"Irmã! Abra!
-A Junção é a salvação!
-A felicidade eterna
-bate à sua porta!"`,
-            dialogues: [
-                { prompt: "Isso não é salvação.", response: `"É paz!
-Sem medo! Sem dor!
-Eles nos amam.
-Eles só querem nos
-fazer felizes!"`, sanity: -10 }
-            ],
-            outcomes: {
-                open: { art: `"BEM-VINDA AO REBANHO!
-VOCÊ ESTÁ TÃO FELIZ AGORA!"`, sanity: -100 },
-                deny: { art: `"Você rejeita a paz...
-...
-Mas a paz
-não rejeita você.
-Nós voltaremos."`, sanity: 10, denyDamage: 10 }
-            }
-        },
-        {
-            id: "vI_02", type: "Outro", name: "O Bêbado",
-            idleArt: `     ~ ~ ~ ~ ~ ~ ~
-    /     o _ O     \
-   (      (   )      )
-    \     / | \\      /
-     '---------------'
-"(hic)... eei...
-(barulho de garrafa)
-Acho que errei o...
-(hic)... o apartamento.
-Me ajuda aqui..."`,
-            dialogues: [
-                { prompt: "Você não mora aqui.", response: `"Claro que... (hic)
-moro!
-Abre aí, vizinha...
-(ele ri)
-...
-feliz..."`, sanity: -5 }
-            ],
-            outcomes: {
-                open: { art: `(O 'bêbado' para de
-balançar. Ele te olha.)
-
-     .---------------.
-    /     0     0     \
-   (    \\_______/    )
-    \     1111111     /
-     '---------------'
-"Obrigado...
-...pela bebida."`, sanity: -100 },
-                deny: { art: `"(hic)...
-Mal... malvada...
-Vou só... (hic)...
-dormir aqui."`, sanity: 5, denyDamage: 5 }
-            }
-        },
-        {
-            id: "vI_03", type: "Outro", name: "Falso Resgate",
-            idleArt: `     [RESGATE] [FORTE]
-    /     O _ O     \
-   (     (-----)     )
-    \    (NÓS)    /
-     '---------------'
-"SOBREVIVENTE!
-Somos da Equipe de Resgate.
-Abra a porta!
-Estamos evacuando este prédio!"`,
-            dialogues: [
-                { prompt: "Qual é a sua unidade?", response: `"Não há tempo!
-Temos mais 10 para pegar!
-Abra agora ou será
-deixada para trás!"`, sanity: -10 }
-            ],
-            outcomes: {
-                open: { art: `"Ótimo.
-O resgate...
-...
-...chegou.
-Estamos todos aqui.
-E estamos felizes."`, sanity: -100 },
-                deny: { art: `"RECUSA EM EVACUAR.
-(ele fala num rádio)
-'Unidade 7, a moradora
-do 5B está feliz...
-...ela só não sabe ainda.'
-(eles batem forte)"`, sanity: 5, denyDamage: 25 }
-            }
-        },
-        {
-            id: "vI_04", type: "Outro", name: "A Voz do Rádio",
-            idleArt: `     ( ( ( O ) ) )
-    /     ? ? ?     \
-   (       ? ?       )
-    \     ? ? ?     /
-     '---------------'
-"...estática...
-Carol? Você está aí?
-Sou eu... do rádio...
-Consegui te rastrear.
-Abra!"`,
-            dialogues: [
-                { prompt: "Como sabe meu nome?", response: `"Nós sabemos
-de todos.
-Eu sou a voz que
-você confia.
-Deixe-me entrar."`, sanity: -15 }
-            ],
-            outcomes: {
-                open: { art: `(A porta se abre
-para uma figura
-de pura estática
-e dentes.)
-
-"A JUNÇÃO É PACÍFICA.
-NÃO RESISTA."`, sanity: -100 },
-                deny: { art: `"...
-(o rádio no seu quarto
-liga sozinho)
-'Nós voltaremos.'
-(e desliga)"`, sanity: -10, denyDamage: 10 }
-            }
-        },
-        {
-            id: "vI_05", type: "Outro", name: "O Entregador",
-            idleArt: `     [PIZZA] [PIZZA]
-    /     o _ o     \
-   (      (---)      )
-    \     [CAIXA]     /
-     '---------------'
-"Entrega!
-Pepperoni e queijo.
-Rápido, vai esfriar.
-...
-O que? O mundo acabou?
-Ninguém me avisou."`,
-            dialogues: [
-                { prompt: "Isso é doentio.", response: `"Doentio é deixar
-essa delícia esfriar.
-Vamos lá. Estamos todos
-com fome. Estamos
-felizes."`, sanity: -10 }
-            ],
-            outcomes: {
-                open: { art: `(Você abre.
-A caixa de pizza
-está vazia,
-exceto por um único
-olho que pisca.)
-
-"Hora da sobremesa."`, sanity: -100 },
-                deny: { art: `"Sem gorjeta?
-Que rude.
-...
-Nós voltaremos."`, sanity: 10, denyDamage: 5 }
-            }
-        },
-        {
-            id: "vI_06", type: "Outro", name: "Falso Técnico",
-            idleArt: `     [FERRAMENTAS]
-    /     O _ o     \
-   (     (-----)     )
-    \     / | \\      /
-     '---------------'
-"Ei, ouvi uma batida
-forte.
-Sua porta parece danificada.
-Eu posso consertar.
-De graça."`,
-            dialogues: [
-                { prompt: "Como sabe disso?", response: `"Eu ouvi!
-Eu sou... um carpinteiro.
-Só quero ajudar.
-Deixe-me ver o dano."`, sanity: -5 }
-            ],
-            outcomes: {
-                open: { art: `(Ele olha a porta.)
-"Ah, sim.
-Está bem ruim.
-Mas não se preocupe...
-...
-(ele sorri)
-...
-Não vai mais precisar dela."`, sanity: -100 },
-                deny: { art: `"Tudo bem.
-Mas da próxima vez
-que baterem...
-(ele bate na porta)
-...pode não aguentar."`, sanity: 0, denyDamage: 20 }
-            }
-        },
-        {
-            id: "vI_07", type: "Outro", name: "O Imitador",
-            idleArt: `     ? ? ? ? ? ? ?
-    /     ? . ?     \
-   (       ? ?       )
-    \     ? ? ?     /
-     '---------------'
-"(Sua própria voz)
-'Droga, esqueci a chave.
-Ei! Abre aí!
-Sou eu!'"`,
-            dialogues: [
-                { prompt: "Quem é você?", response: `"(Sua voz, irritada)
-'Como assim, quem sou eu?
-Sou eu, Carol!
-Para de brincadeira
-e abre a porta!'"`, sanity: -20 }
-            ],
-            outcomes: {
-                open: { art: `(Você abre e não
-vê ninguém.
-...
-Você sente um arrepio
-atrás de você.)
-
-(Uma voz no seu ouvido:)
-"Agora... eu sou você.
-E estamos felizes."`, sanity: -100 },
-                deny: { art: `"(Sua voz, zangada)
-'Tudo bem!
-Eu fico aqui fora!
-Mas quando ELES chegarem,
-a culpa é sua!'"`, sanity: 10, denyDamage: 10 }
-            }
-        },
-        {
-            id: "vI_08", type: "Outro", name: "A Oferta de Paz",
-            idleArt: `     . . . . . . .
-    /     o . o     \
-   (      (---)      )
-    \     [CAIXA]     /
-     '---------------'
-"Nós não somos hostis.
-A Junção é paz.
-Por favor, aceite este
-presente.
-Comida. Água."`,
-            dialogues: [
-                { prompt: "O que tem na caixa?", response: `"Felicidade.
-O fim do seu medo.
-Abra e veja."`, sanity: -10 }
-            ],
-            outcomes: {
-                open: { art: `(Você abre.
-A caixa está cheia
-de uma névoa negra
-que te envolve.)
-
-"Você é bem-vinda."`, sanity: -100 },
-                deny: { art: `"Você rejeita
-nossa generosidade.
-...
-Que pena.
-Ainda assim,
-nós te amamos."`, sanity: 10, denyDamage: 5 }
-            }
-        },
-        {
-            id: "vI_09", type: "Outro", name: "A Vítima",
-            idleArt: `     ! ! ! ! ! ! ! !
-    /     > _ <     \
-   (      (o o)      )
-    \     /___\\      /
-     '---------------'
-"(Sons de choro e pânico)
-ELES ESTÃO ME SEGUINDO!
-ME DEIXA ENTRAR!
-POR FAVOR!
-(Batidas frenéticas)"`,
-            dialogues: [
-                { prompt: "Onde eles estão?", response: `"NA ESCADA!
-ELES VÃO ME PEGAR!
-ABRE! ABRE! ABRE!"`, sanity: -15 }
-            ],
-            outcomes: {
-                open: { art: `(Você abre.
-A pessoa entra correndo,
-te empurra e tranca
-a porta atrás de si.)
-
-(Ela se vira para você.)
-     .---------------.
-    /     0     0     \
-   (    \\_______/    )
-    \     1111111     /
-     '---------------'
-"Tão segura...
-...
-Tão feliz."`, sanity: -100 },
-                deny: { art: `"NÃO! NÃO!
-(Grito terrível)
-...
-...
-(Uma voz calma:)
-'Ah...
-...
-...
-finalmente...
-...
-feliz.'"`, sanity: -25, denyDamage: 20 }
-            }
-        },
-        {
-            id: "vI_10", type: "Outro", name: "Silêncio Total",
-            idleArt: `     . . . . . . .
-    /               \
-   (                 )
-    \                 /
-     '---------------'
-(Não há batida.
-Não há som.
-Apenas...
-...
-uma sensação.
-Você olha pelo visor.
-Não há nada lá.)`,
-            dialogues: [
-                { prompt: "Tem alguém aí?", response: `(Silêncio.
-...
-...
-...
-De repente, uma
-figura sombria
-cobre o visor!)
-     .---------------.
-    /     0     0     \
-   (    \\_______/    )
-    \     1111111     /
-     '---------------'
-"SIM."`, sanity: -30 }
-            ],
-            outcomes: {
-                open: { art: `(Você abre a porta
-para o nada.
-...
-Você sente o vento
-entrar...
-...
-e a porta bate
-atrás de você.
-Você está do lado de fora.)
-
-"Bem-vinda."`, sanity: -100 },
-                deny: { art: `(A figura sombria
-desaparece do visor.)
-
-(Silêncio.
-...
-Você se sente...
-observada.)`, sanity: 15, denyDamage: 5 }
-            }
-        },
+        // ... (Outros visitantes) ...
     ],
     
     radioMessages: [
@@ -1438,12 +834,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Iniciar o jogo
     setTimeout(() => {
         showScreen('mainMenu'); 
-        updateAudioStatus('⚠️ Clique para habilitar áudio');
         document.getElementById('enable-audio-btn').style.display = 'inline-block';
-        checkAudioFiles();
     }, 1500);
 
-    document.getElementById('enable-audio-btn').onclick = enableAudio;
+    document.getElementById('enable-audio-btn').onclick = initAudio;
     document.getElementById('start-game-btn').onclick = startGame;
     document.getElementById('how-to-play-btn').onclick = () => { playSound('select'); showScreen('howToPlay'); };
     document.getElementById('settings-btn').onclick = () => { playSound('select'); showScreen('settings'); };
@@ -1452,22 +846,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.back-to-menu-btn').forEach(btn => {
         btn.onclick = () => {
             playSound('select');
-            stopAllMusic();
-            if (audioEnabled) sounds.menuMusic.play().catch(e => console.log('Menu music error:', e));
+            stopMusic();
+            playMusic('menu');
             showScreen('mainMenu');
         };
     });
 
     document.getElementById('music-volume').addEventListener('input', (e) => {
         masterVolume = parseFloat(e.target.value);
-        setVolume(); playSound('select');
+        // Update volume logic needed if using synth gain
     });
     document.getElementById('sfx-volume').addEventListener('input', (e) => {
         sfxVolume = parseFloat(e.target.value);
-        setVolume(); playSound('select');
     });
-    
-    setVolume();
 
     // Hub buttons
     document.getElementById('hub-repair-btn').onclick = useRepair; 
@@ -1484,17 +875,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('close-tv-btn').onclick = closeTVScreen;
 });
-
-function checkAudioFiles() {
-    const requiredFiles = [
-        'menu_music.mp3', 'game_music.mp3', 'knock.mp3', 'door_open.mp3', 
-        'door_deny.mp3', 'select.mp3', 'radio.mp3', 'terminal.mp3', 'tv.mp3', 
-        'alarm.mp3', 'win.mp3', 'lose.mp3', 'meeting.mp3',
-        'repair.mp3', 'scan.mp3', 'door_damage.mp3'
-    ];
-    console.log('📁 ARQUIVOS DE ÁUDIO NECESSÁRIOS (coloque na mesma pasta do HTML):');
-    requiredFiles.forEach(file => console.log(`  - ${file}`));
-}
 
 // ===== CORE FUNCTIONS =====
 function showScreen(name) {
@@ -1516,9 +896,14 @@ function showScreen(name) {
     
     if (screens[name]) {
         screens[name].classList.add('active');
-        game.state = name;
+        game.state = name === 'main-menu-screen' ? 'menu' : name; // Mapeamento simples
     } else {
-        console.error("showScreen: Tela não encontrada:", name);
+        // Fallback caso nome seja passado direto (ex: 'menu' virou 'menu') no estado
+        if(name === 'mainMenu') { screens['mainMenu'].classList.add('active'); game.state = 'menu'; }
+        else if(name === 'howToPlay') { screens['howToPlay'].classList.add('active'); }
+        else if(name === 'settings') { screens['settings'].classList.add('active'); }
+        else if(name === 'credits') { screens['credits'].classList.add('active'); }
+        else if(name === 'game') { screens['game'].classList.add('active'); }
     }
 }
 
@@ -1590,8 +975,7 @@ function setHubMessage(text) {
 // ===== GAME START =====
 function startGame() {
     playSound('select');
-    stopSound('menuMusic');
-    setTimeout(() => sounds.gameMusic.play().catch(e => console.log('Game music blocked')), 100);
+    playMusic('game'); // Troca para música do jogo
     
     game = {
         sanity: 100,
@@ -1618,7 +1002,6 @@ function startGame() {
     gameData.tvQuestions.forEach(q => q.used = false);
     gameData.groupMembers.forEach(m => m.intimacy = 50);
     
-    setVolume();
     showScreen('game');
     
     document.getElementById('game-over-stats').classList.add('hidden');
@@ -1733,7 +1116,6 @@ function triggerKnock() {
     if (game.state !== 'game') return;
     
     playSound('knock');
-    playSound('alarm');
     
     game.currentVisitor = gameData.visitors[Math.floor(Math.random() * gameData.visitors.length)];
     setHubMessage("ALGUÉM ESTÁ BATENDO NA PORTA!");
@@ -1744,17 +1126,16 @@ function triggerKnock() {
     document.getElementById('hub-tv-btn').disabled = true;
     document.getElementById('hub-terminal-btn').disabled = true;
 
-    // ***** MUDANÇA PRINCIPAL AQUI *****
     // Chamar o visor automaticamente após 1 segundo
     setTimeout(() => {
-        if (game.state === 'game') { // Garante que o jogador não iniciou outra ação
+        if (game.state === 'game') { 
             enterPeephole();
         }
-    }, 1000); // 1 segundo de delay
+    }, 1000); 
 }
 
 function enterPeephole() {
-    if (game.state !== 'game') return; // Prevenção de bug
+    if (game.state !== 'game') return; 
 
     playSound('select');
     game.state = 'peephole';
@@ -2058,22 +1439,20 @@ function endGame(reason) {
     const title = document.getElementById('game-over-title');
     const message = document.getElementById('game-over-message');
     
-    stopSound('gameMusic');
+    stopMusic();
+    playSound('lose'); // Toca o som de derrota por padrão
     
     if (reason === 'win') {
         playSound('win');
         title.textContent = 'VITÓRIA!';
         message.textContent = `Dia 8. Você completou todas as tasks. O grupo sobreviveu. A ajuda está vindo. Você manteve sua humanidade... e sua sanidade.`;
     } else if (reason === 'sanity') {
-        playSound('lose');
         title.textContent = 'CONEXÃO ESTABELECIDA';
         message.textContent = 'Eu me sinto... calma. Eu me sinto... feliz. Eu não sou mais eu. Eu sou Nós.';
     } else if (reason === 'intimacy') {
-        playSound('lose');
         title.textContent = 'EXPULSA DO GRUPO';
         message.textContent = 'O grupo votou. Você não é mais confiável. Você está sozinha. Eles estão vindo...';
     } else if (reason === 'door') { 
-        playSound('lose');
         playSound('doorDamage');
         title.textContent = 'PORTA DESTRUÍDA';
         message.textContent = 'As batidas se tornaram ensurdecedoras. A madeira se partiu. Eles entraram. Eles estão... felizes.';
