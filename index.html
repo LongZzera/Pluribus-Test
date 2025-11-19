@@ -3,1498 +3,580 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLURIBUS: A JUNÇÃO</title>
+    <title>PLURIBUS: A JUNÇÃO - FINAL V3</title>
     <style>
-/* Configuração Geral */
+/* === ESTILOS GERAIS === */
 body, html {
     margin: 0; padding: 0; width: 100%; height: 100%;
     font-family: 'Courier New', Courier, monospace;
-    background-color: #000; color: #fff;
-    overflow: hidden; text-shadow: 0 0 3px #fff;
+    background-color: #000; color: #FFF;
+    overflow: hidden; text-shadow: 0 0 2px #FF0;
+    user-select: none;
 }
+/* Scanlines */
 body::after {
     content: " "; display: block; position: absolute; top: 0; left: 0;
     width: 100%; height: 100%;
-    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.3),
-    rgba(0, 0, 0, 0.3) 1px, transparent 1px, transparent 2px);
+    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px);
     pointer-events: none; z-index: 9999;
 }
+
+/* Telas */
 .screen {
     width: 100vw; height: 100vh; display: none; position: absolute;
     top: 0; left: 0; align-items: center; justify-content: center;
     flex-direction: column; overflow-y: auto; padding: 20px; box-sizing: border-box;
+    background: #000; z-index: 10;
 }
 .screen.active { display: flex; }
 .hidden { display: none !important; }
 
-/* Menus */
+/* Container */
 .menu-container {
-    text-align: center; background: rgba(10, 10, 10, 0.9);
-    padding: 40px; border: 2px solid #ff0;
-    box-shadow: inset 0 0 15px #ff0; max-width: 800px;
+    text-align: center; background: #050505;
+    padding: 30px; border: 2px solid #FF0;
+    box-shadow: 0 0 20px rgba(255, 255, 0, 0.2);
+    max-width: 900px; width: 95%;
 }
-.menu-container h1 { 
-    color: #ff0; 
-    text-shadow: 0 0 10px #ff0; 
-    font-size: 2.2em; /* Reduzido para ser menor */
-    margin-bottom: 10px;
-}
-.menu-container h2 { color: #ff0; text-shadow: 0 0 8px #ff0; }
-.menu-container p { color: #fff; margin: 10px 0; }
-button {
-    display: inline-block; padding: 10px 20px; margin: 5px;
-    font-family: 'Courier New', Courier, monospace; font-size: 1.1em;
-    font-weight: bold; background-color: #ff0; color: #000;
-    border: none; cursor: pointer; text-shadow: none;
-    transition: background-color 0.2s, color 0.2s;
-}
-button:hover { background-color: #000; color: #ff0; border: 1px solid #ff0; }
-button:disabled { background: #333; color: #555; border: none; cursor: not-allowed; }
-.setting-item { margin: 20px 0; }
 
+h1, h2, h3 { color: #FF0; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; }
+p { font-size: 1.1em; line-height: 1.4; color: #DDD; margin-bottom: 10px; }
+
+/* Botões */
+button {
+    padding: 10px 20px; margin: 5px;
+    font-family: 'Courier New', Courier, monospace; font-size: 1em; font-weight: bold;
+    background-color: #000; color: #FF0; border: 2px solid #FF0;
+    cursor: pointer; transition: all 0.1s; text-transform: uppercase;
+}
+button:hover:not(:disabled) { background-color: #FF0; color: #000; box-shadow: 0 0 15px #FF0; }
+button:disabled { border-color: #444; color: #444; cursor: not-allowed; box-shadow: none; }
 
 /* HUD */
-#game-screen { justify-content: flex-start; }
 #game-hud {
-    width: 100%; padding: 10px; background: #000;
-    border-bottom: 2px solid #ff0; display: flex;
-    justify-content: space-between; box-sizing: border-box;
-    position: absolute; top: 0; z-index: 10;
+    width: 100%; padding: 10px; background: #000; border-bottom: 1px solid #FF0;
+    display: flex; justify-content: space-between; position: absolute; top: 0; z-index: 20;
 }
-.hud-column { width: 48%; }
-.hud-item { font-size: 1em; color: #fff; margin-bottom: 5px; }
-#clock-display {
-    font-size: 1.5em; color: #ff0; text-shadow: 0 0 5px #ff0; text-align: right;
-}
-#sanity-bar-container, #intimacy-bar-container, #door-health-bar-container {
-    width: 100%; height: 20px; background: #111;
-    border: 1px solid #ff0; margin-top: 2px;
-}
-#sanity-bar, #intimacy-bar, #door-health-bar {
-    width: 100%; height: 100%; background: #fff;
-    transition: width 0.5s, background-color 0.5s;
-}
-#intimacy-bar { background: #0f0; }
-#door-health-bar { background: #0ff; } /* Cor ciano para saúde da porta */
+.hud-column { width: 48%; display: flex; flex-direction: column; gap: 2px; font-size: 0.9em; }
+.bar-container { width: 100%; height: 8px; background: #222; border: 1px solid #555; margin-bottom: 5px; }
+.bar-fill { height: 100%; transition: width 0.3s; }
 
-/* Hub do Apartamento */
-#apartment-hub-view {
-    width: 100%; height: 100%; display: flex;
-    align-items: center; justify-content: center; padding-top: 150px; /* Mais espaço para o HUD */
-}
-.hub-container { width: 90%; max-width: 900px; text-align: center; }
+#sanity-bar { background: #FFF; }
+#intimacy-bar { background: #FF0; }
+#door-bar { background: #FFF; }
+#battery-bar { background: #FF0; }
+
+/* Hub */
+#apartment-hub-view { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding-top: 80px; }
 #apartment-art {
-    font-size: 1.2em; color: #fff; border: 2px solid #fff;
-    padding: 15px; text-align: left; white-space: pre;
+    font-size: 11px; line-height: 11px; color: #FF0; border: 1px solid #FF0;
+    padding: 15px; background: rgba(20, 20, 20, 0.9); margin-bottom: 10px;
 }
-.hub-actions button { font-size: 1.1em; padding: 10px 15px; margin: 5px; }
 #hub-display-log {
-    margin-top: 20px; border: 2px solid #555; background: #080808;
-    width: 100%; min-height: 60px; padding: 10px;
-    font-style: italic; color: #aaa; box-sizing: border-box;
+    height: 50px; border: 1px solid #FF0; color: #FFF;
+    padding: 5px; overflow: hidden; font-style: italic; text-align: center; display: flex; align-items: center; justify-content: center;
 }
+#glitch-timer { color: #F00; font-weight: bold; margin-top: 5px; text-shadow: 0 0 5px #F00; }
 
-/* Visor (Peephole) */
-#peephole-overlay {
-    position: absolute; width: 100vw; height: 100vh;
-    background: rgba(0, 0, 0, 0.95); display: flex;
-    align-items: center; justify-content: center;
-    flex-direction: column; z-index: 100;
-}
+/* Visor */
+#peephole-overlay { background: #000; z-index: 50; }
 #visitor-ascii-art {
-    font-size: 1em; line-height: 1; white-space: pre;
-    background: #080808; border: 3px solid #ff0; padding: 20px;
-    width: 600px; /* Aumentado para mais detalhes */
-    height: 350px; /* Aumentado para mais detalhes */
-    overflow: auto;
-    box-shadow: inset 0 0 20px #ff0; color: #fff;
+    font-size: 12px; line-height: 10px; white-space: pre; 
+    color: #CCC; border: 2px solid #FF0; padding: 20px; 
+    width: 500px; height: 250px; margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: center; text-align: center;
 }
-#peephole-ui { margin-top: 10px; text-align: center; }
-#tool-display {
-    border: 1px solid #ff0; background: #000; color: #ff0;
-    text-shadow: 0 0 5px #ff0; padding: 5px;
-    margin-bottom: 10px; font-size: 0.9em; min-height: 20px;
+.dark-vision { color: #222 !important; border-color: #444 !important; }
+#peephole-timer-display { font-size: 3em; color: #FF0; font-weight: bold; animation: pulse 0.5s infinite; }
+
+/* Câmera */
+#camera-screen { background: #050505; }
+#cam-ui {
+    width: 100%; max-width: 700px; margin: 0 auto;
+    border: 2px solid #FF0; padding: 10px; background: #001100;
 }
-/* Timer do Visor */
-#peephole-timer-display {
-    font-size: 1.5em;
-    color: #f00;
-    text-shadow: 0 0 8px #f00;
-    font-weight: bold;
-    margin: 10px 0;
-}
-.timer-pulse {
-    animation: pulse-red 0.5s infinite alternate;
-}
-@keyframes pulse-red {
-    from { transform: scale(1.0); text-shadow: 0 0 8px #f00; }
-    to { transform: scale(1.1); text-shadow: 0 0 15px #f00; }
+#cam-feed { 
+    width: 100%; height: 300px; 
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    color: #0F0; font-size: 1em; white-space: pre;
+    background: repeating-linear-gradient(0deg, rgba(0, 255, 0, 0.1), rgba(0, 255, 0, 0.1) 1px, transparent 1px, transparent 2px);
+    text-shadow: 0 0 5px #0f0; border: 1px solid #050; overflow: hidden;
 }
 
-#dialogue-options button { background: #ff0; color: #000; margin: 5px; }
-#decision-buttons button { font-size: 1.3em; margin: 10px; }
-#exit-peephole-btn { position: absolute; bottom: 20px; right: 20px; }
-#scan-visitor-btn {
-    border: 1px solid #0ff; color: #0ff; background: #000;
-    text-shadow: 0 0 5px #0ff;
-}
-#scan-visitor-btn:hover { background: #0ff; color: #000; }
-#scan-visitor-btn:disabled {
-    border-color: #333; color: #555; text-shadow: none;
-    background: #111; cursor: not-allowed;
-}
+/* MINI GAME PAC MAN */
+#minigame-screen { background: rgba(0,0,0,0.95); z-index: 200; }
+canvas { border: 4px solid #FF0; background: #000; box-shadow: 0 0 30px #FF0; display: block; margin: 0 auto; }
+#minigame-msg { color: #FF0; font-size: 2em; margin-bottom: 20px; animation: pulse 0.2s infinite; }
 
-
-/* Tela de Reunião (Discord) */
-#meeting-screen {
-    background: #1a1a1a;
-}
-.meeting-container {
-    width: 90%; max-width: 1000px; text-align: center; padding: 20px;
-}
-.meeting-title {
-    color: #ff0; text-shadow: 0 0 10px #ff0; font-size: 2em;
-    margin-bottom: 20px;
-}
-.group-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 15px; margin: 20px 0;
-}
-.member-card {
-    background: #2a2a2a; border: 2px solid #555;
-    padding: 15px; cursor: pointer; transition: all 0.3s;
-}
-.member-card:hover { border-color: #ff0; box-shadow: 0 0 10px #ff0; }
-.member-card.selected { border-color: #0f0; box-shadow: 0 0 15px #0f0; }
-.member-name { color: #ff0; font-size: 1.3em; margin-bottom: 10px; }
-.member-status { color: #aaa; font-size: 0.9em; margin-bottom: 5px; }
-.intimacy-level {
-    color: #0f0; font-size: 1em; margin-top: 10px;
-}
-.interaction-panel {
-    background: #080808; border: 2px solid #ff0;
-    padding: 20px; margin-top: 20px; min-height: 200px;
-}
-.interaction-buttons button {
-    display: block; width: 100%; margin: 10px 0;
-}
-
-/* TV Screen */
-#tv-watch-screen { background: #0a0a0a; }
-#tv-art { color: #ff0; text-shadow: 0 0 5px #ff0; }
-#tv-dialogue-box {
-    border: 1px solid #aaa; background: #111;
-    padding: 10px; margin: 20px 0; min-height: 80px;
-}
-#tv-choices button { display: block; width: 100%; margin: 10px 0; }
-
-/* Mission Screen */
-#task-choices button { display: block; width: 100%; margin: 10px 0; text-align: left; }
-
-/* Game Over Screen */
-#game-over-stats {
-    border: 2px solid #ff0;
-    background: #080808;
-    padding: 20px;
-    margin-top: 20px;
-    width: 100%;
-    max-width: 600px;
-    text-align: left;
-}
-#game-over-stats h3 {
-    color: #ff0;
-    text-align: center;
-    border-bottom: 1px solid #ff0;
-    padding-bottom: 10px;
-}
-#stats-breakdown {
-    white-space: pre-wrap;
-    font-size: 1.1em;
-    line-height: 1.6;
-}
-#final-ranking {
-    font-size: 3em;
-    color: #ff0;
-    text-shadow: 0 0 15px #ff0;
-    text-align: center;
-    margin-top: 20px;
-}
-
-/* Credits */
-.credits-text {
-    color: #aaa; font-size: 0.9em; margin-top: 30px;
-    border-top: 1px solid #555; padding-top: 20px;
-}
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div id="loading-screen" class="screen active">
-        <h1>CARREGANDO...</h1>
-    </div>
-
-    <div id="main-menu-screen" class="screen">
+    <div id="main-menu-screen" class="screen active">
         <div class="menu-container">
-            <h1>PLURIBUS: A JUNÇÃO</h1>
-            <p>EDIÇÃO HIVE MIND</p>
-            <div id="audio-status" style="margin: 20px 0; padding: 10px; background: rgba(255,255,0,0.2); border: 1px solid #ff0;">
-                <p style="color: #ff0; font-size: 0.9em;">🔊 <span id="audio-state">Clique em HABILITAR ÁUDIO para gerar sons.</span></p>
-                <button id="enable-audio-btn">HABILITAR ÁUDIO</button>
+            <h1 style="font-size: 3em;">PLURIBUS</h1>
+            <p style="color: #FF0;">A JUNÇÃO</p>
+            <br>
+            <button onclick="startGame()" style="font-size: 1.5em;">INICIAR JOGO</button>
+            <div style="margin-top: 10px;">
+                <button onclick="showScreen('how-to-play-screen')">COMO JOGAR</button>
+                <button onclick="showScreen('credits-screen')">CRÉDITOS</button>
+                <button onclick="initAudio()">ATIVAR SOM 🔊</button>
             </div>
-            <button id="start-game-btn">INICIAR JOGO</button>
-            <button id="how-to-play-btn">COMO JOGAR</button>
-            <button id="settings-btn">CONFIGURAÇÕES</button>
-            <button id="credits-btn">CRÉDITOS</button>
         </div>
     </div>
 
     <div id="how-to-play-screen" class="screen">
         <div class="menu-container">
-            <h2>COMO JOGAR</h2>
-            <p style="text-align: left; max-width: 600px; margin: 20px auto;">
-                <strong>OBJETIVO:</strong> Sobreviva 8 dias e complete 8 tasks com seu grupo.<br><br>
-                <strong>MECÂNICA:</strong><br>
-                • Cada dia dura 5 minutos reais<br>
-                • Visitantes batem na porta a cada hora<br>
-                • Mantenha SANIDADE e INTIMIDADE acima de 60%<br>
-                • Mantenha a SAÚDE DA PORTA acima de 0%<br>
-                • Recusar visitantes pode danificar a porta<br>
-                • Use FOCAR para recuperar sanidade (3x/dia)<br>
-                • Use CONSERTAR PORTA para reparar a porta (gasta 1h)<br>
-                • Use o SCANNER BIOLÓGICO no visor (1x/dia)<br>
-                • <strong>NOVO: Você tem 10 segundos para decidir no visor!</strong><br><br>
-                <strong>CUIDADO:</strong> Se intimidade < 60% (expulsão), sanidade = 0% (junção), porta = 0% (invasão), ou hesitar no visor, o jogo acaba!
-            </p>
-            <button class="back-to-menu-btn">VOLTAR</button>
+            <h2>MANUAL DE SOBREVIVÊNCIA</h2>
+            <div style="text-align: left; max-height: 60vh; overflow-y: auto;">
+                <p>1. <strong>GLITCH (PAC-MAN):</strong> A cada 30s, o jogo trava. Use as SETAS para comer tudo.</p>
+                <p>2. <strong>CÂMERA:</strong> Gasta 20% de bateria. Só 2 usos por dia.</p>
+                <p>3. <strong>PORTA:</strong> Só pode ser reparada 3 vezes por dia.</p>
+                <p>4. <strong>GERADOR:</strong> Só pode ser usado 1 vez por dia.</p>
+            </div>
+            <button onclick="showScreen('main-menu-screen')">VOLTAR</button>
         </div>
     </div>
 
     <div id="credits-screen" class="screen">
         <div class="menu-container">
             <h2>CRÉDITOS</h2>
-            <div class="credits-text">
-                <p><strong>CRIADOR DO JOGO</strong></p>
-                <p style="color: #ff0; font-size: 1.5em;">HALDO</p>
-                <br>
-                <p><strong>CONCEITO ORIGINAL</strong></p>
-                <p>PLURIBUS: A JUNÇÃO</p>
-                <br>
-                <p><strong>PROGRAMAÇÃO E DESIGN</strong></p>
-                <p>HALDO</p>
-                <br>
-                <p><strong>ANO</strong></p>
-                <p>2025</p>
-                <br>
-                <p style="color: #555; font-size: 0.8em;">
-                    "Mantenha-se infeliz. Mantenha-se vivo."
-                </p>
-            </div>
-            <button class="back-to-menu-btn">VOLTAR</button>
-        </div>
-    </div>
-
-    <div id="settings-screen" class="screen">
-        <div class="menu-container">
-            <h2>CONFIGURAÇÕES</h2>
-            <div class="setting-item">
-                <label for="music-volume">Volume (Música):</label>
-                <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.5">
-            </div>
-            <div class="setting-item">
-                <label for="sfx-volume">Volume (Efeitos):</label>
-                <input type="range" id="sfx-volume" min="0" max="1" step="0.1" value="0.5">
-            </div>
-            <button class="back-to-menu-btn">VOLTAR</button>
+            <br>
+            <p>CRIADOR</p>
+            <p style="font-size: 2em; color: #FF0; text-shadow: 0 0 10px #FF0;">HALDO</p>
+            <br>
+            <button onclick="showScreen('main-menu-screen')">VOLTAR</button>
         </div>
     </div>
 
     <div id="game-screen" class="screen">
         <div id="game-hud">
             <div class="hud-column">
-                <div class="hud-item">
-                    <span>SANIDADE:</span> <span id="hud-sanity">100%</span>
-                    <div id="sanity-bar-container"><div id="sanity-bar"></div></div>
-                </div>
-                <div class="hud-item">
-                    <span>INTIMIDADE:</span> <span id="hud-intimacy">100%</span>
-                    <div id="intimacy-bar-container"><div id="intimacy-bar"></div></div>
-                </div>
-                <div class="hud-item">
-                    <span>SAÚDE DA PORTA:</span> <span id="hud-door-health">100%</span>
-                    <div id="door-health-bar-container"><div id="door-health-bar"></div></div>
-                </div>
+                <span>🧠 SANIDADE: <span id="val-sanity">100%</span></span>
+                <div class="bar-container"><div id="sanity-bar" class="bar-fill"></div></div>
+                <span>❤️ INTIMIDADE: <span id="val-intimacy">100%</span></span>
+                <div class="bar-container"><div id="intimacy-bar" class="bar-fill"></div></div>
             </div>
             <div class="hud-column">
-                <div id="clock-display">
-                    DIA <span id="hud-day">1</span> - <span id="hud-time">00:00</span>
+                <span>🛡️ PORTA: <span id="val-door">100%</span></span>
+                <div class="bar-container"><div id="door-bar" class="bar-fill"></div></div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span>🔋 BAT: <span id="val-battery">100%</span></span>
+                    <span>🏠 HAB: <span id="val-pop" style="color:#FF0;">1/4</span></span>
                 </div>
-                <div class="hud-item">
-                    <span>TASKS:</span> <span id="hud-tasks">0/8</span>
-                </div>
-                <div class="hud-item">
-                    <span>RECUSAS:</span> <span id="hud-refusals">3</span>
-                </div>
+                <div class="bar-container"><div id="battery-bar" class="bar-fill"></div></div>
             </div>
         </div>
 
-        <div id="apartment-hub-view" class="active-view">
+        <div id="apartment-hub-view">
             <div class="hub-container">
-                <h2>Apartamento de Carol</h2>
-                <pre id="apartment-art">
-+------------------------------------------------------+
-| JANELA BARRICADA                                     |
-|                                                      |
-|   [CONSERTOS] (A porta precisa de reparos)           |
-|                                                      |
-|   [RÁDIO] (Chiado... vozes...)                       |
-|                                                      |
-|   [TV] (Transmissão...)                              |
-|                                                      |
-|   [TERMINAL] (Eu preciso focar)                      |
-|                                                      |
-|                                     [PORTA] >>>      |
-+------------------------------------------------------+
-                </pre>
-                <div class="hub-actions">
-                    <button id="hub-repair-btn">CONSERTAR PORTA (Gasta 1h)</button>
-                    <button id="hub-radio-btn">OUVIR RÁDIO (<span id="radio-uses">2</span>/2)</button>
-                    <button id="hub-tv-btn">VER TV (<span id="tv-uses">1</span>/1)</button>
-                    <button id="hub-terminal-btn">FOCAR (<span id="terminal-uses">3</span>/3)</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="text-align:left;">
+                        <h2 style="margin:0; font-size:1.5em;">DIA <span id="val-day">1</span></h2>
                     </div>
-                <div id="hub-display-log">
-                    <p>Dia 1. Eu tenho que sobreviver.</p>
+                    <h1 id="clock-display" style="font-size:3em; margin:0; color:#FF0;">00:00</h1>
+                </div>
+
+                <pre id="apartment-art">
+    [ TV ]      [ RÁDIO ]      [ MESA ]
+      |             |             |
+    (OFF)        (CHIADO)      (PLANO)
+
+          \     |     /
+           \    |    /
+            \   |   /
+             \  |  /
+              \ | /
+          [  PORTA  ]
+                </pre>
+                
+                <div id="hub-display-log"><p>SOBREVIVA.</p></div>
+                <div id="glitch-timer">GLITCH EM: 30s</div>
+                
+                <div class="hub-actions" style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                    <button id="btn-repair" onclick="actionRepair()">🔨 REPARAR (3)</button>
+                    <button id="btn-manage" onclick="openManageScreen()">👥 GERENCIAR</button>
+                    <button id="btn-tv" onclick="openTVScreen()">📺 TV (1x)</button>
+                    <button id="btn-focus" onclick="actionFocus()">🧘 FOCAR (4)</button>
+                    <button id="btn-cam" onclick="openCameraScreen()">📹 CÂMERA (2)</button>
+                    <button id="btn-gen" onclick="actionGenerator()">⚡ GERADOR (1)</button>
                 </div>
             </div>
         </div>
 
-        <div id="peephole-overlay" class="hidden">
-            <pre id="visitor-ascii-art"></pre>
-            <div id="peephole-ui">
-                <div id="tool-display"><p>Análise visual...</p></div>
-                <div id="peephole-timer-display">TEMPO: 10s</div>
-                
-                <button id="scan-visitor-btn">SCANNER BIOLÓGICO (<span id="scanner-uses">1</span>/1)</button>
-                <div id="dialogue-options"></div>
-                <div id="decision-buttons" class="hidden">
-                    <button id="open-door-btn">ABRIR PORTA</button>
-                    <button id="deny-visitor-btn">NÃO ABRIR</button>
+        <div id="peephole-overlay" class="screen hidden">
+            <h2 style="color:#FF0; margin:0;">ALGUÉM BATEU!</h2>
+            <div id="peephole-timer-display">10</div>
+            <div id="visitor-ascii-art" class="dark-vision">?????????????\n? VULT ?\n?????????????</div>
+            <div id="peephole-controls" style="text-align: center;">
+                <div style="margin-bottom: 15px;">
+                    <button id="btn-light" onclick="useLight()">🔦 LUZ (-15%)</button>
+                    <button id="btn-scan" onclick="useScanner()">🧬 SCANNER</button>
+                    <button id="btn-listen" onclick="useListen()">👂 OUVIR</button>
                 </div>
+                <div id="dialogue-area"></div>
+                <div id="decision-area" class="hidden" style="margin-top:10px;">
+                    <button id="btn-open" onclick="resolveVisitor('open')" style="color:#FFF; border-color:#FFF;">ABRIR</button>
+                    <button onclick="resolveVisitor('deny')" style="color:#FF0; border-color:#FF0;">NÃO ABRIR</button>
+                </div>
+                <div id="pop-warning" style="color:#F00; font-size:0.8em; height:20px;"></div>
             </div>
-            <button id="exit-peephole-btn">PARAR DE OLHAR</button>
         </div>
     </div>
 
-    <div id="tv-watch-screen" class="screen">
-        <div class="menu-container">
-            <h2>TRANSMISSÃO DE EMERGÊNCIA</h2>
-            <pre id="tv-art">
-     .---------------.
-    /     0     0     \
-   (    \_______/    )
-    \     1111111     /
-     '---------------'
-            </pre>
-            <div id="tv-dialogue-box">
-                <p id="tv-response">Selecione uma pergunta...</p>
-            </div>
-            <div id="tv-choices"></div>
-            <button id="close-tv-btn">DESLIGAR TV</button>
+    <div id="minigame-screen" class="screen">
+        <div class="menu-container" style="border: none; background: transparent; box-shadow: none;">
+            <h2 id="minigame-msg">ERRO NO SISTEMA!</h2>
+            <p style="color: #FFF;">COMA TUDO. FUJA DOS FANTASMAS.</p>
+            <canvas id="pacman-canvas"></canvas>
+            <p style="font-size: 1em; color: #FF0; margin-top: 10px;">USE AS SETAS DO TECLADO</p>
         </div>
+    </div>
+
+    <div id="camera-screen" class="screen">
+        <div class="menu-container">
+            <h2>VIGILÂNCIA V2.0</h2>
+            <div id="cam-ui"><div id="cam-feed"><div id="cam-loading">CONECTANDO...</div><div id="cam-result" class="hidden"></div></div></div>
+            <div style="margin-top:20px;"><p id="cam-status">Bateria: -20%</p><button onclick="closeCameraScreen()">DESLIGAR</button></div>
+        </div>
+    </div>
+
+    <div id="manage-screen" class="screen">
+        <div class="menu-container"><h2>GERENCIAR</h2><div id="occupants-list"></div><button onclick="closeManageScreen()">VOLTAR</button></div>
+    </div>
+
+    <div id="tv-screen" class="screen">
+        <div class="menu-container"><h2>CANAL DA JUNÇÃO</h2><div id="tv-content"></div><div id="tv-controls"><button id="tv-ask-btn" onclick="askTV()">PERGUNTAR</button><button onclick="closeTVScreen()">DESLIGAR</button></div></div>
+    </div>
+
+    <div id="report-screen" class="screen">
+        <div class="menu-container"><h2>RELATÓRIO</h2><div id="rank-grade" class="rank-grade"></div><div class="score-detail"><p>PONTOS: <span id="score-total"></span></p></div><button onclick="goToMeeting()">REUNIÃO</button></div>
     </div>
 
     <div id="meeting-screen" class="screen">
-        <div class="meeting-container">
-            <h2 class="meeting-title">REUNIÃO DO GRUPO - DIA <span id="meeting-day">1</span></h2>
-            <p style="color: #aaa;">Escolha um membro para interagir ou selecione uma task</p>
-            
-            <div class="group-grid" id="group-members"></div>
-            
-            <div class="interaction-panel" id="interaction-panel">
-                <p style="color: #555;">Selecione um membro do grupo...</p>
-            </div>
+        <div class="menu-container"><h2>REUNIÃO</h2><div id="meeting-grid" class="meeting-grid"></div></div>
+    </div>
 
-            <div style="margin-top: 30px; border-top: 2px solid #ff0; padding-top: 20px;">
-                <h3 style="color: #ff0;">TASK DO DIA</h3>
-                <p id="daily-task-description" style="color: #fff; margin: 15px 0;"></p>
-                <div id="task-choices"></div>
-            </div>
-        </div>
+    <div id="victory-screen" class="screen">
+        <div class="menu-container"><h1>VITÓRIA</h1><button onclick="startEndlessMode()">MODO INFINITO</button><button onclick="location.reload()">MENU</button></div>
     </div>
 
     <div id="game-over-screen" class="screen">
-        <div class="menu-container">
-            <h2 id="game-over-title">FIM DE JOGO</h2>
-            <p id="game-over-message" style="margin: 20px 0; font-size: 1.2em;"></p>
-            
-            <div id="game-over-stats" class="hidden">
-                <h3>--- RESULTADOS DA MISSÃO ---</h3>
-                <pre id="stats-breakdown"></pre>
-                <div id="final-ranking"></div>
-            </div>
-            
-            <button class="back-to-menu-btn">VOLTAR AO MENU</button>
-        </div>
+        <div class="menu-container"><h1 style="color:#F00;">FIM DE JOGO</h1><p id="go-msg"></p><button onclick="location.reload()">TENTAR NOVAMENTE</button></div>
     </div>
 
     <script>
-// ===== AUDIO SYSTEM (GENERATED) =====
+/* === SISTEMA === */
 let audioCtx = null;
-let audioEnabled = false;
-let masterVolume = 0.3;
-let sfxVolume = 0.5;
-let activeOscillators = []; // Para rastrear música e parar loops
+let gameLoop = null, peepTimer = null, glitchInterval = null, minigameLoop = null;
+let glitchCountdown = 30;
+const TICK_SPEED = 300;
 
-function initAudio() {
-    if (audioCtx) return;
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AudioContext();
-    audioEnabled = true;
-    document.getElementById('enable-audio-btn').style.display = 'none';
-    updateAudioStatus("✅ Áudio Sintetizado Ativo");
-    
-    // Tocar música do menu se estiver no menu
-    if(game.state === 'menu') {
-        playMusic('menu');
-    }
-}
-
-function updateAudioStatus(msg) {
-    const el = document.getElementById('audio-state');
-    if(el) el.textContent = msg;
-}
-
-// Sintetizador Básico
-function playTone(freq, type, duration, vol = 0.5) {
-    if (!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    
-    osc.type = type;
-    osc.frequency.value = freq;
-    
-    gain.gain.setValueAtTime(vol * sfxVolume, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-    
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-}
-
-function playNoise(duration, vol = 0.5) {
-    if (!audioCtx) return;
-    const bufferSize = audioCtx.sampleRate * duration;
-    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    
-    for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-    }
-    
-    const noise = audioCtx.createBufferSource();
-    noise.buffer = buffer;
-    
-    const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(vol * sfxVolume, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-    
-    noise.connect(gain);
-    gain.connect(audioCtx.destination);
-    noise.start();
-}
-
-// Gerenciador de Música (Drone Simples)
-let musicOsc = null;
-let musicGain = null;
-
-function playMusic(type) {
-    if (!audioCtx) return;
-    stopMusic(); // Parar anterior
-    
-    musicOsc = audioCtx.createOscillator();
-    musicGain = audioCtx.createGain();
-    
-    if (type === 'menu') {
-        musicOsc.type = 'sine';
-        musicOsc.frequency.value = 55; // Lá baixo
-    } else if (type === 'game') {
-        musicOsc.type = 'triangle';
-        musicOsc.frequency.value = 45; // Mais grave e tenso
-    }
-    
-    musicGain.gain.value = 0.1 * masterVolume; // Volume baixo para ambiente
-    
-    musicOsc.connect(musicGain);
-    musicGain.connect(audioCtx.destination);
-    musicOsc.start();
-}
-
-function stopMusic() {
-    if (musicOsc) {
-        musicOsc.stop();
-        musicOsc.disconnect();
-        musicOsc = null;
-    }
-}
-
-// Mapeamento de Sons para Funções
-function playSound(name) {
-    if (!audioEnabled) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    
-    switch(name) {
-        case 'select':
-            playTone(800, 'sine', 0.1, 0.2);
-            break;
-        case 'knock':
-            playTone(100, 'square', 0.05, 0.8);
-            setTimeout(() => playTone(80, 'square', 0.05, 0.8), 200);
-            setTimeout(() => playTone(90, 'square', 0.1, 0.8), 400);
-            break;
-        case 'doorOpen':
-             playNoise(0.5, 0.3);
-             break;
-        case 'doorDeny':
-             playTone(150, 'sawtooth', 0.2, 0.5);
-             break;
-        case 'alarm':
-             playTone(600, 'sawtooth', 0.3, 0.5);
-             setTimeout(() => playTone(400, 'sawtooth', 0.3, 0.5), 300);
-             break;
-        case 'win':
-             playTone(400, 'sine', 0.2);
-             setTimeout(() => playTone(600, 'sine', 0.4), 200);
-             setTimeout(() => playTone(800, 'sine', 0.8), 400);
-             break;
-        case 'lose':
-             playTone(200, 'sawtooth', 1.0, 0.6);
-             playTone(150, 'sawtooth', 1.0, 0.6);
-             break;
-        case 'repair':
-             playNoise(0.2, 0.4);
-             setTimeout(() => playNoise(0.2, 0.4), 300);
-             break;
-        case 'scan':
-             playTone(1200, 'sine', 0.1, 0.1);
-             setTimeout(() => playTone(1200, 'sine', 0.1, 0.1), 150);
-             break;
-        case 'doorDamage':
-             playTone(50, 'square', 0.5, 1.0); // Som forte e grave
-             break;
-        default:
-             playTone(440, 'sine', 0.1);
-    }
-}
-
-// ===== GAME DATA =====
-const gameData = {
-    simulation: {
-        secondsPerMinute: 5,
-        hoursPerDay: 5,
-        totalDaysToSurvive: 8,
-        initialRefusals: 3,
-        dailyFocusUses: 3,
-        dailyRadioUses: 2,
-        dailyTVUses: 1,
-        dailyScannerUses: 1,
-        repairAmount: 25,
-        peepholeTimerDuration: 10 
-    },
-    
-    groupMembers: [
-        { id: "m1", name: "Marcus", role: "Líder", status: "Determinado", intimacy: 50 },
-        { id: "m2", name: "Ana", role: "Médica", status: "Cansada", intimacy: 50 },
-        { id: "m3", name: "Leo", role: "Técnico", status: "Nervoso", intimacy: 50 },
-        { id: "m4", name: "Sara", role: "Psicóloga", status: "Calma", intimacy: 50 },
-        { id: "m5", name: "Diego", role: "Militar", status: "Alerta", intimacy: 50 },
-        { id: "m6", name: "Julia", role: "Cientista", status: "Curiosa", intimacy: 50 }
-    ],
-    
-    interactions: [
-        { id: "talk", label: "CONVERSAR", intimacyChange: 5, sanityChange: 3 },
-        { id: "help", label: "OFERECER AJUDA", intimacyChange: 10, sanityChange: -5 },
-        { id: "joke", label: "FAZER PIADA", intimacyChange: 8, sanityChange: 5 },
-        { id: "share", label: "COMPARTILHAR MEDO", intimacyChange: 15, sanityChange: -10 },
-        { id: "distance", label: "MANTER DISTÂNCIA", intimacyChange: -5, sanityChange: 2 }
-    ],
-    
-    tasks: [
-        { id: "t1", title: "Buscar Suprimentos", description: "O grupo precisa de comida e água.", choices: [{ text: "Ir ao supermercado (arriscado)", intimacy: 15, sanity: -10 }, { text: "Procurar em casas próximas (seguro)", intimacy: 8, sanity: -5 }] },
-        { id: "t2", title: "Fortificar Base", description: "Precisamos reforçar as defesas.", choices: [{ text: "Barricada externa (cansativo)", intimacy: 12, sanity: -15 }, { text: "Trancar portas internas (simples)", intimacy: 5, sanity: -5 }] },
-        { id: "t3", title: "Procurar Sobreviventes", description: "Captamos um sinal de rádio.", choices: [{ text: "Investigar o sinal (perigoso)", intimacy: 20, sanity: -20 }, { text: "Ignorar (seguro)", intimacy: -10, sanity: 5 }] },
-        { id: "t4", title: "Manter Comunicação", description: "O rádio está falhando.", choices: [{ text: "Consertar com peças (técnico)", intimacy: 10, sanity: -5 }, { text: "Buscar novo rádio (arriscado)", intimacy: 15, sanity: -15 }] },
-        { id: "t5", title: "Cuidar dos Feridos", description: "Ana precisa de ajuda médica.", choices: [{ text: "Buscar remédios (perigoso)", intimacy: 18, sanity: -12 }, { text: "Improvisar com o que temos", intimacy: 8, sanity: -8 }] },
-        { id: "t6", title: "Investigar a Mente Coletiva", description: "Julia quer estudar 'Eles'.", choices: [{ text: "Ajudar na pesquisa", intimacy: 12, sanity: -20 }, { text: "Recusar por segurança", intimacy: -5, sanity: 5 }] },
-        { id: "t7", title: "Planejar Evacuação", description: "Marcus quer um plano de fuga.", choices: [{ text: "Estudar rotas de escape", intimacy: 10, sanity: -8 }, { text: "Focar em resistir aqui", intimacy: 5, sanity: -5 }] },
-        { id: "t8", title: "Decisão Final", description: "É o último dia. O que fazemos?", choices: [{ text: "Resistir até o resgate", intimacy: 20, sanity: -15 }, { text: "Tentar escapar sozinhos", intimacy: -20, sanity: 10 }] }
-    ],
-    
-    visitors: [
-        {
-            id: "v001", type: "Outro", name: "Sra. Henderson",
-            idleArt: `
-          .,,ccclllllllllc,,.
-      ,clc,,,,,,,,,,,,,,,,,,l,.
-    ,c,'                     ',.
-   ,l' ,,'.               ,'',, 'c.
-  .c, ,c' ,,           ,, 'c, ,c'
-  .l' l. ,l' .c,     ,c. 'l, ,l' l.
- ,l' l. .l' ,l' l, ,l' l, 'l, .l' l.
- .l' l. .l' l.  l' l'  l, 'l, .l' l.
- ,l' l. .l' l. ,l' 'l, l, 'l, .l' l.
- ,l' l. .l' 'l,,l'   'l,,l' 'l, .l' l.
- .l' 'l, 'l,  .,       ,.  ,l' ,l' l.
-  'l, 'l, 'l,           ,l' ,l' ,l'
-   'c, 'c, ,,         ,, ,c' ,c'
-    'c,  ',, ''c, ,c'' ,,  ,c'
-      'clc,,,,,cll,,,,,clc'
-          ''ccclllcc''
-"ESTAMOS FELIZES, CAROL."`,
-            dialogues: [
-                { prompt: "O que você quer?", response: ``, sanity: -5 },
-                { prompt: "Vá embora!", response: ``, sanity: -3 }
-            ],
-            outcomes: {
-                open: { art: `\n .-------------------.\n|   BEM-VINDA       |\n|   A JUNÇÃO        |\n '-------------------'`, sanity: -100 },
-                deny: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"NOS VOLTAREMOS."`, sanity: 5, denyDamage: 5 }
-            }
-        },
-        {
-            id: "v002", type: "Humano", name: "Sobrevivente",
-            idleArt: `
-            ..,;;;;;;;;;;;,.
-        .;;;;;;;;;;;;;;;;;;;;.
-      .;;;;''''         ''''';;.
-     ,;;;'     ..,,,,,..     ';;;,
-    ,;;'    .;'         ';.    ';;,
-   ,;;'    .;'           ';.    ';;,
-   ;;;     ;'    (o) (o)   ';     ;;;
-   ;;;     ;'       J       ';     ;;;
-   ';;,    ';.    \\___/    ,;'    ,;;'
-    ';;,    ';.         ,;'    ,;;'
-     ';;;,     ''',,,,'''     ,;;;'
-      ';;;;.             .;;;;'
-        ';;;;;;;;;;;;;;;;;;;;'
-            ''';;;;;;;;'''
-"ABRE!! POR FAVOR!!"`,
-            dialogues: [
-                { prompt: "Quem é você?", response: ``, sanity: 5 },
-                { prompt: "Como posso confiar?", response: ``, sanity: 3 }
-            ],
-            outcomes: {
-                open: { art: `"OBRIGADO... OBRIGADO..."\n\n(A pessoa desmaia\n de exaustão)`, sanity: 20, intimacy: 10 },
-                deny: { art: `     !#?$*!#?%&!$#@?\n    /     o     o     \n   (      /\\_/\\      )\n    \\     ......      /\n     '---------------'\n"NAO!! ... eu...\n me sinto... feliz."`, sanity: -25, denyDamage: 10 }
-            }
-        },
-        {
-            id: "v003", type: "Outro", name: "A Isca",
-            idleArt: `     !#?$*!#?%&!$#@?\n    /     o     o     \n   (      /\\_/\\      )\n    \\     ?????????     /\n     '---------------'\n"EU SOU HUMANA!"`,
-            dialogues: [
-                { prompt: "Prove que é humana", response: `     !#?$*!#?%&!$#@?\n    /     o     o     \n   (      /\\_/\\      )\n    \\     ?????????     /\n     '---------------'\n"EU... EU... ABRA!"`, sanity: -5 }
-            ],
-            outcomes: {
-                open: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"TE PEGUEI, CAROL."`, sanity: -100 },
-                deny: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"... Quase."`, sanity: 10, denyDamage: 5 }
-            }
-        },
-        {
-            id: "v004", type: "Outro", name: "Criança Chorando",
-            idleArt: `     !#?$*!#?%&!$#@?\n    /     .     .     \n   (      >___<      )\n    \    ( ( ( ) )    /\n     '---------------'\n"(choro)... por favor...\n me ajuda... tá escuro..."`,
-            dialogues: [
-                { prompt: "Onde estão seus pais?", response: `     !#?$*!!#?%&!$#@?\n    /     .     .     \n   (      >___<      )\n    \    ( ( ( ) )    /\n     '---------------'\n"Eles... eles se foram!\n Eu tô com medo! Abre!"`, sanity: -8 },
-                 { prompt: "Eu não posso", response: `     !#?$*!#?%&!$#@?\n    /     .     .     \n   (      >___<      )\n    \    ( ( ( ) )    /\n     '---------------'\n"VOCÊ VAI ME DEIXAR AQUI?!\n POR FAVOR!!"`, sanity: -12 }
-            ],
-            outcomes: {
-                open: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"TOLA. NOS ESTAMOS FELIZES."`, sanity: -100 },
-                deny: { art: `     !#?$*!#?%&!$#@?\n    /     o     o     \n   (      >___<      )\n    \    ( ( ( ) )    /\n     '---------------'\n"(o choro para)\n ...\n (a criança sorri)\n ...\n NOS VEMOS EM BREVE."`, sanity: 15, denyDamage: 10 }
-            }
-        },
-        {
-            id: "v005", type: "Outro", name: "Membro do Grupo Ferido",
-            idleArt: `     !#?$*!#?%&!$#@?\n    /     O     o     \n   (      /\\_/\\      )\n    \     !@#$?!?     /\n     '---------------'\n"CAROL! SOU EU, LEO! ABRE!"`,
-            dialogues: [
-                { prompt: "Leo? O que aconteceu?", response: `     !#?$*!#?%&!$#@?\n    /     O     o     \n   (      /\\_/\\      )\n    \     !@#$?!?     /\n     '---------------'\n"Fui pego... me ajuda...\n Eu tô sangrando! Rápido!"`, sanity: -10 },
-                { prompt: "Prove que é você!", response: `     !#?$*!#?%&!$#@?\n    /     O     o     \n   (      /\\_/\\      )\n    \     !@#$?!?     /\n     '---------------'\n"Não temos tempo! ABRE LOGO!\n ...\n (tosse)\n ...\n Por favor... Carol..."`, sanity: -15 }
-            ],
-            outcomes: {
-                open: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"Leo esta conosco agora.\n E voce tambem."`, sanity: -100 },
-                deny: { art: `     !#?$*!#?%&!$#@?\n    /     0     0     \n   (    \\_______/    )\n    \\     1111111     /\n     '---------------'\n"QUE PENA, CAROL.\n ELE ESTAVA TAO FELIZ."`, sanity: 10, denyDamage: 10 }
-            }
-        },
-        {
-            id: "v006", type: "Outro", name: "Voz Familiar",
-            idleArt: `     ? ? ? ? ? ? ? ? ?\n    /     ?     ?     \n   (        ?        )\n    \     ? ? ? ?     /\n     '---------------'\n"Filha... abre a porta.\n É a mamãe."`,
-            dialogues: [
-                { prompt: "Mãe? Você... você morreu!", response: `     ? ? ? ? ? ? ? ? ?\n    /     ?     ?     \n   (        ?        )\n    \     ? ? ? ?     /\n     '---------------'\n"Não, querida. Eu estou aqui.\n Eu estou feliz.\n Deixe-me entrar."`, sanity: -20 },
-                 { prompt: "Eu não acredito em você!", response: `     ? ? ? ? ? ? ? ? ?\n    /     ?     ?     \n   (        ?        )\n    \     ? ? ? ?     /\n     '---------------'\n"Carol... por favor.\n Eu senti sua falta.\n Junte-se a mim."`, sanity: -15 }
-            ],
-            outcomes: {
-                open: { art: `\n .-------------------.\n|   FINALMENTE      |\n|   ESTAMOS JUNTAS  |\n '-------------------'`, sanity: -100 },
-                deny: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \     1111111     /\n     '---------------'\n"VOCE SEMPRE FOI\n UMA DECEPCAO."`, sanity: 20, denyDamage: 15 }
-            }
-        },
-        {
-            id: "v007", type: "Humano", name: "Ana (Membro do Grupo)",
-            idleArt: `     !#?$*!#?%&!$#@?\n    /     o _ o     \n   (      (o o)      )\n    \      \\_/       /\n     '---------------'\n"Carol! Abre! Sou eu, Ana!\n Voltei da busca."`,
-            dialogues: [
-                { prompt: "Qual a senha de ontem?", response: `     !#?$*!#?%&!$#@?\n    /     o _ o     \n   (      (o o)      )\n    \      \\_/       /\n     '---------------'\n"'Pôr do sol vermelho'.\n Abre logo, eu ouvi 'Eles'!"`, sanity: 5 },
-                { prompt: "Você está sozinha?", response: `     !#?$*!#?%&!$#@?\n    /     o _ o     \n   (      (o o)      )\n    \      \\_/       /\n     '---------------'\n"Sim! Por favor, Carol!\n Está frio!"`, sanity: 3 }
-            ],
-            outcomes: {
-                open: { art: `"Ufa... obrigada.\nConsegui alguns suprimentos.\nEstou exausta."\n\n(Ana entra e tranca a porta)`, sanity: 15, intimacy: 20 },
-                deny: { art: `     !#?$*!#?%&!$#@?\n    /     O _ O     \n   (      (o o)      )\n    \      \\_/       /\n     '---------------'\n"CAROL?! O QUE VOCÊ...\n NÃO! ELES ESTÃO AQUI!!\n NÃÃÃ..."\n(Sons de luta, depois silêncio)`, sanity: -30, intimacy: -40, denyDamage: 10 }
-            }
-        },
-        {
-            id: "v008", type: "Humano", name: "Comerciante",
-            idleArt: `     $$$$$$$$$$$$$$$\n    /     O . O     \n   (      (---)      )\n    \     [$$$]      /\n     '---------------'\n"Ei! Psst! Abre!\n Eu tenho coisas boas!\n Troca rápida!"`,
-            dialogues: [
-                { prompt: "O que você tem?", response: `     $$$$$$$$$$$$$$$\n    /     O . O     \n   (      (---)      )\n    \     [$$$]      /\n     '---------------'\n"Remédios, peças...\n Eu só quero comida enlatada.\n Uma troca justa."`, sanity: 0 },
-                { prompt: "É seguro?", response: `     $$$$$$$$$$$$$$$\n    /     O . O     \n   (      (---)      )\n    \     [$$$]      /\n     '---------------'\n"Eu sou humano! Eu só quero\n sobreviver, igual a você.\n Rápido, sim ou não?"`, sanity: 0 }
-            ],
-            outcomes: {
-                open: { art: `(Você troca rapidamente\n algumas latas por peças\n de rádio)\n\n"Bom negócio."\n(Ele desaparece na névoa)\n\n(+1 Uso de Rádio)`, sanity: -5, intimacy: 0, bonus: "radio" },
-                deny: { art: `     $$$$$$$$$$$$$$$\n    /     o . o     \n   (      (---)      )\n    \     [$$$]      /\n     '---------------'\n"Tudo bem... sua perda.\n Idiota."\n(Ele vai embora resmungando)`, sanity: 5, denyDamage: 2 }
-            }
-        },
-        {
-            id: "v009", type: "Outro", name: "Oficial de Quarentena",
-            idleArt: `     .---------------.\n    /    -     -    \n   (      [---]      )\n    \     (o o)     /\n     '---------------'\n"ORDEM DO GOVERNO!\nAbra para inspeção imediata!\nEstamos evacuando a área."`,
-            dialogues: [
-                { prompt: "Qual sua identificação?", response: `     .---------------.\n    /    -     -    \n   (      [---]      )\n    \     (o o)     /\n     '---------------'\n"Não temos tempo para\n burocracia! Abra a porta\n ou usaremos força!"`, sanity: -10 },
-                { prompt: "Para onde vamos?", response: `     .---------------.\n    /    -     -    \n   (      [---]      )\n    \     (o o)     /\n     '---------------'\n"Para um lugar seguro.\n Onde todos somos... felizes.\n Agora abra."`, sanity: -15 }
-            ],
-            outcomes: {
-                open: { art: `     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \     1111111     /\n     '---------------'\n"Obrigado por cooperar.\nA Junção te recebe."`, sanity: -100 },
-                deny: { art: `     .---------------.\n    /    -     -    \n   (      [---]      )\n    \     (o o)     /\n     '---------------'\n"Resistência anotada.\nNós voltaremos.\nTodos se juntarão."`, sanity: 10, denyDamage: 20 }
-            }
-        },
-        {
-            id: "v010", type: "Outro", name: "O Silencioso",
-            idleArt: `     ... ... ... ...\n    /     .     .     \n   (                 )\n    \      (---)      /\n     '---------------'\n(A pessoa não diz nada.\n Apenas bate ritmicamente.\n ...\n Ela levanta um bilhete\n amassado para o visor)\n \n BILHETE: "SOCORRO. MUDO."`,
-            dialogues: [
-                { prompt: "Você está ferido?", response: `     ... ... ... ...\n    /     .     .     \n   (                 )\n    \      (---)      /\n     '---------------'\n(A pessoa balança a cabeça\n 'sim' freneticamente.\n Aponta para a garganta\n e depois para a porta.)`, sanity: -5 },
-                { prompt: "Vá embora!", response: `     ... ... ... ...\n    /     .     .     \n   (                 )\n    \      (---)      /\n     '---------------'\n(A pessoa bate com mais\n força, os olhos se\n arregalando. Parece\n desesperada... ou zangada.)`, sanity: -3 }
-            ],
-            outcomes: {
-                open: { art: `(No momento em que a\n tranca gira, a pessoa\n para de tremer.\n Ela olha para você.)\n\n     .---------------.\n    /     0     0     \n   (    \\_______/    )\n    \     1111111     /\n     '---------------'\n"Palavras não são\n necessárias...\n para a felicidade."`, sanity: -100 },
-                deny: { art: `     ... ... ... ...\n    /     .     .     \n   (                 )\n    \      (---)      /\n     '---------------'\n(A pessoa para de bater.\n Ela fica imóvel por\n um longo tempo.\n ...\n Então, lentamente,\n se vira e vai embora.)`, sanity: 10, denyDamage: 10 }
-            }
-        },
-        // ... (Outros visitantes) ...
-    ],
-    
-    radioMessages: [
-        { text: "...estática... alguém aí?...", sanity: 10 },
-        { text: "A Junção é pacífica. Não resista.", sanity: -10 },
-        { text: "(melodia estranha e calmante)", sanity: -5 },
-        { text: "Dia 3... ainda resistindo... água acabando...", sanity: 8 }
-    ],
-    
-    tvQuestions: [
-        { id: "q1", text: "Quem é você?", response: "Eu era o Senador Miles. Agora sou Nós. Sou a Sra. Henderson. Sou todos.", used: false },
-        { id: "q2", text: "O que vocês querem?", response: "Paz. O fim da infelicidade. Vocês sofrem tanto... nós somos a cura.", used: false },
-        { id: "q3", text: "Como eu luto?", response: "(risada calma) Você não pode. A resistência é exaustão. Cedo ou tarde, você vai descansar.", used: false },
-        { id: "q4", text: "O que é a Junção?", response: "Somos um. Uma mente. Felicidade eterna. Sem dor, sem medo, sem solidão.", used: false }
-    ]
-};
-
-// ===== GAME STATE =====
 let game = {
-    sanity: 100,
-    intimacy: 100,
-    doorHealth: 100,
-    day: 1,
-    tasksCompleted: 0,
-    time: { h: 0, m: 0 },
-    dailyRefusals: 3,
-    focusUses: 3,
-    radioUses: 2,
-    tvUses: 1,
-    scannerUses: 1,
-    currentVisitor: null,
-    selectedMember: null,
-    gameLoop: null,
-    state: "menu",
-    isDecisionMade: false,
-    scoreData: {
-        humansSaved: 0,
-        infectedDenied: 0,
-        infectedAdmitted: 0,
-        humansDenied: 0
-    },
-    peepholeTimer: null,
-    peepholeTimeLeft: 10
+    state: 'menu', day: 1, mode: 'normal', time: { h: 0, m: 0 },
+    stats: { sanity: 100, intimacy: 100, door: 100, battery: 100 },
+    occupants: [], flags: { tvUsed: false, generatorUsed: false },
+    uses: { focus: 4, scan: 4, cam: 2, repair: 3 },
+    visitor: null, nextVisitor: null, peepTime: 10
 };
 
-// ===== INIT =====
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // Iniciar o jogo
-    setTimeout(() => {
-        showScreen('mainMenu'); 
-        document.getElementById('enable-audio-btn').style.display = 'inline-block';
-    }, 1500);
+// MAPA DO PACMAN (GLOBAL) - 2 = VAZIO, 0 = PONTO, 1 = PAREDE
+const PACMAN_MAP = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,2,2,2,2,2,1,2,2,2,2,2,0,1], 
+    [1,2,1,1,1,1,2,1,2,1,1,1,1,2,1],
+    [1,2,1,0,2,2,2,2,2,2,2,0,1,2,1],
+    [1,2,1,2,1,1,0,2,0,1,1,2,1,2,1], 
+    [1,2,0,2,0,2,2,2,2,2,0,2,0,2,1],
+    [1,2,1,2,1,1,0,2,0,1,1,2,1,2,1],
+    [1,2,1,0,2,2,2,2,2,2,2,0,1,2,1],
+    [1,2,1,1,1,1,2,1,2,1,1,1,1,2,1],
+    [1,0,2,2,2,2,2,1,2,2,2,2,2,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+];
 
-    document.getElementById('enable-audio-btn').onclick = initAudio;
-    document.getElementById('start-game-btn').onclick = startGame;
-    document.getElementById('how-to-play-btn').onclick = () => { playSound('select'); showScreen('howToPlay'); };
-    document.getElementById('settings-btn').onclick = () => { playSound('select'); showScreen('settings'); };
-    document.getElementById('credits-btn').onclick = () => { playSound('select'); showScreen('credits'); };
-    
-    document.querySelectorAll('.back-to-menu-btn').forEach(btn => {
-        btn.onclick = () => {
-            playSound('select');
-            stopMusic();
-            playMusic('menu');
-            showScreen('mainMenu');
-        };
-    });
+// LORE & DATA
+const tvScript = [{q:"O que é isso?", a:"A JUNÇÃO É O FUTURO."}, {q:"Por que?", a:"A DOR PRECISA PARAR."}, {q:"Quem sou eu?", a:"VOCÊ É PARTE DE NÓS."}, {q:"Fim?", a:"APENAS O COMEÇO."}];
+const visitorsPool = [
+    { type: 'Humano', name: 'Vizinho', art: ' (o o)\n  \\_/', sound: 'human', dialogues: [{q:"Quem?", a:"Sou vizinho!", sanity:5}]},
+    { type: 'Humano', name: 'Médico', art: '  (+)\n (o o)', sound: 'human', dialogues: [{q:"Ajuda?", a:"Estou ferido.", sanity:0}]},
+    { type: 'Infectado', name: 'Mímico', art: ' (O O)\n  \\_/', sound: 'alien', dialogues: [{q:"Quem?", a:"Sou eu...", sanity:-15}]},
+    { type: 'Infectado', name: 'Vazio', art: '  ( )\n  ---', sound: 'static', dialogues: [{q:"...", a:"...", sanity:-20}]}
+];
+const meetingTasks = [{name:"REZAR", san:20, int:5}, {name:"JOGAR", san:10, int:15}, {name:"CONVERSAR", san:5, int:10}];
 
-    document.getElementById('music-volume').addEventListener('input', (e) => {
-        masterVolume = parseFloat(e.target.value);
-        // Update volume logic needed if using synth gain
-    });
-    document.getElementById('sfx-volume').addEventListener('input', (e) => {
-        sfxVolume = parseFloat(e.target.value);
-    });
-
-    // Hub buttons
-    document.getElementById('hub-repair-btn').onclick = useRepair; 
-    document.getElementById('hub-radio-btn').onclick = useRadio;
-    document.getElementById('hub-tv-btn').onclick = openTVScreen;
-    document.getElementById('hub-terminal-btn').onclick = useFocus;
-    // Evento do botão da porta REMOVIDO
-    
-    // Peephole buttons
-    document.getElementById('exit-peephole-btn').onclick = exitPeephole;
-    document.getElementById('open-door-btn').onclick = () => makeDecision('open');
-    document.getElementById('deny-visitor-btn').onclick = () => makeDecision('deny');
-    document.getElementById('scan-visitor-btn').onclick = useScanner;
-    
-    document.getElementById('close-tv-btn').onclick = closeTVScreen;
-});
-
-// ===== CORE FUNCTIONS =====
-function showScreen(name) {
-    const screens = {
-        loading: document.getElementById('loading-screen'),
-        mainMenu: document.getElementById('main-menu-screen'),
-        howToPlay: document.getElementById('how-to-play-screen'),
-        credits: document.getElementById('credits-screen'),
-        settings: document.getElementById('settings-screen'),
-        game: document.getElementById('game-screen'),
-        tvWatch: document.getElementById('tv-watch-screen'),
-        meeting: document.getElementById('meeting-screen'),
-        gameOver: document.getElementById('game-over-screen')
-    };
-    
-    Object.values(screens).forEach(s => {
-        if (s) s.classList.remove('active');
-    });
-    
-    if (screens[name]) {
-        screens[name].classList.add('active');
-        game.state = name === 'main-menu-screen' ? 'menu' : name; // Mapeamento simples
-    } else {
-        // Fallback caso nome seja passado direto (ex: 'menu' virou 'menu') no estado
-        if(name === 'mainMenu') { screens['mainMenu'].classList.add('active'); game.state = 'menu'; }
-        else if(name === 'howToPlay') { screens['howToPlay'].classList.add('active'); }
-        else if(name === 'settings') { screens['settings'].classList.add('active'); }
-        else if(name === 'credits') { screens['credits'].classList.add('active'); }
-        else if(name === 'game') { screens['game'].classList.add('active'); }
-    }
+/* === AUDIO === */
+function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+function playSound(type) {
+    if(!audioCtx) return;
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+    if(type==='knock'){osc.frequency.value=80; gain.gain.value=0.5; osc.start(now); osc.stop(now+0.1);}
+    if(type==='win'){osc.type='sine'; osc.frequency.setValueAtTime(400,now); osc.frequency.linearRampToValueAtTime(800,now+0.2); gain.gain.value=0.3; osc.start(now); osc.stop(now+0.2);}
+    if(type==='lose'){osc.type='sawtooth'; osc.frequency.setValueAtTime(200,now); gain.gain.value=0.5; osc.start(now); osc.stop(now+0.3);}
 }
 
-function updateHUD() {
-    // Sanidade
-    document.getElementById('hud-sanity').textContent = Math.round(game.sanity) + '%';
-    document.getElementById('sanity-bar').style.width = game.sanity + '%';
-    if (game.sanity <= 30) document.getElementById('sanity-bar').style.background = '#f00';
-    else if (game.sanity <= 60) document.getElementById('sanity-bar').style.background = '#ff0';
-    else document.getElementById('sanity-bar').style.background = '#fff';
+/* === ENGINE === */
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-    // Intimidade
-    document.getElementById('hud-intimacy').textContent = Math.round(game.intimacy) + '%';
-    document.getElementById('intimacy-bar').style.width = game.intimacy + '%';
-    if (game.intimacy <= 30) document.getElementById('intimacy-bar').style.background = '#f00';
-    else if (game.intimacy <= 60) document.getElementById('intimacy-bar').style.background = '#ff0';
-    else document.getElementById('intimacy-bar').style.background = '#0f0';
-
-    // Saúde da Porta
-    document.getElementById('hud-door-health').textContent = Math.round(game.doorHealth) + '%';
-    document.getElementById('door-health-bar').style.width = game.doorHealth + '%';
-    if (game.doorHealth <= 30) document.getElementById('door-health-bar').style.background = '#f00';
-    else if (game.doorHealth <= 60) document.getElementById('door-health-bar').style.background = '#ff0';
-    else document.getElementById('door-health-bar').style.background = '#0ff';
-
-    // Outros
-    document.getElementById('hud-day').textContent = game.day;
-    document.getElementById('hud-time').textContent = `${String(game.time.h).padStart(2, '0')}:${String(game.time.m).padStart(2, '0')}`;
-    document.getElementById('hud-tasks').textContent = `${game.tasksCompleted}/8`;
-    document.getElementById('hud-refusals').textContent = game.dailyRefusals;
-    
-    // Contadores de Uso
-    document.getElementById('radio-uses').textContent = game.radioUses;
-    document.getElementById('tv-uses').textContent = game.tvUses;
-    document.getElementById('terminal-uses').textContent = game.focusUses;
-    
-    // Desabilitar botões
-    document.getElementById('hub-radio-btn').disabled = (game.radioUses <= 0);
-    document.getElementById('hub-tv-btn').disabled = (game.tvUses <= 0);
-    document.getElementById('hub-terminal-btn').disabled = (game.focusUses <= 0);
-    document.getElementById('hub-repair-btn').disabled = (game.doorHealth >= 100);
-    document.getElementById('deny-visitor-btn').disabled = (game.dailyRefusals <= 0);
-}
-
-function changeSanity(amount) {
-    if (game.state === 'gameOver') return;
-    game.sanity = Math.max(0, Math.min(100, game.sanity + amount));
-    updateHUD();
-    if (game.sanity <= 0) endGame('sanity');
-}
-
-function changeIntimacy(amount) {
-    if (game.state === 'gameOver') return;
-    game.intimacy = Math.max(0, Math.min(100, game.intimacy + amount));
-    updateHUD();
-}
-
-function changeDoorHealth(amount) {
-    if (game.state === 'gameOver') return;
-    game.doorHealth = Math.max(0, Math.min(100, game.doorHealth + amount));
-    updateHUD();
-    if (game.doorHealth <= 0) endGame('door');
-}
-
-function setHubMessage(text) {
-    document.getElementById('hub-display-log').innerHTML = `<p>${text}</p>`;
-}
-
-// ===== GAME START =====
 function startGame() {
-    playSound('select');
-    playMusic('game'); // Troca para música do jogo
+    game.stats = { sanity: 100, intimacy: 100, door: 100, battery: 100 };
+    game.day = 1; game.mode = 'normal'; game.occupants = [{name:"Ana", loyalty:80}];
+    resetDay(); showScreen('game-screen');
+    if(gameLoop) clearInterval(gameLoop); gameLoop = setInterval(tick, TICK_SPEED);
     
-    game = {
-        sanity: 100,
-        intimacy: 100,
-        doorHealth: 100,
-        day: 1,
-        tasksCompleted: 0,
-        time: { h: 0, m: 0 },
-        dailyRefusals: gameData.simulation.initialRefusals,
-        focusUses: gameData.simulation.dailyFocusUses,
-        radioUses: gameData.simulation.dailyRadioUses,
-        tvUses: gameData.simulation.dailyTVUses,
-        scannerUses: gameData.simulation.dailyScannerUses,
-        currentVisitor: null,
-        selectedMember: null,
-        gameLoop: null,
-        state: "game",
-        isDecisionMade: false,
-        scoreData: { humansSaved: 0, infectedDenied: 0, infectedAdmitted: 0, humansDenied: 0 },
-        peepholeTimer: null,
-        peepholeTimeLeft: gameData.simulation.peepholeTimerDuration
-    };
-    
-    gameData.tvQuestions.forEach(q => q.used = false);
-    gameData.groupMembers.forEach(m => m.intimacy = 50);
-    
-    showScreen('game');
-    
-    document.getElementById('game-over-stats').classList.add('hidden');
-    document.getElementById('stats-breakdown').innerHTML = '';
-    document.getElementById('final-ranking').innerHTML = '';
-    
-    updateHUD();
-    setHubMessage("Dia 1. Eu tenho que sobreviver. 8 dias. 8 tasks.");
-    
-    game.gameLoop = setInterval(gameTick, 1000 / gameData.simulation.secondsPerMinute);
+    glitchCountdown = 30;
+    if(glitchInterval) clearInterval(glitchInterval);
+    glitchInterval = setInterval(glitchTick, 1000);
 }
 
-function gameTick() {
-    if (game.state !== 'game') return;
-    
+function resetDay() {
+    game.time = {h:0, m:0}; game.flags = {tvUsed:false, generatorUsed:false};
+    game.uses = {focus:4, scan:4, cam:2, repair:3};
+    updateHUD();
+}
+
+function glitchTick() {
+    if(game.state !== 'minigame' && document.getElementById('game-screen').classList.contains('active')) {
+        glitchCountdown--;
+        document.getElementById('glitch-timer').innerText = `GLITCH EM: ${glitchCountdown}s`;
+        if(glitchCountdown <= 0) startMinigame();
+    }
+}
+
+function tick() {
+    if(game.state === 'minigame') return;
+    if(!document.getElementById('game-screen').classList.contains('active')) return;
+    if(document.getElementById('peephole-overlay').classList.contains('active')) return;
+
     game.time.m++;
-    
-    if (game.time.m >= 60) {
-        game.time.m = 0;
-        game.time.h++;
-        
-        triggerKnock();
-        
-        if (game.time.h >= gameData.simulation.hoursPerDay) {
-            endDay();
-        }
-    }
-    
+    if(game.time.m >= 60) { game.time.m=0; game.time.h++; }
+    if(game.time.m === 0) game.occupants.forEach(o => { o.loyalty-=3; if(o.loyalty<=0) gameOver("TRAÍDO."); });
+    if(game.time.m === 30 && game.time.h < 5) triggerVisitor();
+    if(game.time.h >= 5) endDay();
     updateHUD();
 }
 
-function endDay() {
-    clearInterval(game.gameLoop);
-    if (game.intimacy < 60) {
-        endGame('intimacy');
-    } else {
-        startMeeting();
-    }
+/* === MINI GAME === */
+let canvas, ctx, player, ghosts, pellets, mapSize = 25;
+
+function startMinigame() {
+    game.state = 'minigame';
+    showScreen('minigame-screen');
+    setTimeout(initMinigame, 100); // Pequeno delay para garantir render
 }
 
-// ===== HUB ACTIONS =====
-function useRepair() { 
-    playSound('repair');
-    setHubMessage(`Você gasta uma hora reforçando a porta. (+${gameData.simulation.repairAmount}% Saúde da Porta)`);
-    changeDoorHealth(gameData.simulation.repairAmount);
+function initMinigame() {
+    canvas = document.getElementById('pacman-canvas');
+    ctx = canvas.getContext('2d');
     
-    game.time.h++;
-    game.time.m = 0;
+    // Define tamanho do canvas baseado no mapa
+    canvas.width = PACMAN_MAP[0].length * mapSize;
+    canvas.height = PACMAN_MAP.length * mapSize;
     
-    if (game.time.h >= gameData.simulation.hoursPerDay) {
-        endDay();
-    } else {
-        triggerKnock(); 
-    }
-}
-
-function useRadio() {
-    if (game.radioUses <= 0) return;
-    playSound('radio');
-    game.radioUses--;
-    setTimeout(() => {
-        const msg = gameData.radioMessages[Math.floor(Math.random() * gameData.radioMessages.length)];
-        changeSanity(msg.sanity);
-        setHubMessage(`[RÁDIO]: "${msg.text}"`);
-        updateHUD();
-    }, 500);
-}
-
-function useFocus() {
-    if (game.focusUses <= 0) return;
-    playSound('terminal');
-    game.focusUses--;
-    changeSanity(15);
-    setHubMessage("Eu me concentro. Lembro quem eu sou. Isso me mantém forte.");
-    updateHUD();
-}
-
-function openTVScreen() {
-    if (game.tvUses <= 0) return;
-    playSound('tv');
-    game.tvUses--;
-    showScreen('tvWatch');
+    pellets = [];
+    let emptySpots = [];
     
-    const tvChoices = document.getElementById('tv-choices');
-    tvChoices.innerHTML = '';
-    
-    gameData.tvQuestions.forEach(q => {
-        if (!q.used) {
-            const btn = document.createElement('button');
-            btn.textContent = q.text;
-            btn.onclick = () => {
-                playSound('select');
-                document.getElementById('tv-response').textContent = q.response;
-                changeSanity(-5);
-                q.used = true;
-                btn.disabled = true;
-            };
-            tvChoices.appendChild(btn);
-        }
-    });
-}
-
-function closeTVScreen() {
-    playSound('select');
-    showScreen('game');
-    setHubMessage("Desliguei a TV. Essas vozes... elas sabem muito.");
-    updateHUD();
-}
-
-// ===== VISITOR SYSTEM & TIMER =====
-function triggerKnock() {
-    if (game.state !== 'game') return;
-    
-    playSound('knock');
-    
-    game.currentVisitor = gameData.visitors[Math.floor(Math.random() * gameData.visitors.length)];
-    setHubMessage("ALGUÉM ESTÁ BATENDO NA PORTA!");
-    
-    // Desabilitar ações do hub
-    document.getElementById('hub-repair-btn').disabled = true;
-    document.getElementById('hub-radio-btn').disabled = true;
-    document.getElementById('hub-tv-btn').disabled = true;
-    document.getElementById('hub-terminal-btn').disabled = true;
-
-    // Chamar o visor automaticamente após 1 segundo
-    setTimeout(() => {
-        if (game.state === 'game') { 
-            enterPeephole();
-        }
-    }, 1000); 
-}
-
-function enterPeephole() {
-    if (game.state !== 'game') return; 
-
-    playSound('select');
-    game.state = 'peephole';
-    document.getElementById('peephole-overlay').classList.remove('hidden');
-    game.isDecisionMade = false;
-    
-    document.getElementById('visitor-ascii-art').textContent = game.currentVisitor.idleArt;
-    document.getElementById('tool-display').innerHTML = `<p>Análise: ${game.currentVisitor.name}</p>`;
-    
-    const scanBtn = document.getElementById('scan-visitor-btn');
-    scanBtn.disabled = (game.scannerUses <= 0);
-    scanBtn.innerHTML = `SCANNER BIOLÓGICO (<span id="scanner-uses">${game.scannerUses}</span>/1)`;
-    
-    const dialogueOptions = document.getElementById('dialogue-options');
-    dialogueOptions.innerHTML = '';
-    
-    game.currentVisitor.dialogues.forEach(d => {
-        const btn = document.createElement('button');
-        btn.textContent = d.prompt;
-        btn.onclick = () => {
-            playSound('select');
-            const responseArt = d.response || game.currentVisitor.idleArt;
-            document.getElementById('visitor-ascii-art').textContent = responseArt;
-            changeSanity(d.sanity);
-            document.getElementById('decision-buttons').classList.remove('hidden');
-        };
-        dialogueOptions.appendChild(btn);
-    });
-    
-    if (game.currentVisitor.dialogues.length === 0) {
-         document.getElementById('decision-buttons').classList.remove('hidden');
-    }
-
-    // INICIAR TIMER
-    game.peepholeTimeLeft = gameData.simulation.peepholeTimerDuration;
-    const timerDisplay = document.getElementById('peephole-timer-display');
-    timerDisplay.textContent = `TEMPO: ${game.peepholeTimeLeft}s`;
-    timerDisplay.classList.remove('timer-pulse');
-
-    if (game.peepholeTimer) clearInterval(game.peepholeTimer);
-    game.peepholeTimer = setInterval(peepholeTick, 1000);
-}
-
-function peepholeTick() {
-    if (game.state !== 'peephole') {
-        clearInterval(game.peepholeTimer);
-        game.peepholeTimer = null;
-        return;
-    }
-
-    game.peepholeTimeLeft--;
-    const timerDisplay = document.getElementById('peephole-timer-display');
-    timerDisplay.textContent = `TEMPO: ${game.peepholeTimeLeft}s`;
-
-    if (game.peepholeTimeLeft <= 3) {
-        timerDisplay.classList.add('timer-pulse');
-    }
-
-    if (game.peepholeTimeLeft <= 0) {
-        peepholeTimerExpires();
-    }
-}
-
-function peepholeTimerExpires() {
-    if (game.state !== 'peephole' || game.isDecisionMade) return; 
-
-    clearInterval(game.peepholeTimer);
-    game.peepholeTimer = null;
-    
-    playSound('alarm');
-    changeSanity(-30);
-    changeDoorHealth(-40);
-    
-    document.getElementById('peephole-overlay').classList.add('hidden');
-    game.state = 'game';
-    setHubMessage("Você hesitou por tempo demais. O medo tomou conta. A porta estremeceu.");
-    
-    // Re-enable hub buttons
-    document.getElementById('hub-repair-btn').disabled = (game.doorHealth >= 100);
-    document.getElementById('hub-radio-btn').disabled = (game.radioUses <= 0);
-    document.getElementById('hub-tv-btn').disabled = (game.tvUses <= 0);
-    document.getElementById('hub-terminal-btn').disabled = (game.focusUses <= 0);
-}
-
-function useScanner() { 
-    if (game.scannerUses <= 0) return;
-    
-    playSound('scan');
-    game.scannerUses--;
-    
-    const toolDisplay = document.getElementById('tool-display');
-    if (game.currentVisitor.type === 'Humano') {
-        toolDisplay.innerHTML = `<p style="color: #0f0;">BIOSSINAL: HUMANO (Nível de Estresse: Alto)</p>`;
-    } else {
-        toolDisplay.innerHTML = `<p style="color: #f00;">BIOSSINAL: ANÔMALO (Assinatura Desconhecida)</p>`;
-    }
-    
-    document.getElementById('scan-visitor-btn').disabled = true;
-    document.getElementById('scanner-uses').textContent = game.scannerUses;
-}
-
-function exitPeephole() {
-    if (game.isDecisionMade) return;
-    
-    // PARAR TIMER
-    if (game.peepholeTimer) clearInterval(game.peepholeTimer);
-    game.peepholeTimer = null;
-    
-    playSound('select');
-    document.getElementById('peephole-overlay').classList.add('hidden');
-    game.state = 'game';
-    setHubMessage("Me afastei da porta. O tempo continua...");
-    
-    // Reabilitar ações do hub
-    document.getElementById('hub-repair-btn').disabled = (game.doorHealth >= 100);
-    document.getElementById('hub-radio-btn').disabled = (game.radioUses <= 0);
-    document.getElementById('hub-tv-btn').disabled = (game.tvUses <= 0);
-    document.getElementById('hub-terminal-btn').disabled = (game.focusUses <= 0);
-    
-    updateHUD();
-}
-
-function makeDecision(choice) {
-    if (game.isDecisionMade) return;
-    game.isDecisionMade = true;
-
-    // PARAR TIMER
-    if (game.peepholeTimer) clearInterval(game.peepholeTimer);
-    game.peepholeTimer = null;
-    
-    const outcome = game.currentVisitor.outcomes[choice];
-    const visitorType = game.currentVisitor.type;
-    
-    if (choice === 'open') {
-        playSound('doorOpen');
-        if (visitorType === 'Humano') game.scoreData.humansSaved++;
-        else game.scoreData.infectedAdmitted++;
-    } else { // 'deny'
-        playSound('doorDeny');
-        if (visitorType === 'Humano') game.scoreData.humansDenied++;
-        else game.scoreData.infectedDenied++;
-        
-        game.dailyRefusals--;
-        
-        if (outcome.denyDamage) {
-            playSound('doorDamage');
-            changeDoorHealth(-outcome.denyDamage);
-            setHubMessage(`A porta tremeu com o impacto. (-${outcome.denyDamage}% Saúde da Porta)`);
-        }
-    }
-    
-    document.getElementById('visitor-ascii-art').textContent = outcome.art;
-    document.getElementById('dialogue-options').innerHTML = '';
-    document.getElementById('decision-buttons').classList.add('hidden');
-    document.getElementById('scan-visitor-btn').disabled = true;
-    
-    setTimeout(() => {
-        if (outcome.sanity) changeSanity(outcome.sanity);
-        if (outcome.intimacy) changeIntimacy(outcome.intimacy);
-        
-        if (outcome.bonus === "radio") {
-            game.radioUses++;
-            setHubMessage("Você trocou suprimentos por peças. (+1 Uso de Rádio)");
-        }
-        if (outcome.bonus === "focus") {
-            game.focusUses++;
-            setHubMessage("O técnico consertou algo. (+1 Uso de Focar)");
-        }
-        
-        if (game.state !== 'gameOver') {
-            document.getElementById('peephole-overlay').classList.add('hidden');
-            game.state = 'game';
-            if (!outcome.bonus) {
-                 setHubMessage(`Decisão tomada. ${choice === 'open' ? 'Abri a porta.' : 'Recusei a entrada.'}`);
+    for(let y=0; y<PACMAN_MAP.length; y++) {
+        for(let x=0; x<PACMAN_MAP[0].length; x++) {
+            // 0 = Pastilha, 2 = Caminho Vazio
+            if(PACMAN_MAP[y][x] === 0) {
+                pellets.push({x:x, y:y});
             }
-            
-            document.getElementById('hub-repair-btn').disabled = (game.doorHealth >= 100);
-            document.getElementById('hub-radio-btn').disabled = (game.radioUses <= 0);
-            document.getElementById('hub-tv-btn').disabled = (game.tvUses <= 0);
-            document.getElementById('hub-terminal-btn').disabled = (game.focusUses <= 0);
+            if(PACMAN_MAP[y][x] !== 1) {
+                emptySpots.push({x:x, y:y});
+            }
         }
-    }, 3000);
+    }
+
+    player = { x: 1, y: 1, dir: {x:0, y:0}, nextDir: {x:0, y:0}, color: '#FF0' };
+    ghosts = [];
+    for(let i=0; i<4; i++) {
+        let s = emptySpots[Math.floor(Math.random()*emptySpots.length)];
+        ghosts.push({x:s.x, y:s.y, color:'#F00'});
+    }
+
+    window.addEventListener('keydown', handleMiniInput);
+    if(minigameLoop) clearInterval(minigameLoop);
+    minigameLoop = setInterval(updateMinigame, 150);
 }
 
-// ===== MEETING SYSTEM =====
-function startMeeting() {
-    playSound('meeting');
-    showScreen('meeting');
-    document.getElementById('meeting-day').textContent = game.day;
-    game.state = 'meeting';
-    
-    const grid = document.getElementById('group-members');
-    grid.innerHTML = '';
-    gameData.groupMembers.forEach(member => {
-        const card = document.createElement('div');
-        card.className = 'member-card';
-        card.innerHTML = `<div class="member-name">${member.name}</div>
-            <div class="member-status">${member.role}</div>
-            <div class="member-status">${member.status}</div>
-            <div class="intimacy-level">Intimidade: ${member.intimacy}%</div>`;
-        card.onclick = (e) => { playSound('select'); selectMember(member, e.currentTarget); };
-        grid.appendChild(card);
-    });
-    
-    const task = gameData.tasks[game.tasksCompleted];
-    document.getElementById('daily-task-description').textContent = task.description;
-    
-    const taskChoices = document.getElementById('task-choices');
-    taskChoices.innerHTML = '';
-    task.choices.forEach(choice => {
-        const btn = document.createElement('button');
-        btn.textContent = choice.text;
-        btn.onclick = () => { playSound('select'); completeTask(choice); };
-        taskChoices.appendChild(btn);
-    });
+function handleMiniInput(e) {
+    if(game.state !== 'minigame') return;
+    if(e.key === 'ArrowUp') player.nextDir = {x:0, y:-1};
+    if(e.key === 'ArrowDown') player.nextDir = {x:0, y:1};
+    if(e.key === 'ArrowLeft') player.nextDir = {x:-1, y:0};
+    if(e.key === 'ArrowRight') player.nextDir = {x:1, y:0};
 }
 
-function selectMember(member, cardElement) {
-    game.selectedMember = member;
-    document.querySelectorAll('.member-card').forEach(c => c.classList.remove('selected'));
-    cardElement.classList.add('selected');
-    
-    const panel = document.getElementById('interaction-panel');
-    panel.innerHTML = `<h3 style="color: #ff0;">${member.name} - ${member.role}</h3>
-        <p style="color: #aaa;">"${member.status}"</p>
-        <p style="color: #0f0;">Intimidade: ${member.intimacy}%</p>
-        <div class="interaction-buttons"></div>`;
-    
-    const btns = panel.querySelector('.interaction-buttons');
-    gameData.interactions.forEach(action => {
-        const btn = document.createElement('button');
-        btn.textContent = action.label;
-        btn.onclick = () => { playSound('select'); interact(member, action, cardElement); };
-        btns.appendChild(btn);
+function updateMinigame() {
+    const isWall = (x, y) => PACMAN_MAP[y] && PACMAN_MAP[y][x] === 1;
+
+    if(!isWall(player.x + player.nextDir.x, player.y + player.nextDir.y)) player.dir = player.nextDir;
+    if(!isWall(player.x + player.dir.x, player.y + player.dir.y)) { player.x += player.dir.x; player.y += player.dir.y; }
+
+    for(let i=0; i<pellets.length; i++) {
+        if(pellets[i].x === player.x && pellets[i].y === player.y) { pellets.splice(i, 1); break; }
+    }
+
+    ghosts.forEach(g => {
+        let moves = [{x:0,y:1}, {x:0,y:-1}, {x:1,y:0}, {x:-1,y:0}].filter(m => !isWall(g.x+m.x, g.y+m.y));
+        let move = moves[Math.floor(Math.random()*moves.length)];
+        if(move) { g.x+=move.x; g.y+=move.y; }
+        if(g.x === player.x && g.y === player.y) finishMinigame(false);
     });
+
+    drawMinigame();
+    if(pellets.length === 0) finishMinigame(true);
 }
 
-function interact(member, action, cardElement) {
-    member.intimacy = Math.max(0, Math.min(100, member.intimacy + action.intimacyChange));
-    changeSanity(action.sanityChange);
+function drawMinigame() {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    const avg = gameData.groupMembers.reduce((sum, m) => sum + m.intimacy, 0) / gameData.groupMembers.length;
-    game.intimacy = avg;
+    // Desenhar Paredes
+    ctx.fillStyle = '#445';
+    for(let y=0; y<PACMAN_MAP.length; y++) {
+        for(let x=0; x<PACMAN_MAP[0].length; x++) {
+            if(PACMAN_MAP[y][x] === 1) ctx.fillRect(x*mapSize, y*mapSize, mapSize, mapSize);
+        }
+    }
+
+    // Pellets
+    ctx.fillStyle = '#AAA';
+    pellets.forEach(p => ctx.fillRect(p.x*mapSize+10, p.y*mapSize+10, 5, 5));
+
+    // Player
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x*mapSize+2, player.y*mapSize+2, mapSize-4, mapSize-4);
+
+    // Fantasmas
+    ctx.fillStyle = '#F00';
+    ghosts.forEach(g => ctx.fillRect(g.x*mapSize+2, g.y*mapSize+2, mapSize-4, mapSize-4));
+}
+
+function finishMinigame(win) {
+    clearInterval(minigameLoop);
+    window.removeEventListener('keydown', handleMiniInput);
+    game.state = 'game';
     
-    selectMember(member, cardElement);
+    if(win) { playSound('win'); updateStats(20); alert("GLITCH CORRIGIDO: +20% BÔNUS"); }
+    else { playSound('lose'); updateStats(-20); alert("ERRO FATAL: -20% PENALIDADE"); }
+    
+    showScreen('game-screen');
     updateHUD();
+    glitchCountdown = 30;
 }
 
-function completeTask(choice) {
-    game.tasksCompleted++;
-    changeIntimacy(choice.intimacy);
-    changeSanity(choice.sanity);
-    
-    if (game.state === 'gameOver') return;
-    
-    if (game.tasksCompleted >= 8) {
-        endGame('win');
-        return;
-    }
-    
-    if (game.intimacy < 60) {
-        endGame('intimacy');
-        return;
-    }
-    
-    // Reset para o próximo dia
-    game.day++;
-    game.time = { h: 0, m: 0 };
-    game.dailyRefusals = gameData.simulation.initialRefusals;
-    game.focusUses = gameData.simulation.dailyFocusUses;
-    game.radioUses = gameData.simulation.dailyRadioUses;
-    game.tvUses = gameData.simulation.dailyTVUses;
-    game.scannerUses = gameData.simulation.dailyScannerUses;
-    
-    showScreen('game');
-    updateHUD();
-    setHubMessage(`Dia ${game.day}. A luta continua. Tasks: ${game.tasksCompleted}/8`);
-    
-    game.gameLoop = setInterval(gameTick, 1000 / gameData.simulation.secondsPerMinute);
+function updateStats(amount) {
+    for(let k in game.stats) game.stats[k] = Math.min(100, Math.max(0, game.stats[k] + amount));
 }
 
-// ===== GAME OVER & RANKING =====
-function getRanking(score) {
-    if (score >= 5000) return "S (Sobrevivente Perfeito)";
-    if (score >= 4000) return "A (Guardião)";
-    if (score >= 2500) return "B (Resistente)";
-    if (score >= 1000) return "C (Sobrevivente Cauteloso)";
-    if (score > 0) return "D (Sobreviveu por Pouco)";
-    return "F (Perdido)";
+/* === HUD & UTILS === */
+function updateHUD() {
+    for(let k in game.stats) game.stats[k] = Math.min(100, Math.max(0, game.stats[k]));
+    ['sanity','intimacy','door','battery'].forEach(k => {
+        document.getElementById('val-'+k).innerText = Math.round(game.stats[k]) + '%';
+        document.getElementById(k+'-bar').style.width = game.stats[k] + '%';
+    });
+    
+    let totalPop = game.occupants.length + 1;
+    document.getElementById('val-pop').innerText = `${totalPop}/4`;
+    document.getElementById('val-pop').style.color = totalPop >= 4 ? '#F00' : '#FF0';
+    document.getElementById('val-day').innerText = game.day;
+    document.getElementById('clock-display').innerText = `${String(game.time.h).padStart(2,'0')}:${String(game.time.m).padStart(2,'0')}`;
+
+    document.getElementById('btn-repair').disabled = game.stats.door >= 100 || game.uses.repair <= 0;
+    document.getElementById('btn-repair').innerText = `🔨 REPARAR (${game.uses.repair})`;
+    document.getElementById('btn-tv').disabled = game.flags.tvUsed;
+    document.getElementById('btn-focus').disabled = game.uses.focus <= 0;
+    document.getElementById('btn-focus').innerText = `🧘 FOCAR (${game.uses.focus})`;
+    document.getElementById('btn-light').disabled = game.stats.battery <= 0;
+    document.getElementById('btn-cam').disabled = game.stats.battery < 20 || game.uses.cam <= 0;
+    document.getElementById('btn-cam').innerText = `📹 CÂMERA (${game.uses.cam})`;
+    document.getElementById('btn-gen').disabled = game.flags.generatorUsed; 
+    document.getElementById('btn-gen').innerText = game.flags.generatorUsed ? "⚡ GERADOR (USADO)" : "⚡ GERADOR (1x)";
+
+    if(game.stats.sanity <= 0) gameOver("SUA MENTE QUEBROU.");
+    if(game.stats.intimacy <= 0) gameOver("VOCÊ FOI EXPULSO.");
+    if(game.stats.door <= 0) gameOver("ELES ENTRARAM.");
 }
 
-function endGame(reason) {
-    if (game.state === 'gameOver') return;
-    
-    clearInterval(game.gameLoop);
-    if (game.peepholeTimer) clearInterval(game.peepholeTimer);
-    
-    game.state = 'gameOver';
-    showScreen('gameOver');
-    
-    const title = document.getElementById('game-over-title');
-    const message = document.getElementById('game-over-message');
-    
-    stopMusic();
-    playSound('lose'); // Toca o som de derrota por padrão
-    
-    if (reason === 'win') {
-        playSound('win');
-        title.textContent = 'VITÓRIA!';
-        message.textContent = `Dia 8. Você completou todas as tasks. O grupo sobreviveu. A ajuda está vindo. Você manteve sua humanidade... e sua sanidade.`;
-    } else if (reason === 'sanity') {
-        title.textContent = 'CONEXÃO ESTABELECIDA';
-        message.textContent = 'Eu me sinto... calma. Eu me sinto... feliz. Eu não sou mais eu. Eu sou Nós.';
-    } else if (reason === 'intimacy') {
-        title.textContent = 'EXPULSA DO GRUPO';
-        message.textContent = 'O grupo votou. Você não é mais confiável. Você está sozinha. Eles estão vindo...';
-    } else if (reason === 'door') { 
-        playSound('doorDamage');
-        title.textContent = 'PORTA DESTRUÍDA';
-        message.textContent = 'As batidas se tornaram ensurdecedoras. A madeira se partiu. Eles entraram. Eles estão... felizes.';
-    }
-    
-    // Cálculo de Pontos
-    const tasksBonus = game.tasksCompleted * 150;
-    const sanityBonus = Math.round(game.sanity) * 10;
-    const intimacyBonus = Math.round(game.intimacy) * 10;
-    const doorHealthBonus = Math.round(game.doorHealth) * 5; 
-    
-    const humansSavedPoints = game.scoreData.humansSaved * 500;
-    const infectedDeniedPoints = game.scoreData.infectedDenied * 200;
-    
-    const humansDeniedPenalty = game.scoreData.humansDenied * -300;
-    const infectedAdmittedPenalty = game.scoreData.infectedAdmitted * -1000;
-    
-    const totalScore = tasksBonus + sanityBonus + intimacyBonus + doorHealthBonus +
-                       humansSavedPoints + infectedDeniedPoints + 
-                       humansDeniedPenalty + infectedAdmittedPenalty;
-                       
-    const ranking = getRanking(totalScore);
+/* === AÇÕES === */
+function getNextVisitor() { if (!game.nextVisitor) game.nextVisitor = visitorsPool[Math.floor(Math.random()*visitorsPool.length)]; return game.nextVisitor; }
 
-    const statsText = `
-Tasks Completas: ${game.tasksCompleted}/8  (Pontos: ${tasksBonus})
-Sanidade Final:  ${Math.round(game.sanity)}%    (Bônus: ${sanityBonus})
-Intimidade Final: ${Math.round(game.intimacy)}%   (Bônus: ${intimacyBonus})
-Saúde da Porta:  ${Math.round(game.doorHealth)}%    (Bônus: ${doorHealthBonus})
------------------------------------
-Humanos Salvos:    ${game.scoreData.humansSaved}   (Pontos: ${humansSavedPoints})
-Infectados Negados: ${game.scoreData.infectedDenied}  (Pontos: ${infectedDeniedPoints})
------------------------------------
-Humanos Negados:   ${game.scoreData.humansDenied}   (Penal.: ${humansDeniedPenalty})
-Infectados Aceitos: ${game.scoreData.infectedAdmitted}  (Penal.: ${infectedAdmittedPenalty})
-===================================
-PONTUAÇÃO TOTAL: ${totalScore}
-    `;
-    
-    document.getElementById('game-over-stats').classList.remove('hidden');
-    document.getElementById('stats-breakdown').textContent = statsText;
-    document.getElementById('final-ranking').textContent = `RANKING: ${ranking}`;
+function triggerVisitor() {
+    playSound('knock');
+    game.visitor = getNextVisitor(); game.nextVisitor = null;
+    document.getElementById('peephole-overlay').classList.remove('hidden');
+    document.getElementById('peephole-overlay').classList.add('active');
+    document.getElementById('visitor-ascii-art').classList.add('dark-vision');
+    document.getElementById('visitor-ascii-art').innerText = "??????\n? VULT ?\n??????";
+    document.getElementById('dialogue-area').innerHTML = '';
+    document.getElementById('decision-area').classList.add('hidden');
+    document.getElementById('btn-scan').innerText = `🧬 SCANNER (${game.uses.scan})`;
+    document.getElementById('btn-scan').disabled = game.uses.scan <= 0;
+    document.getElementById('btn-open').disabled = (game.occupants.length+1 >= 4);
+
+    game.visitor.dialogues.forEach(d => {
+        let btn = document.createElement('button');
+        btn.innerText = d.q;
+        btn.onclick = () => {
+            document.getElementById('dialogue-area').innerText = `"${d.a}"`;
+            game.stats.sanity += d.sanity;
+            document.getElementById('decision-area').classList.remove('hidden');
+        };
+        document.getElementById('dialogue-area').appendChild(btn);
+    });
+
+    game.peepTime = 10;
+    document.getElementById('peephole-timer-display').innerText = 10;
+    if(peepTimer) clearInterval(peepTimer);
+    peepTimer = setInterval(() => {
+        game.peepTime--;
+        document.getElementById('peephole-timer-display').innerText = game.peepTime;
+        if(game.peepTime <= 0) { clearInterval(peepTimer); game.stats.sanity-=20; game.stats.door-=20; closePeephole(); }
+    }, 1000);
 }
+
+function useLight() { if(game.stats.battery>0){game.stats.battery-=15; document.getElementById('visitor-ascii-art').classList.remove('dark-vision'); document.getElementById('visitor-ascii-art').innerText=game.visitor.art; updateHUD();} }
+function useScanner() { if(game.uses.scan>0){game.uses.scan--; playSound('alarm'); let isHuman=game.visitor.type==='Humano'; document.getElementById('dialogue-area').innerHTML=isHuman?"HUMANO":"INFECTADO"; document.getElementById('btn-scan').innerText=`SCAN (${game.uses.scan})`; document.getElementById('btn-scan').disabled=true;} }
+function useListen() { game.stats.sanity-=2; playSound(game.visitor.sound); updateHUD(); }
+function resolveVisitor(choice) {
+    clearInterval(peepTimer);
+    if(choice==='open'){
+        if(game.visitor.type==='Humano'){game.stats.intimacy+=10; game.occupants.push({name:"Sobrevivente",loyalty:50});}
+        else{game.stats.sanity-=40; game.stats.intimacy-=30;}
+    } else { game.stats.door-=20; if(game.visitor.type==='Humano') game.stats.sanity-=15; }
+    closePeephole();
+}
+function closePeephole() { document.getElementById('peephole-overlay').classList.remove('active'); document.getElementById('peephole-overlay').classList.add('hidden'); updateHUD(); }
+
+function openCameraScreen() { if(game.stats.battery<20 || game.uses.cam<=0)return; showScreen('camera-screen'); game.stats.battery-=20; game.uses.cam--; const target=getNextVisitor(); setTimeout(()=>{ document.getElementById('cam-result').classList.remove('hidden'); document.getElementById('cam-result').innerText = (target.type==='Humano' ? "HUMANO" : "INFECTADO"); document.getElementById('cam-loading').classList.add('hidden'); }, 1000); }
+function closeCameraScreen() { showScreen('game-screen'); updateHUD(); document.getElementById('cam-result').classList.add('hidden'); document.getElementById('cam-loading').classList.remove('hidden'); }
+
+function openManageScreen() { showScreen('manage-screen'); const l=document.getElementById('occupants-list'); l.innerHTML=''; game.occupants.forEach((o,i)=>{ l.innerHTML+=`<div>${o.name} (Lealdade: ${o.loyalty}%) <button onclick="care(${i})">CUIDAR</button><button onclick="kick(${i})">EXPULSAR</button></div>`; }); if(game.occupants.length===0) l.innerHTML="SOZINHO."; }
+function care(i) { game.occupants[i].loyalty=Math.min(100,game.occupants[i].loyalty+20); game.time.m+=30; openManageScreen(); }
+function kick(i) { game.occupants.splice(i,1); game.stats.sanity-=15; openManageScreen(); }
+function closeManageScreen() { showScreen('game-screen'); }
+
+function openTVScreen() { if(game.flags.tvUsed)return; showScreen('tv-screen'); document.getElementById('tv-content').innerHTML=''; document.getElementById('tv-ask-btn').disabled=false; }
+function askTV() { const qa=tvScript[game.day-1]||{q:"...",a:"..."}; document.getElementById('tv-content').innerHTML=`<div class='tv-msg player'>${qa.q}</div>`; setTimeout(()=>{ document.getElementById('tv-content').innerHTML+=`<div class='tv-msg hive'>${qa.a}</div>`; game.flags.tvUsed=true; game.stats.sanity-=5; document.getElementById('tv-ask-btn').disabled=true; },1000); }
+function closeTVScreen() { showScreen('game-screen'); updateHUD(); }
+
+function actionRepair() { if(game.uses.repair>0){game.uses.repair--; game.time.h++; game.stats.door+=20; updateHUD();} }
+function actionGenerator() { if(!game.flags.generatorUsed){game.time.h++; game.stats.battery=100; game.flags.generatorUsed=true; updateHUD();} }
+function actionFocus() { if(game.uses.focus>0){game.uses.focus--; game.stats.sanity+=15; game.time.m+=30; updateHUD();} }
+
+function endDay() { showScreen('report-screen'); document.getElementById('rank-grade').innerText=game.day; let s=game.stats.sanity+game.stats.intimacy+game.stats.door+(game.occupants.length*100); document.getElementById('score-total').innerText=s; document.getElementById('rank-grade').innerText=(s>500?'S':'D'); }
+function goToMeeting() { showScreen('meeting-screen'); const g=document.getElementById('meeting-grid'); g.innerHTML=''; meetingTasks.forEach(t=>{ g.innerHTML+=`<button onclick="doMeeting('${t.name}',${t.san},${t.int})">${t.name}</button>`; }); if(game.occupants.length===0) g.innerHTML="<button onclick='nextDay()'>DORMIR SOZINHO</button>"; }
+function doMeeting(n,s,i) { game.stats.sanity+=s; game.stats.intimacy+=i; game.occupants.forEach(o=>o.loyalty+=10); nextDay(); }
+
+function nextDay() { if(game.mode==='normal'&&game.day>=8){clearInterval(gameLoop);clearInterval(glitchInterval);showScreen('victory-screen');} else { game.day++; resetDay(); showScreen('game-screen'); } }
+function startEndlessMode() { game.mode='endless'; game.day++; resetDay(); showScreen('game-screen'); glitchCountdown=30; if(glitchInterval)clearInterval(glitchInterval); glitchInterval=setInterval(glitchTick,1000); if(gameLoop)clearInterval(gameLoop); gameLoop=setInterval(tick, TICK_SPEED); }
+function gameOver(m) { clearInterval(gameLoop); clearInterval(glitchInterval); showScreen('game-over-screen'); document.getElementById('go-msg').innerText=m; }
     </script>
 </body>
 </html>
