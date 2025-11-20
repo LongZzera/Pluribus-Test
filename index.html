@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLURIBUS: A JUNÇÃO - Platinum Edition v2.2</title>
+    <title>PLURIBUS: A JUNÇÃO - Vigilante Edition v2.4</title>
     <style>
         :root {
             --bg-color: #050505;
@@ -13,14 +13,9 @@
             --text-danger: #ff3333;
             --text-safe: #33ff33;
             --text-lore: #00ccff;
-            --ps5-dark: #1a1a1a;
-            --ps5-light: #f5f5f5;
-            --trophy-bronze: #cd7f32;
-            --trophy-silver: #c0c0c0;
-            --trophy-gold: #ffd700;
-            --trophy-plat: #e5e4e2;
             --border-style: 1px solid var(--text-dim);
             --scan-color: rgba(255, 204, 0, 0.03);
+            --cam-bg: #001100;
         }
 
         * { box-sizing: border-box; user-select: none; }
@@ -105,6 +100,24 @@
         button:disabled { color: #444; border-color: #222; cursor: not-allowed; opacity: 0.6; }
         button.danger-action { border-color: var(--text-danger); color: var(--text-danger); }
         button.danger-action:hover { background: #300; }
+
+        /* --- CCTV STYLES --- */
+        #cctv-screen {
+            width: 100%; height: 180px; background: var(--cam-bg); border: 2px solid #334433;
+            margin-bottom: 10px; position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            font-family: monospace; color: #558855; white-space: pre;
+        }
+        #cctv-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px);
+            pointer-events: none; animation: scrollScan 10s linear infinite;
+        }
+        #cctv-label { position: absolute; top: 5px; left: 5px; color: #33ff33; background: rgba(0,0,0,0.7); padding: 2px 5px; font-size: 0.8em; }
+        #cctv-rec { position: absolute; top: 5px; right: 5px; color: red; animation: blink 1s infinite; font-weight: bold; }
+        .cam-btn-group { display: flex; gap: 5px; }
+        .cam-btn-group button { flex: 1; justify-content: center; font-size: 0.8em; }
+        @keyframes scrollScan { from { background-position: 0 0; } to { background-position: 0 100%; } }
 
         /* --- TROPHY NOTIFICATION --- */
         #trophy-notification {
@@ -221,13 +234,13 @@
     <!-- MAIN START MENU -->
     <div id="start-menu" class="full-screen-menu">
         <h1>PLURIBUS</h1>
-        <h2 style="color: #888; letter-spacing: 3px;">PLATINUM EDITION</h2>
+        <h2 style="color: #888; letter-spacing: 3px;">VIGILANTE EDITION</h2>
         
         <button class="menu-btn" onclick="game.startStory()">MODO HISTÓRIA (CAMPANHA)</button>
         <button class="menu-btn secondary" onclick="arcadeMode.openMenu()">MODO ARCADE (MINIGAMES)</button>
         <button class="menu-btn secondary" style="border-color: var(--trophy-gold); color: var(--trophy-gold);" onclick="achievementSys.openMenu()">COLEÇÃO DE TROFÉUS</button>
         
-        <div style="margin-top: 20px; font-size: 0.8em; color: #666;">V2.2.0 - NOVOS JOGOS</div>
+        <div style="margin-top: 20px; font-size: 0.8em; color: #666;">V2.4.0 - SISTEMA DE CÂMERAS</div>
     </div>
 
     <!-- ARCADE MENU -->
@@ -244,13 +257,12 @@
         </div>
         
         <h3 style="color:var(--text-dim); border-bottom:1px solid #333; width:300px; margin-bottom:15px;">PROTOCOLO DE TREINO</h3>
-        <button class="menu-btn" onclick="minigameManager.startSpecific('snake', 'arcade')">SNAKE-LINK (Cobrinha)</button>
-        <button class="menu-btn" onclick="minigameManager.startSpecific('pac', 'arcade')">PAC-DATA (Pac-Man)</button>
-        <button class="menu-btn" onclick="minigameManager.startSpecific('flappy', 'arcade')">FLAP-LINK (Flappy Bird)</button>
-        <button class="menu-btn" onclick="minigameManager.startSpecific('dino', 'arcade')">RUN-DATA (Dino)</button>
-        <button class="menu-btn" onclick="minigameManager.startSpecific('echo', 'arcade')">ECHO-MIND (Memória)</button>
-        
-        <button class="menu-btn secondary" onclick="arcadeMode.closeMenu()" style="margin-top: 20px;">VOLTAR AO MENU</button>
+        <button class="menu-btn" onclick="minigameManager.startSpecific('snake', 'arcade')">JOGAR: SNAKE-LINK</button>
+        <button class="menu-btn" onclick="minigameManager.startSpecific('pac', 'arcade')">JOGAR: PAC-DATA</button>
+        <button class="menu-btn" onclick="minigameManager.startSpecific('flappy', 'arcade')">JOGAR: FLAP-LINK</button>
+        <button class="menu-btn" onclick="minigameManager.startSpecific('dino', 'arcade')">JOGAR: RUN-DATA</button>
+        <button class="menu-btn" onclick="minigameManager.startSpecific('echo', 'arcade')">JOGAR: ECHO-MIND</button>
+        <button class="menu-btn secondary" onclick="arcadeMode.closeMenu()" style="margin-top: 30px;">VOLTAR AO MENU</button>
     </div>
 
     <!-- TROPHY MENU -->
@@ -282,16 +294,40 @@
             <div id="controls-panel">
                 <div class="tabs">
                     <button class="tab-btn active" onclick="game.ui.switchTab('maint')">AÇÕES</button>
+                    <button class="tab-btn" onclick="game.ui.switchTab('cams')">CÂMERAS</button>
                     <button class="tab-btn" onclick="game.ui.switchTab('crew')">TRIPULAÇÃO</button>
                     <button class="tab-btn" onclick="game.ui.switchTab('archive')">ARQUIVO</button>
                     <button class="tab-btn" onclick="game.ui.switchTab('inventory')">ITENS</button>
                 </div>
+                
                 <div id="tab-maint" class="tab-content active">
                     <div class="panel-section"><div class="panel-title" id="actions-title">COMANDOS</div><div id="dynamic-actions"></div></div>
                     <div class="panel-section" style="flex:1;"><div class="panel-title">REGISTRO</div><div id="log-container"></div></div>
                 </div>
+
+                <!-- CCTV TAB -->
+                <div id="tab-cams" class="tab-content">
+                    <div class="panel-section" style="flex:1;">
+                        <div class="panel-title">MONITORAMENTO <span style="float:right; color:red;">REC ●</span></div>
+                        <div id="cctv-screen">
+                            <div id="cctv-overlay"></div>
+                            <div id="cctv-label">CAM 01 - CORREDOR</div>
+                            <div id="cctv-feed">SINAL PERDIDO</div>
+                        </div>
+                        <div class="cam-btn-group">
+                            <button onclick="cameraSys.switch(1)">CAM 01</button>
+                            <button onclick="cameraSys.switch(2)">CAM 02</button>
+                            <button onclick="cameraSys.switch(3)">CAM 03</button>
+                        </div>
+                        <p style="font-size:0.8em; color:#666; margin-top:10px;">
+                            STATUS: <span id="cam-status" style="color:lime">ONLINE</span><br>
+                            DRENO: -1 NRG/s
+                        </p>
+                    </div>
+                </div>
+
                 <div id="tab-crew" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">GESTÃO DE PESSOAL</div><div id="crew-container"></div></div></div>
-                <div id="tab-archive" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">FRAGMENTOS DE DADOS</div><div id="lore-list"></div><div id="lore-display" style="margin-top:10px; padding:10px; border:1px dashed var(--text-lore); color: var(--text-lore); font-size:0.9em; min-height:100px; display:none;"></div></div></div>
+                <div id="tab-archive" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">FRAGMENTOS DE DADOS</div><div style="margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:10px;"><button onclick="game.actions.deepScan()" style="border-color:var(--text-lore); color:var(--text-lore);">VARREDURA PROFUNDA (-40 NRG)</button><small style="color:#666">Garante um arquivo de Lore se disponível.</small></div><div id="lore-list"></div><div id="lore-display" style="margin-top:10px; padding:10px; border:1px dashed var(--text-lore); color: var(--text-lore); font-size:0.9em; min-height:100px; display:none;"></div></div></div>
                 <div id="tab-inventory" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">ITENS CHAVE</div><div id="inventory-list" style="color: #888;">Vazio.</div></div></div>
             </div>
         </div>
@@ -395,7 +431,7 @@
                 <div class="d-pad-btn d-pad-down" onclick="minigameManager.handleInput('ArrowDown')">▼</div>
                 <div class="d-pad-btn d-pad-right" onclick="minigameManager.handleInput('ArrowRight')">►</div>
             </div>
-            <p style="font-size: 0.8em; color: #444; margin-top: 10px;">Pressione Espaço ou Cima para pular/voar.</p>
+            <p style="font-size: 0.8em; color: #444; margin-top: 10px;">Use as setas ou o teclado.</p>
             <button id="arcade-back-btn" style="display:none; margin-top:10px; border-color:red; color:red;" onclick="minigameManager.exitArcade()">SAIR DO JOGO</button>
         </div>
     </div>
@@ -410,6 +446,36 @@
                 scan: ()=>audioSys.playTone(2000,'sine',0.2), lore: ()=> { audioSys.playTone(400,'sine',0.1); setTimeout(()=>audioSys.playTone(600,'sine',0.3), 150); },
                 travel: ()=>audioSys.playTone(100,'square',1.0,0.2), knock: ()=>audioSys.playTone(80, 'square', 0.1, 0.3), glitch: ()=>audioSys.playTone(Math.random()*500, 'sawtooth', 0.05, 0.1), trophy: ()=> { audioSys.playTone(800,'sine',0.1); setTimeout(()=>audioSys.playTone(1200,'sine',0.3),100); },
                 jump: ()=>audioSys.playTone(300, 'square', 0.1, 0.1)
+            }
+        };
+
+        // --- PERSISTENT RANK ---
+        const arcadeMode = {
+            totalScore: 0,
+            ranks: [ { name: "CIVIL", threshold: 0 }, { name: "RECRUTA", threshold: 100 }, { name: "SOBREVIVENTE", threshold: 300 }, { name: "EXPLORADOR", threshold: 600 }, { name: "OPERADOR", threshold: 1000 }, { name: "VETERANO", threshold: 1500 }, { name: "ELITE", threshold: 2200 }, { name: "HACKER NEURAL", threshold: 3000 }, { name: "MESTRE DO SISTEMA", threshold: 4000 }, { name: "A SINGULARIDADE", threshold: 5500 }, { name: "DEUS DA MÁQUINA", threshold: 7500 } ],
+            
+            init: function() {
+                const saved = localStorage.getItem('pluribus_rank');
+                if(saved) this.totalScore = parseInt(saved);
+                this.updateUI();
+            },
+            openMenu: function() { document.getElementById('start-menu').style.display = 'none'; document.getElementById('arcade-menu').style.display = 'flex'; this.updateUI(); },
+            closeMenu: function() { document.getElementById('arcade-menu').style.display = 'none'; document.getElementById('start-menu').style.display = 'flex'; },
+            addScore: function(amount) { 
+                this.totalScore += amount; 
+                localStorage.setItem('pluribus_rank', this.totalScore); // Save
+                if (this.totalScore >= 2000) achievementSys.unlock('arcade_2k'); if (this.totalScore >= 7500) achievementSys.unlock('arcade_max'); 
+                this.updateUI(); 
+            },
+            updateUI: function() {
+                const el = document.getElementById('total-score-display');
+                if(el) el.innerText = this.totalScore;
+                let c = this.ranks[0], n = this.ranks[1]; for (let i = 0; i < this.ranks.length; i++) { if (this.totalScore >= this.ranks[i].threshold) { c = this.ranks[i]; n = this.ranks[i+1] || null; } }
+                const rankEl = document.getElementById('rank-display');
+                if(rankEl) rankEl.innerText = "RANK: " + c.name;
+                const msgEl = document.getElementById('next-rank-msg');
+                if (n && msgEl) { msgEl.innerText = `PRÓXIMO NÍVEL: ${n.threshold} PTS`; document.getElementById('xp-bar').style.width = `${((this.totalScore - c.threshold) / (n.threshold - c.threshold)) * 100}%`; } 
+                else if(msgEl) { msgEl.innerText = "NÍVEL MÁXIMO"; document.getElementById('xp-bar').style.width = "100%"; }
             }
         };
 
@@ -458,6 +524,7 @@
             closeMenu: function() { document.getElementById('trophy-menu').style.display = 'none'; document.getElementById('start-menu').style.display = 'flex'; }
         };
         achievementSys.init();
+        arcadeMode.init(); // Init arcade persistence
 
         const scenes = {
             bunker: `\n      _______________________\n     /                       \\\n    /    [RÁDIO]   [TV]       \\\n   |                          |\n   |    +------+              |\n   |    | CAMA |   [PORTA]    |\n   |    |      |      ||      |\n   |    +------+      ||      |\n   |                          |\n    \\                        /\n     \\______________________/`,
@@ -467,26 +534,43 @@
         };
 
         const loreDB = [
-            { id: 0, title: "Relatório Médico #01", text: "Paciente Zero exibe calcificação. Vírus digital.", unlocked: false, loc: 'bunker' },
-            { id: 1, title: "Frequência Theta", text: "Eles sentem medo via rádio. Desligue tudo.", unlocked: false, loc: 'bunker' },
+            { id: 0, title: "Relatório Médico #01", text: "Paciente Zero exibe calcificação. Vírus digital. [BUFF: CUSTO DE CURA -5]", unlocked: false, loc: 'bunker', buff: 'heal_cost' },
+            { id: 1, title: "Frequência Theta", text: "Eles sentem medo via rádio. [BUFF: RÁDIO GASTA MENOS ENERGIA]", unlocked: false, loc: 'bunker', buff: 'radio_cost' },
             { id: 2, title: "Chave do Esgoto", text: "ITEM CHAVE. Permite acesso aos túneis sob a cidade.", unlocked: false, loc: 'ruas', isItem: true },
-            { id: 3, title: "Mapa dos Túneis", text: "Mostra a saída secreta para o Setor 7.", unlocked: false, loc: 'mercado', isItem: true },
+            { id: 3, title: "Mapa dos Túneis", text: "Mostra a saída secreta para o Setor 7. [BUFF: VIAGEM RÁPIDA]", unlocked: false, loc: 'mercado', isItem: true, buff: 'travel_time' },
             { id: 4, title: "Amostra Zero", text: "Vial de sangue original. A cura potencial.", unlocked: false, loc: 'farmacia', isItem: true },
-            { id: 5, title: "Diário do Soldado", text: "Não há resgate. É uma armadilha.", unlocked: false, loc: 'ruas' }
+            { id: 5, title: "Diário do Soldado", text: "Não há resgate. É uma armadilha. [BUFF: DANO ESCOPETA]", unlocked: false, loc: 'ruas', buff: 'shotgun_sanity' }
         ];
         const dreamsDB = [ { text: "Sonho: O dia do surto no metrô.", choices: [ {l:"Ajudar", e:"san", v:-10, r:"Mordida."}, {l:"Correr", e:"nrg", v:10, r:"Sobreviveu."} ] }, { text: "Sonho: A voz da colmeia chama.", choices: [ {l:"Resistir", e:"san", v:15, r:"Mente forte."}, {l:"Ouvir", e:"san", v:-15, r:"Paz falsa."} ] } ];
 
-        const arcadeMode = {
-            totalScore: 0,
-            ranks: [ { name: "CIVIL", threshold: 0 }, { name: "RECRUTA", threshold: 100 }, { name: "SOBREVIVENTE", threshold: 300 }, { name: "EXPLORADOR", threshold: 600 }, { name: "OPERADOR", threshold: 1000 }, { name: "VETERANO", threshold: 1500 }, { name: "ELITE", threshold: 2200 }, { name: "HACKER NEURAL", threshold: 3000 }, { name: "MESTRE DO SISTEMA", threshold: 4000 }, { name: "A SINGULARIDADE", threshold: 5500 }, { name: "DEUS DA MÁQUINA", threshold: 7500 } ],
-            openMenu: function() { document.getElementById('start-menu').style.display = 'none'; document.getElementById('arcade-menu').style.display = 'flex'; this.updateUI(); },
-            closeMenu: function() { document.getElementById('arcade-menu').style.display = 'none'; document.getElementById('start-menu').style.display = 'flex'; },
-            addScore: function(amount) { this.totalScore += amount; if (this.totalScore >= 2000) achievementSys.unlock('arcade_2k'); if (this.totalScore >= 7500) achievementSys.unlock('arcade_max'); this.updateUI(); },
-            updateUI: function() {
-                document.getElementById('total-score-display').innerText = this.totalScore;
-                let c = this.ranks[0], n = this.ranks[1]; for (let i = 0; i < this.ranks.length; i++) { if (this.totalScore >= this.ranks[i].threshold) { c = this.ranks[i]; n = this.ranks[i+1] || null; } }
-                document.getElementById('rank-display').innerText = "RANK: " + c.name;
-                if (n) { document.getElementById('next-rank-msg').innerText = `PRÓXIMO NÍVEL: ${n.threshold} PTS`; document.getElementById('xp-bar').style.width = `${((this.totalScore - c.threshold) / (n.threshold - c.threshold)) * 100}%`; } else { document.getElementById('next-rank-msg').innerText = "NÍVEL MÁXIMO"; document.getElementById('xp-bar').style.width = "100%"; }
+        // --- CCTV SYSTEM ---
+        const cameraSys = {
+            activeCam: 1,
+            feeds: {
+                1: `\n  [CAM 01: CORREDOR]\n\n   [PORTA]   (vazio)\n\n`,
+                2: `\n  [CAM 02: VENTILAÇÃO]\n\n   |||||||   (silêncio)\n\n`,
+                3: `\n  [CAM 03: RUA]\n\n   _ _ _     (chuva)\n\n`
+            },
+            switch: function(id) {
+                this.activeCam = id;
+                this.render();
+                audioSys.sfx.click();
+            },
+            update: function() {
+                // Random events
+                if (Math.random() > 0.9) {
+                    const events = ["(vulto)", "(ruído)", "(olhos)", "!!!", "(estática)"];
+                    const ev = events[Math.floor(Math.random()*events.length)];
+                    if(this.activeCam === 1) this.feeds[1] = `\n  [CAM 01: CORREDOR]\n\n   [PORTA]   ${ev}\n\n`;
+                    if(this.activeCam === 2) this.feeds[2] = `\n  [CAM 02: VENTILAÇÃO]\n\n   |||||||   ${ev}\n\n`;
+                    if(this.activeCam === 3) this.feeds[3] = `\n  [CAM 03: RUA]\n\n   _ _ _     ${ev}\n\n`;
+                    this.render();
+                }
+            },
+            render: function() {
+                const screen = document.getElementById('cctv-feed');
+                if(screen) screen.innerText = this.feeds[this.activeCam];
+                document.getElementById('cctv-label').innerText = `CAM 0${this.activeCam}`;
             }
         };
 
@@ -517,9 +601,16 @@
             endGame: function(won, score = 0) {
                 if(this.activeGame) this.activeGame.active=false;
                 document.getElementById('minigame-container').classList.remove('active');
+                
+                // SAVE SCORE PERSISTENTLY
+                if(score > 0) {
+                    arcadeMode.addScore(score);
+                    if(this.mode === 'story') game.log(`XP GANHO: ${score}`, "safe");
+                }
+
                 if (this.mode === 'story') game.resolveDay(won);
                 else {
-                    if (won) { alert(`VITÓRIA! +${score} PONTOS`); arcadeMode.addScore(score); } else alert("GAME OVER");
+                    if (won) { alert(`VITÓRIA! +${score} PONTOS`); } else alert("GAME OVER");
                     document.getElementById('arcade-menu').style.display = 'flex';
                 }
             },
@@ -531,20 +622,30 @@
         const snakeGame = {
             active:false, canvas:null, ctx:null, grid:20, snake:[], food:{}, velocity:{x:1,y:0}, inputQueue:[], score:0, target:20,
             init: function(c){this.canvas=c;this.ctx=c.getContext('2d');},
-            start: function(){this.active=true; this.snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}]; this.score=0; this.velocity={x:1,y:0}; this.inputQueue=[]; this.spawnFood(); this.target = minigameManager.mode === 'arcade' ? 15 : 5; document.getElementById('minigame-title').innerText="SNAKE-LINK"; document.getElementById('minigame-info').innerText=`ALVOS: ${this.target}`; this.loop();},
+            start: function(){
+                this.active=true; this.snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}]; this.score=0; this.velocity={x:1,y:0}; this.inputQueue=[]; this.spawnFood(); 
+                this.target = minigameManager.mode === 'arcade' ? 15 : 5; 
+                document.getElementById('minigame-title').innerText="SNAKE-LINK"; 
+                document.getElementById('minigame-info').innerText=`ALVOS: ${this.target}`; 
+                this.loop();
+            },
             spawnFood: function(){let v=false; while(!v){this.food={x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*20)}; v=!this.snake.some(s=>s.x===this.food.x&&s.y===this.food.y);}},
             handleInput: function(k){if(this.inputQueue.length>2)return; const last=this.inputQueue.length>0?this.inputQueue[this.inputQueue.length-1]:this.velocity; if(k==='ArrowUp'&&last.y===0)this.inputQueue.push({x:0,y:-1}); if(k==='ArrowDown'&&last.y===0)this.inputQueue.push({x:0,y:1}); if(k==='ArrowLeft'&&last.x===0)this.inputQueue.push({x:-1,y:0}); if(k==='ArrowRight'&&last.x===0)this.inputQueue.push({x:1,y:0});},
-            loop: function(){if(!this.active)return; if(this.inputQueue.length>0)this.velocity=this.inputQueue.shift(); const h={x:this.snake[0].x+this.velocity.x, y:this.snake[0].y+this.velocity.y}; if(h.x<0||h.x>=20||h.y<0||h.y>=20||this.snake.some(s=>s.x===h.x&&s.y===h.y)){minigameManager.endGame(false, 0);return;} this.snake.unshift(h); if(h.x===this.food.x&&h.y===this.food.y){this.score++;audioSys.sfx.click();if(minigameManager.mode==='story' && this.score>=this.target){minigameManager.endGame(true);return;} if(minigameManager.mode==='arcade' && this.score>=this.target){minigameManager.endGame(true, 25);return;} this.spawnFood();}else{this.snake.pop();} this.ctx.fillStyle='#000';this.ctx.fillRect(0,0,400,400); this.ctx.fillStyle='#fc0';this.ctx.fillRect(this.food.x*20+2,this.food.y*20+2,16,16); this.ctx.fillStyle='#3f3';this.snake.forEach(s=>this.ctx.fillRect(s.x*20,s.y*20,18,18)); setTimeout(()=>requestAnimationFrame(()=>this.loop()),120);}
+            loop: function(){if(!this.active)return; if(this.inputQueue.length>0)this.velocity=this.inputQueue.shift(); const h={x:this.snake[0].x+this.velocity.x, y:this.snake[0].y+this.velocity.y}; if(h.x<0||h.x>=20||h.y<0||h.y>=20||this.snake.some(s=>s.x===h.x&&s.y===h.y)){minigameManager.endGame(false, 0);return;} this.snake.unshift(h); if(h.x===this.food.x&&h.y===this.food.y){this.score++;audioSys.sfx.click();if(minigameManager.mode==='story' && this.score>=this.target){minigameManager.endGame(true, 50);return;} if(minigameManager.mode==='arcade' && this.score>=this.target){minigameManager.endGame(true, 100);return;} this.spawnFood();}else{this.snake.pop();} 
+            this.ctx.fillStyle='#000';this.ctx.fillRect(0,0,400,400); this.ctx.fillStyle='#fc0';this.ctx.fillRect(this.food.x*20+2,this.food.y*20+2,16,16); this.ctx.fillStyle='#3f3';this.snake.forEach(s=>this.ctx.fillRect(s.x*20,s.y*20,18,18)); setTimeout(()=>requestAnimationFrame(()=>this.loop()),120);}
         };
 
         const echoGame = {
             active:false, canvas:null, ctx:null, seq:[], userSeq:[], level:1, showing:false,
             init: function(c){this.canvas=c;this.ctx=c.getContext('2d');},
-            start: function(){this.active=true; this.level=1; document.getElementById('minigame-title').innerText="ECHO-MIND"; document.getElementById('minigame-info').innerText="MEMORIZE"; this.startLevel();},
+            start: function(){this.active=true; this.level=1; 
+            document.getElementById('minigame-title').innerText="ECHO-MIND"; 
+            document.getElementById('minigame-info').innerText="MEMORIZE"; 
+            this.startLevel();},
             startLevel: function(){this.seq=[]; this.userSeq=[]; for(let i=0;i<this.level+2;i++)this.seq.push(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'][Math.floor(Math.random()*4)]); this.showing=true; this.showSequence(0);},
             showSequence: function(i){if(i>=this.seq.length){this.showing=false;this.draw(null);return;} this.draw(this.seq[i]); audioSys.sfx.click(); setTimeout(()=>{this.draw(null);setTimeout(()=>this.showSequence(i+1),200)},600);},
             draw: function(d){this.ctx.fillStyle='#000';this.ctx.fillRect(0,0,400,400); if(!d)return; this.ctx.font="100px monospace"; this.ctx.fillStyle="#3f3"; this.ctx.textAlign="center"; this.ctx.fillText({'ArrowUp':'↑','ArrowDown':'↓','ArrowLeft':'←','ArrowRight':'→'}[d],200,240);},
-            handleInput: function(k){if(this.showing)return; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(k)){this.userSeq.push(k); this.draw(k); audioSys.sfx.click(); setTimeout(()=>this.draw(null),200); if(this.userSeq[this.userSeq.length-1]!==this.seq[this.userSeq.length-1]){minigameManager.endGame(false, 0);return;} if(this.userSeq.length===this.seq.length){this.level++; if(minigameManager.mode==='story' && this.level>3) minigameManager.endGame(true); else if (minigameManager.mode==='arcade' && this.level>5) minigameManager.endGame(true, 35); else setTimeout(()=>this.startLevel(),1000);}}}
+            handleInput: function(k){if(this.showing)return; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(k)){this.userSeq.push(k); this.draw(k); audioSys.sfx.click(); setTimeout(()=>this.draw(null),200); if(this.userSeq[this.userSeq.length-1]!==this.seq[this.userSeq.length-1]){minigameManager.endGame(false, 0);return;} if(this.userSeq.length===this.seq.length){this.level++; if(minigameManager.mode==='story' && this.level>3) minigameManager.endGame(true, 50); else if (minigameManager.mode==='arcade' && this.level>5) minigameManager.endGame(true, 150); else setTimeout(()=>this.startLevel(),1000);}}}
         };
 
         const pacGame = {
@@ -623,39 +724,24 @@
             loop: function() {
                 if(!this.active) return;
                 this.frame++;
-                // Bird physics
                 this.bird.vel += 0.4; this.bird.y += this.bird.vel;
-                
-                // Pipe generation
                 if(this.frame % 90 === 0) {
                     let gapY = Math.floor(Math.random() * 200) + 50;
-                    this.pipes.push({ x: 400, topH: gapY, bottomY: gapY + 120 });
+                    this.pipes.push({ x: 400, topH: gapY, bottomY: gapY + 120, passed: false });
                 }
-                
-                // Update pipes
                 this.pipes.forEach(p => p.x -= 3);
                 this.pipes = this.pipes.filter(p => p.x > -30);
-                
-                // Collision
                 if(this.bird.y < 0 || this.bird.y > 400) { minigameManager.endGame(false, this.score); return; }
                 this.pipes.forEach(p => {
-                    // Check X range
                     if(50 + this.bird.size > p.x && 50 < p.x + 30) {
                         if(this.bird.y < p.topH || this.bird.y + this.bird.size > p.bottomY) { minigameManager.endGame(false, this.score); return; }
                     }
-                    // Score update
-                    if(p.x === 48) { this.score++; audioSys.sfx.click(); if(minigameManager.mode === 'story' && this.score >= this.target) minigameManager.endGame(true); }
+                    if(!p.passed && p.x < 50) { this.score++; p.passed = true; audioSys.sfx.click(); if(minigameManager.mode === 'story' && this.score >= this.target) minigameManager.endGame(true, 50); }
                 });
-                
-                // Draw
                 this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400);
                 this.ctx.fillStyle = '#ffcc00'; this.ctx.fillRect(50, this.bird.y, this.bird.size, this.bird.size);
                 this.ctx.fillStyle = '#33ff33';
-                this.pipes.forEach(p => {
-                    this.ctx.fillRect(p.x, 0, 30, p.topH);
-                    this.ctx.fillRect(p.x, p.bottomY, 30, 400 - p.bottomY);
-                });
-                
+                this.pipes.forEach(p => { this.ctx.fillRect(p.x, 0, 30, p.topH); this.ctx.fillRect(p.x, p.bottomY, 30, 400 - p.bottomY); });
                 document.getElementById('minigame-info').innerText = `PONTOS: ${this.score} / ${this.target}`;
                 setTimeout(() => requestAnimationFrame(() => this.loop()), 20);
             }
@@ -676,34 +762,17 @@
             loop: function() {
                 if(!this.active) return;
                 this.score += 2; this.frame++;
-                
-                // Physics
-                if(!this.dino.grounded) {
-                    this.dino.vel += 0.8; this.dino.y += this.dino.vel;
-                    if(this.dino.y >= 350) { this.dino.y = 350; this.dino.vel = 0; this.dino.grounded = true; }
-                }
-                
-                // Obstacles
-                if(this.frame % 100 === 0 || (this.frame % 60 === 0 && Math.random() > 0.7)) {
-                    this.obst.push({ x: 400, h: Math.random()>0.5?30:50 });
-                }
+                if(!this.dino.grounded) { this.dino.vel += 0.8; this.dino.y += this.dino.vel; if(this.dino.y >= 350) { this.dino.y = 350; this.dino.vel = 0; this.dino.grounded = true; } }
+                if(this.frame % 100 === 0 || (this.frame % 60 === 0 && Math.random() > 0.7)) { this.obst.push({ x: 400, h: Math.random()>0.5?30:50 }); }
                 this.obst.forEach(o => o.x -= 5);
                 this.obst = this.obst.filter(o => o.x > -20);
-                
-                // Collision
-                this.obst.forEach(o => {
-                    if(o.x < 70 && o.x > 30 && this.dino.y > (350 - o.h + 10)) { minigameManager.endGame(false, this.score); return; }
-                });
-                
-                // Draw
+                this.obst.forEach(o => { if(o.x < 70 && o.x > 30 && this.dino.y > (350 - o.h + 10)) { minigameManager.endGame(false, this.score); return; } });
                 this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400);
-                this.ctx.fillStyle = '#fff'; this.ctx.fillRect(0, 380, 400, 2); // Ground
-                this.ctx.fillStyle = '#00ccff'; this.ctx.fillRect(50, this.dino.y, 20, 30); // Dino
-                this.ctx.fillStyle = '#ff3333'; 
-                this.obst.forEach(o => this.ctx.fillRect(o.x, 380 - o.h, 15, o.h)); // Obstacles
-                
+                this.ctx.fillStyle = '#fff'; this.ctx.fillRect(0, 380, 400, 2); 
+                this.ctx.fillStyle = '#00ccff'; this.ctx.fillRect(50, this.dino.y, 20, 30); 
+                this.ctx.fillStyle = '#ff3333'; this.obst.forEach(o => this.ctx.fillRect(o.x, 380 - o.h, 15, o.h)); 
                 document.getElementById('minigame-info').innerText = `DISTÂNCIA: ${this.score} / ${this.target}`;
-                if(minigameManager.mode === 'story' && this.score >= this.target) minigameManager.endGame(true);
+                if(minigameManager.mode === 'story' && this.score >= this.target) minigameManager.endGame(true, 50);
                 else setTimeout(() => requestAnimationFrame(() => this.loop()), 20);
             }
         };
@@ -711,7 +780,7 @@
         const radioGame = {
             active:false, pos:0, dir:1, target:0, anim:null,
             start: function() { this.active=true; document.getElementById('radio-minigame').classList.add('active'); this.target=20+Math.random()*60; document.getElementById('tuner-target').style.left=this.target+'%'; document.getElementById('tuner-target').style.width='20%'; this.loop(); },
-            loop: function() { if(!this.active)return; this.pos+=0.5*this.dir; if(this.pos>100||this.pos<0)this.dir*=-1; document.getElementById('tuner-cursor').style.left=this.pos+'%'; this.anim=requestAnimationFrame(()=>this.loop()); },
+            loop: function() { if(!this.active)return; this.pos+=1.5*this.dir; if(this.pos>100||this.pos<0)this.dir*=-1; document.getElementById('tuner-cursor').style.left=this.pos+'%'; this.anim=requestAnimationFrame(()=>this.loop()); },
             stop: function() { cancelAnimationFrame(this.anim); this.active=false; document.getElementById('radio-minigame').classList.remove('active'); if(this.pos>=this.target&&this.pos<=this.target+20){audioSys.sfx.success();game.state.sanity=Math.min(100,game.state.sanity+15);if(Math.random()>0.7)game.unlockLore('bunker');else game.log("Sinal limpo.", "safe");}else{audioSys.sfx.error();game.state.sanity-=5;game.log("Ruído.", "alert");} game.updateHUD(); }
         };
 
@@ -727,7 +796,7 @@
                 this.state = { day: 1, hour: 8.0, sanity: 100, energy: 100, intimacy: 100, doorHealth: 100, location: 'bunker', paused: false };
                 this.unlocks = { map: true, uv: false, shotgun: false };
                 document.getElementById('game-container').style.display = 'flex';
-                this.updateHUD(); this.ui.renderScene(); this.ui.renderLoreList(); this.ui.renderCrew();
+                this.updateHUD(); this.ui.renderScene(); this.ui.renderLoreList(); this.ui.renderCrew(); cameraSys.render();
                 this.log("SISTEMA ONLINE. ZONA SEGURA.", "safe");
                 setInterval(() => { if(this.running && !this.state.paused && this.state.doorHealth > 0) this.tick(); }, 1000);
             },
@@ -736,11 +805,17 @@
                 this.tickCount++;
                 const timeMod = this.state.location === 'bunker' ? 0.05 : 0.15; 
                 this.state.hour += timeMod;
+                // Camera Drain
+                if(document.getElementById('tab-cams').classList.contains('active')) {
+                    game.state.energy -= 0.1;
+                    cameraSys.update();
+                }
                 if(this.state.location === 'bunker' && this.tickCount % 40 === 0 && this.state.hour < 13.9) this.encounter.trigger();
                 if(this.state.location !== 'bunker' && Math.random() > 0.95) { this.state.sanity -= 2; this.log("Sons de passos...", "alert"); }
                 if(this.state.hour >= 14) this.triggerEndSequence();
                 if(this.state.doorHealth <= 0) this.gameOver("A PORTA CAIU.");
                 if(this.state.sanity <= 0) this.gameOver("COLAPSO MENTAL.");
+                if(this.state.energy <= 0) this.state.energy = 0;
                 this.updateHUD();
             },
 
@@ -808,12 +883,19 @@
 
             actions: {
                 watchTV: function() { if(game.state.energy>=10){game.state.energy-=10;game.state.sanity+=5;game.log("TV assistida.");audioSys.sfx.click();} game.updateHUD(); },
-                radio: function() { if(game.state.energy>=5){game.state.energy-=5;radioGame.start();} game.updateHUD(); },
+                radio: function() { 
+                    let cost = 5;
+                    if(loreDB[1].unlocked) cost = 2; // Buff from Lore
+                    if(game.state.energy>=cost){game.state.energy-=cost;radioGame.start();} 
+                    game.updateHUD(); 
+                },
                 repairDoor: function() { if(game.state.energy>=15){game.state.energy-=15;game.state.doorHealth=Math.min(100,game.state.doorHealth+20);game.log("Porta reparada.");audioSys.sfx.click();} game.updateHUD(); },
                 travel: function(dest) {
+                    let timeCost = 0.5;
+                    if(loreDB[3].unlocked) timeCost = 0.2; // Buff from Lore
                     game.ui.toggleMap(); audioSys.sfx.travel(); game.log(`Viajando: ${dest.toUpperCase()}`);
                     document.getElementById('main-hub').style.opacity = 0;
-                    setTimeout(() => { game.state.location = dest; game.state.energy -= 10; game.state.hour += 0.5; game.ui.renderScene(); document.getElementById('main-hub').style.opacity = 1; game.updateHUD(); }, 1000);
+                    setTimeout(() => { game.state.location = dest; game.state.energy -= 10; game.state.hour += timeCost; game.ui.renderScene(); document.getElementById('main-hub').style.opacity = 1; game.updateHUD(); }, 1000);
                 },
                 scavenge: function() {
                     if(game.state.energy < 20) { game.log("Cansado demais.", "alert"); return; }
@@ -836,8 +918,20 @@
                     const crew = game.crew[idx]; if(!crew) return;
                     if(type === 'feed') { if(game.state.energy >= 10 && crew.hp < 100) { game.state.energy -= 10; crew.hp = Math.min(100, crew.hp + 20); game.log(`Você alimentou ${crew.name}.`, "safe"); audioSys.sfx.click(); } }
                     if(type === 'talk') { game.state.hour += 0.1; game.state.sanity = Math.min(100, game.state.sanity + 5); game.log(`${crew.name} conversou.`, "lore"); }
-                    if(type === 'heal') { if(game.state.energy >= 20) { game.state.energy -= 20; crew.hp = 100; game.log(`${crew.name} curado.`, "safe"); } }
+                    if(type === 'heal') { 
+                        let cost = 20;
+                        if(loreDB[0].unlocked) cost = 15; // Buff from Lore
+                        if(game.state.energy >= cost) { game.state.energy -= cost; crew.hp = 100; game.log(`${crew.name} curado.`, "safe"); } 
+                    }
                     game.updateHUD(); game.ui.renderCrew();
+                },
+                deepScan: function() {
+                    if(game.state.energy < 40) { game.log("Energia insuficiente.", "alert"); return; }
+                    game.state.energy -= 40;
+                    let loc = game.state.location;
+                    if(loc === 'bunker') loc = 'any';
+                    game.unlockLore(loc);
+                    game.updateHUD();
                 }
             },
 
@@ -874,7 +968,11 @@
                 updateStressUI: function() { document.getElementById('stress-meter-fill').style.width = this.visitorData.stress + '%'; if(this.visitorData.stress > 50) document.getElementById('stress-meter-fill').style.background = 'red'; else document.getElementById('stress-meter-fill').style.background = 'lime'; },
                 scan: function() { if(game.state.energy < 5) return; game.state.energy -= 5; audioSys.sfx.scan(); game.updateHUD(); const d = this.visitorData; let res = `SANGUE: ${d.trueData.blood} | DNA: ${d.isDistorted ? 'CORROMPIDO' : 'NORMAL'}`; if(d.trueData.blood !== d.idCardData.blood) res += " [ERRO DE TIPO]"; const el = document.getElementById('scan-result'); el.innerText = res; el.style.color = d.isDistorted || d.trueData.blood !== d.idCardData.blood ? "red" : "lime"; },
                 toggleUV: function() { if(game.unlocks.uv) document.getElementById('visor-circle').classList.toggle('uv-active'); },
-                shotgun: function() { audioSys.sfx.error(); game.state.sanity-=15; achievementSys.unlock('first_kill'); this.close(); },
+                shotgun: function() { 
+                    let loss = 15;
+                    if(loreDB[5].unlocked) loss = 5; // Buff from Lore
+                    audioSys.sfx.error(); game.state.sanity-=loss; achievementSys.unlock('first_kill'); this.close(); 
+                },
                 decide: function(accept) {
                     const d = this.visitorData;
                     if(accept) { if(d.isDistorted) game.gameOver("VOCÊ DEIXOU UM MONSTRO ENTRAR."); else { game.state.sanity += 10; game.crew.push({name: d.idCardData.name, hp: 100, role: 'CIVIL'}); game.log("Sobrevivente salvo.", "safe"); achievementSys.unlock('first_human'); } } 
