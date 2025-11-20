@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLURIBUS: A JUNÇÃO - Final Cut (Fixed)</title>
+    <title>PLURIBUS: A JUNÇÃO - Director's Cut</title>
     <style>
         :root {
             --bg-color: #050505;
@@ -64,31 +64,25 @@
         .menu-btn.narrative:hover { background: rgba(0, 204, 255, 0.1); }
         .menu-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: #444; color: #444; background: #111; }
 
-        /* --- ARCADE & RANKS --- */
+        /* --- ARCADE & RANKS (FIXED) --- */
         #arcade-menu { display: none; }
         #arcade-stats { border: 1px solid var(--text-lore); padding: 20px; margin-bottom: 20px; width: 500px; background: #080808; }
         .rank-title { font-size: 1.8em; color: var(--text-lore); font-weight: bold; margin-bottom: 5px; text-shadow: 0 0 10px var(--text-lore); }
-        .xp-bar-container { width: 100%; height: 12px; background: #222; border: 1px solid #555; margin-top: 5px; position: relative; }
-        .xp-bar-fill { height: 100%; background: var(--text-lore); width: 0%; transition: width 0.5s; }
-        .xp-text { font-size: 0.8em; color: #fff; position: absolute; width: 100%; text-align: center; top: -2px; text-shadow: 1px 1px #000; }
-
-        /* --- TROPHIES --- */
-        #trophy-menu { display: none; }
-        #trophy-list { 
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; 
-            max-height: 60vh; overflow-y: auto; width: 80%; max-width: 900px;
-            padding: 10px; background: #111; border: 1px solid #333;
+        
+        /* FIXED XP BAR DESIGN */
+        .xp-bar-container { 
+            width: 100%; height: 24px; background: #111; border: 1px solid #444; 
+            margin-top: 10px; position: relative; display: flex; align-items: center; justify-content: center;
+            border-radius: 4px; overflow: hidden;
         }
-        .trophy-item { 
-            background: #0a0a0a; border: 1px solid #333; padding: 10px; 
-            display: flex; align-items: center; gap: 15px; opacity: 0.4; transition: 0.3s; 
+        .xp-bar-fill { 
+            height: 100%; background: var(--text-lore); width: 0%; 
+            transition: width 0.5s; position: absolute; left: 0; top: 0; z-index: 1; opacity: 0.7;
         }
-        .trophy-item.unlocked { opacity: 1; border-color: var(--text-safe); background: #1a2a1a; }
-        .trophy-item.gold { border-color: var(--text-alert); }
-        .trophy-item.plat { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
-        .t-icon { font-size: 2em; width: 50px; text-align: center; }
-        .t-info h4 { margin: 0; color: #fff; font-size: 0.9em; }
-        .t-info p { margin: 3px 0 0 0; font-size: 0.75em; color: #888; }
+        .xp-text { 
+            font-size: 0.85em; color: #fff; position: relative; z-index: 2; 
+            text-shadow: 1px 1px 2px #000; font-weight: bold; letter-spacing: 1px;
+        }
 
         /* --- HUD --- */
         #hud {
@@ -125,36 +119,43 @@
         button:disabled { color: #444; border-color: #222; cursor: not-allowed; opacity: 0.6; }
         button.danger-action { border-color: var(--text-danger); color: var(--text-danger); }
         button.danger-action:hover { background: #300; }
-        button.decrypt-btn { border-color: var(--text-lore); color: var(--text-lore); }
 
-        /* --- TROPHY NOTIFICATION --- */
-        #trophy-notification {
-            position: fixed; top: 20px; right: 20px;
-            background: rgba(20, 20, 20, 0.95); border: 1px solid #333; border-radius: 50px;
-            padding: 10px 25px 10px 15px; display: flex; align-items: center; gap: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-            transform: translateX(150%); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 3000; color: #fff; pointer-events: none; min-width: 300px;
+        /* --- TROPHIES --- */
+        #trophy-menu { display: none; }
+        #trophy-list { 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; 
+            max-height: 60vh; overflow-y: auto; width: 80%; max-width: 900px;
+            padding: 10px; background: #111; border: 1px solid #333;
         }
-        #trophy-notification.active { transform: translateX(0); }
-        #trophy-icon { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; background: #000; border: 2px solid #fff; }
-        #trophy-details { display: flex; flex-direction: column; }
-        #trophy-label { font-size: 0.7em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-        #trophy-name { font-size: 1em; font-weight: bold; }
+        .trophy-item { 
+            background: #0a0a0a; border: 1px solid #333; padding: 10px; 
+            display: flex; align-items: center; gap: 15px; opacity: 0.4; transition: 0.3s; 
+        }
+        .trophy-item.unlocked { opacity: 1; border-color: var(--text-safe); background: #1a2a1a; }
+        .trophy-item.gold { border-color: var(--text-alert); }
+        .trophy-item.plat { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        .t-icon { font-size: 2em; width: 50px; text-align: center; }
+        .t-info h4 { margin: 0; color: #fff; font-size: 0.9em; }
+        .t-info p { margin: 3px 0 0 0; font-size: 0.75em; color: #888; }
 
-        /* --- NARRATIVE MODE UI --- */
+        /* --- NARRATIVE MODE UI (IMPROVED) --- */
         #narrative-ui {
             display: none; flex-direction: column; height: 100%; 
-            max-width: 800px; margin: 0 auto; padding: 40px;
+            max-width: 900px; margin: 0 auto; padding: 40px;
             background: #080808; border-left: 1px solid #333; border-right: 1px solid #333;
         }
-        .narrative-text { font-size: 1.2em; line-height: 1.6; color: #ddd; flex: 1; overflow-y: auto; margin-bottom: 20px; white-space: pre-wrap; border-bottom: 1px dashed #333; padding-bottom: 20px; }
+        .narrative-chapter { color: var(--text-dim); font-size: 0.8em; letter-spacing: 2px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .narrative-text { font-size: 1.15em; line-height: 1.8; color: #ddd; flex: 1; overflow-y: auto; margin-bottom: 20px; white-space: pre-wrap; padding-right: 10px; }
         .narrative-choice { 
             background: #111; border: 1px solid var(--text-lore); padding: 15px; margin-bottom: 10px; 
-            cursor: pointer; transition: 0.2s; color: var(--text-lore); font-weight: bold;
+            cursor: pointer; transition: 0.2s; color: var(--text-lore); font-weight: bold; display: flex; justify-content: space-between;
         }
         .narrative-choice:hover { background: rgba(0, 204, 255, 0.1); padding-left: 25px; color: #fff; }
-        .narrative-notification { color: #888; font-style: italic; font-size: 0.9em; margin-bottom: 5px; animation: fadeIn 1s; }
+        .narrative-choice span { font-size: 0.8em; opacity: 0.6; font-weight: normal; }
+        .narrative-notification { 
+            color: var(--text-alert); font-style: italic; font-size: 0.9em; margin-bottom: 10px; 
+            animation: fadeIn 1s; border-left: 2px solid var(--text-alert); padding-left: 10px;
+        }
 
         /* --- GAMEPLAY MODALS --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 100; display: flex; align-items: center; justify-content: center; visibility: hidden; opacity: 0; transition: opacity 0.2s; }
@@ -194,7 +195,6 @@
         .crew-hp-bar { width: 100%; height: 6px; background: #222; margin-bottom: 8px; }
         .crew-hp-fill { height: 100%; background: var(--text-safe); }
         .crew-actions { display: flex; gap: 5px; }
-        .crew-actions button { font-size: 0.7em; padding: 5px; margin: 0; justify-content: center; text-align: center; }
         
         .lore-file { border: 1px solid #333; padding: 8px; margin-bottom: 5px; cursor: pointer; background: #080808; display: flex; justify-content: space-between; align-items: center; }
         .lore-file:hover { border-color: var(--text-lore); }
@@ -206,6 +206,18 @@
         .log-entry.alert { color: var(--text-danger); border-left-color: var(--text-danger); }
         .log-entry.safe { color: var(--text-safe); border-left-color: var(--text-safe); }
         .log-entry.lore { color: var(--text-lore); border-left-color: var(--text-lore); font-style: italic; }
+
+        #radio-minigame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; height: 200px; background: #000; border: 2px solid var(--text-alert); z-index: 300; display: none; flex-direction: column; padding: 20px; box-shadow: 0 0 30px #000; }
+        #tuner-bar-bg { width: 100%; height: 30px; background: #222; position: relative; margin: 20px 0; border: 1px solid #555; }
+        #tuner-target { position: absolute; top: 0; height: 100%; width: 60px; background: rgba(0, 255, 0, 0.3); border-left: 1px solid #0f0; border-right: 1px solid #0f0; }
+        #tuner-cursor { position: absolute; top: -5px; bottom: -5px; width: 4px; background: #fff; box-shadow: 0 0 5px #fff; left: 0; }
+
+        #trophy-notification { position: fixed; top: 20px; right: 20px; background: rgba(20, 20, 20, 0.95); border: 1px solid #333; border-radius: 50px; padding: 10px 25px 10px 15px; display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); transform: translateX(150%); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 3000; color: #fff; pointer-events: none; min-width: 300px; }
+        #trophy-notification.active { transform: translateX(0); }
+        #trophy-icon { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; background: #000; border: 2px solid #fff; }
+        #trophy-details { display: flex; flex-direction: column; }
+        #trophy-label { font-size: 0.7em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        #trophy-name { font-size: 1em; font-weight: bold; }
 
         /* --- MINIGAMES --- */
         #minigame-container { text-align: center; }
@@ -223,12 +235,6 @@
         #cctv-screen { width: 100%; height: 180px; background: var(--cam-bg); border: 2px solid #334433; margin-bottom: 10px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; font-family: monospace; color: #558855; white-space: pre; }
         #cctv-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px); pointer-events: none; animation: scrollScan 10s linear infinite; }
         
-        /* --- RADIO FIX --- */
-        #radio-minigame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; height: 200px; background: #000; border: 2px solid var(--text-alert); z-index: 300; display: none; flex-direction: column; padding: 20px; box-shadow: 0 0 30px #000; }
-        #tuner-bar-bg { width: 100%; height: 30px; background: #222; position: relative; margin: 20px 0; border: 1px solid #555; }
-        #tuner-target { position: absolute; top: 0; height: 100%; width: 60px; background: rgba(0, 255, 0, 0.3); border-left: 1px solid #0f0; border-right: 1px solid #0f0; }
-        #tuner-cursor { position: absolute; top: -5px; bottom: -5px; width: 4px; background: #fff; box-shadow: 0 0 5px #fff; left: 0; }
-
         @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 100% { transform: translate(-1px, -2px) rotate(-1deg); } }
         @keyframes scrollScan { from { background-position: 0 0; } to { background-position: 0 100%; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -249,12 +255,12 @@
 
     <div id="start-menu" class="full-screen-menu">
         <h1>PLURIBUS</h1>
-        <h2 style="color: #888; letter-spacing: 3px;">FINAL CUT</h2>
+        <h2 style="color: #888; letter-spacing: 3px;">DIRECTOR'S CUT</h2>
         <button class="menu-btn" onclick="game.startSurvival()">MODO SOBREVIVÊNCIA</button>
         <button class="menu-btn narrative" onclick="narrativeSys.start()">MODO NARRATIVO (ORIGENS)</button>
         <button class="menu-btn secondary" onclick="arcadeMode.openMenu()">MODO ARCADE</button>
         <button class="menu-btn secondary" style="border-color: var(--trophy-gold); color: var(--trophy-gold);" onclick="achievementSys.openMenu()">COLEÇÃO DE TROFÉUS [50]</button>
-        <div style="margin-top: 20px; font-size: 0.8em; color: #666;">V3.1.2</div>
+        <div style="margin-top: 20px; font-size: 0.8em; color: #666;">V3.2.0 (STORY EXPANDED)</div>
     </div>
 
     <div id="arcade-menu" class="full-screen-menu">
@@ -319,7 +325,8 @@
     </div>
 
     <div id="narrative-ui" class="full-screen-menu" style="display:none; justify-content: flex-start; text-align: left;">
-        <h1 style="border-bottom: 1px solid #333; padding-bottom: 10px; width: 100%; text-align: center; color: var(--text-lore);">MODO NARRATIVO</h1>
+        <h1 style="border-bottom: 1px solid #333; padding-bottom: 10px; width: 100%; text-align: center; color: var(--text-lore);">MODO NARRATIVO (ORIGENS)</h1>
+        <div id="narrative-chapter" class="narrative-chapter">CAPÍTULO 1</div>
         <div id="narrative-text" class="narrative-text"></div>
         <div id="narrative-choices" style="width: 100%;"></div>
         <button class="menu-btn secondary" onclick="narrativeSys.exit()" style="margin-top: 20px; align-self: center;">SAIR PARA O MENU</button>
@@ -331,18 +338,15 @@
                 <div class="panel-title" style="text-align:center;">VISOR</div>
                 <div id="visor-circle"><div id="visitor-face"></div></div>
                 <div style="display:flex; flex-direction:column; gap:5px; width:100%;">
-                    <button id="btn-uv" onclick="game.encounter.toggleUV()">LUZ UV</button>
-                    <button id="btn-shotgun" class="danger-action" onclick="game.encounter.shotgun()">ESCOPETA</button>
+                    <button onclick="game.encounter.toggleUV()">LUZ UV</button>
+                    <button class="danger-action" onclick="game.encounter.shotgun()">ESCOPETA</button>
                 </div>
             </div>
             <div id="data-section">
                 <div class="investigation-card"><div class="inv-header">CARTÃO</div><div id="id-card-grid"></div></div>
                 <div class="investigation-card"><div class="inv-header">DIALOGO</div><div id="dialogue-box"></div><div class="dialogue-options"><button class="dialogue-btn" onclick="game.encounter.ask('origin')">ORIGEM</button><button class="dialogue-btn" onclick="game.encounter.ask('symptoms')">SINTOMAS</button><button class="dialogue-btn" onclick="game.encounter.ask('blood')">SANGUE</button><button class="dialogue-btn" onclick="game.encounter.ask('calm')">ACALMAR</button></div></div>
                 <div class="investigation-card"><button onclick="game.encounter.scan()">SCANNER (-5E)</button><div id="scan-result" class="scan-result-box">---</div></div>
-                <div class="decision-area">
-                    <div class="timer-bar-container"><div id="timer-bar"></div></div>
-                    <div style="display:flex; gap:10px;"><button onclick="game.encounter.decide(true)" style="border-color:lime;">ABRIR</button><button onclick="game.encounter.decide(false)" style="border-color:red;">RECUSAR</button></div>
-                </div>
+                <div class="decision-area"><div class="timer-bar-container"><div id="timer-bar"></div></div><div style="display:flex; gap:10px;"><button onclick="game.encounter.decide(true)" style="border-color:lime;">ABRIR</button><button onclick="game.encounter.decide(false)" style="border-color:red;">RECUSAR</button></div></div>
             </div>
         </div>
     </div>
@@ -372,7 +376,7 @@
         </div>
     </div>
 
-    <div id="radio-minigame" class="modal-overlay" style="background:transparent; pointer-events:auto;">
+    <div id="radio-minigame" class="modal-overlay" style="background:transparent; pointer-events:none;">
         <div style="background:#000; border:2px solid #ffcc00; padding:20px; width:400px; pointer-events:auto;">
             <div class="panel-title">SINTONIA</div>
             <div id="tuner-bar-bg"><div id="tuner-target"></div><div id="tuner-cursor"></div></div>
@@ -381,18 +385,12 @@
     </div>
 
     <div id="dream-modal" class="modal-overlay">
-        <div class="dream-content">
-            <h2 style="color: #fff; border-bottom: 1px solid #555; padding-bottom: 10px;">SONHO LÚCIDO</h2>
-            <div id="dream-text" class="dream-text">...</div>
-            <div id="dream-options" class="dream-choices"></div>
-        </div>
+        <div class="dream-content"><h2 style="color: #fff;">SONHO LÚCIDO</h2><div id="dream-text" class="dream-text">...</div><div id="dream-options" class="dream-choices"></div></div>
     </div>
 
     <div id="lore-modal" class="modal-overlay" style="z-index: 3000;">
         <div style="max-width:500px; background:#111; padding:30px; border:2px solid var(--text-primary); text-align:justify;">
-            <h2 id="lore-title" style="color:var(--text-alert); text-align:center;">FIM DO DIA</h2>
-            <p id="lore-text">...</p>
-            <button id="next-day-btn" onclick="game.nextDay()" style="margin-top:20px; justify-content: center;">CONTINUAR</button>
+            <h2 id="lore-title" style="color:var(--text-alert); text-align:center;">FIM DO DIA</h2><p id="lore-text">...</p><button id="next-day-btn" onclick="game.nextDay()" style="margin-top:20px; justify-content: center;">CONTINUAR</button>
         </div>
     </div>
 
@@ -402,71 +400,43 @@
             init: function() { if(!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)(); if(this.ctx.state==='suspended') this.ctx.resume(); },
             playTone: function(f,t,d,v=0.1) { if(!this.ctx) return; const o=this.ctx.createOscillator(); const g=this.ctx.createGain(); o.type=t; o.frequency.setValueAtTime(f,this.ctx.currentTime); g.gain.setValueAtTime(v,this.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+d); o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+d); },
             sfx: {
-                click: ()=>audioSys.playTone(1200,'square',0.05), error: ()=>audioSys.playTone(150,'sawtooth',0.3), 
-                success: ()=>{ audioSys.playTone(600,'sine',0.1); setTimeout(()=>audioSys.playTone(900,'sine',0.2),100); },
+                click: ()=>audioSys.playTone(1200,'square',0.05), error: ()=>audioSys.playTone(150,'sawtooth',0.3), success: ()=>{ audioSys.playTone(600,'sine',0.1); setTimeout(()=>audioSys.playTone(900,'sine',0.2),100); },
                 trophy: ()=> { audioSys.playTone(800,'sine',0.1); setTimeout(()=>audioSys.playTone(1200,'sine',0.3),100); setTimeout(()=>audioSys.playTone(1500,'square',0.4),200); },
                 scan: ()=>audioSys.playTone(2000,'sine',0.2), knock: ()=>audioSys.playTone(80, 'square', 0.1, 0.3), glitch: ()=>audioSys.playTone(Math.random()*500, 'sawtooth', 0.05, 0.1),
-                jump: ()=>audioSys.playTone(300, 'square', 0.1, 0.1), travel: ()=>audioSys.playTone(100,'square',1.0,0.2),
-                lore: ()=> { audioSys.playTone(400,'sine',0.1); setTimeout(()=>audioSys.playTone(600,'sine',0.3), 150); }
+                jump: ()=>audioSys.playTone(300, 'square', 0.1, 0.1), travel: ()=>audioSys.playTone(100,'square',1.0,0.2), lore: ()=> { audioSys.playTone(400,'sine',0.1); setTimeout(()=>audioSys.playTone(600,'sine',0.3), 150); }
             }
         };
 
-        // 50 TROPHIES DEFINITION (REAL OBJECTIVES)
         const achievementSys = {
             trophies: [
-                {id:'die1', n:'Fim da Linha', d:'Morrer pela primeira vez.', t:'bronze'}, 
-                {id:'door1', n:'Porteiro', d:'Deixe um humano entrar.', t:'bronze'}, 
-                {id:'kill1', n:'Gatilho Rápido', d:'Use a escopeta.', t:'bronze'},
-                {id:'scav1', n:'Lixeiro', d:'Vasculhe algo com sucesso.', t:'bronze'}, 
-                {id:'trav1', n:'Viajante', d:'Viaje para qualquer local.', t:'bronze'}, 
-                {id:'lore1', n:'Curioso', d:'Decodifique um arquivo de Lore.', t:'bronze'},
-                {id:'feed1', n:'Nutridor', d:'Alimente um membro da equipe.', t:'bronze'}, 
-                {id:'talk1', n:'Ouvinte', d:'Converse com um membro da equipe.', t:'bronze'}, 
-                {id:'heal1', n:'Médico', d:'Cure um membro da equipe.', t:'bronze'},
-                {id:'cam1', n:'Vigilante', d:'Use as câmeras por 1 minuto (total).', t:'bronze'}, 
-                {id:'uv1', n:'Revelador', d:'Use a Luz UV em um visitante.', t:'bronze'}, 
-                {id:'repair1', n:'Soldador', d:'Repare a porta para 100%.', t:'bronze'},
-                {id:'snake1', n:'Cobrinha', d:'Jogue uma partida de Snake.', t:'bronze'}, 
-                {id:'pac1', n:'Comilão', d:'Jogue uma partida de Pac-Man.', t:'bronze'}, 
-                {id:'echo1', n:'Memória', d:'Jogue uma partida de Echo.', t:'bronze'},
-                {id:'day2', n:'Amanhecer', d:'Chegue ao Dia 2 no Modo Sobrevivência.', t:'silver'}, 
-                {id:'day4', n:'Meio Termo', d:'Chegue ao Dia 4 no Modo Sobrevivência.', t:'silver'}, 
-                {id:'day6', n:'Veterano', d:'Chegue ao Dia 6 no Modo Sobrevivência.', t:'silver'},
-                {id:'full_crew', n:'Líder', d:'Tenha 3 pessoas vivas na equipe simultaneamente.', t:'silver'}, 
-                {id:'solo', n:'Lobo Solitário', d:'Chegue ao Dia 4 sem aceitar ninguém.', t:'silver'}, 
-                {id:'pac_score', n:'Hacker Pac', d:'Faça 500 pontos no Pac-Man.', t:'silver'},
-                {id:'snake_score', n:'Hacker Snake', d:'Faça 20 pontos no Snake.', t:'silver'}, 
-                {id:'lore5', n:'Arquivista', d:'Decodifique 5 arquivos de Lore.', t:'silver'}, 
-                {id:'map_all', n:'Explorador', d:'Visite todos os 3 locais do mapa.', t:'silver'},
-                {id:'flappy_play', n:'Piloto', d:'Jogue uma partida de Flappy.', t:'bronze'},
-                {id:'dino_play', n:'Corredor', d:'Jogue uma partida de Dino.', t:'bronze'},
-                {id:'flappy_score', n:'Ás dos Céus', d:'Faça 30 pontos no Flappy.', t:'silver'},
-                {id:'dino_score', n:'Maratonista', d:'Faça 1000 pontos no Dino.', t:'silver'},
-                {id:'calm_down', n:'Negociador', d:'Acalme um visitante com sucesso.', t:'bronze'},
-                {id:'uv_human', n:'Paranóico', d:'Use UV em um humano confirmado.', t:'bronze'},
-                {id:'reject_human', n:'Coração Frio', d:'Recuse a entrada de um humano confirmado.', t:'bronze'},
-                {id:'low_san', n:'No Limite', d:'Sobreviva um dia com menos de 10% de Sanidade.', t:'bronze'},
-                {id:'low_nrg', n:'Apagão', d:'Sobreviva um dia com 0% de Energia.', t:'bronze'},
-                {id:'door_full', n:'Fortaleza', d:'Mantenha a porta em 100% até o Dia 3.', t:'bronze'},
-                {id:'radio_fail', n:'Sinal Perdido', d:'Falhe na sintonia do rádio.', t:'bronze'},
-                {id:'radio_streak', n:'DJ do Fim', d:'Sintonize o rádio 5 vezes sem falhar.', t:'silver'},
-                {id:'stealth_master', n:'Sombra', d:'Use a ação Esgueirar 10 vezes.', t:'silver'},
-                {id:'risk_taker', n:'Risco Calculado', d:'Vasculhe um local com menos de 20 Energia.', t:'silver'},
-                {id:'key_found', n:'Chaveiro', d:'Encontre a Chave do Esgoto.', t:'silver'},
-                {id:'cure_found', n:'Cientista', d:'Encontre a Amostra Zero.', t:'silver'},
-                {id:'map_found', n:'Cartógrafo', d:'Encontre o Mapa dos Túneis.', t:'silver'},
-                {id:'shotgun_spree', n:'Sem Piedade', d:'Use a Escopeta 3 vezes em um único dia.', t:'silver'},
-                {id:'pacifist', n:'Pacifista', d:'Chegue ao Dia 3 sem usar a Escopeta.', t:'silver'},
-                {id:'insight_max', n:'Iluminado', d:'Atinja 100% de Insight.', t:'gold'},
-                {id:'story_good', n:'Herói', d:'Alcance o Final: Resgate.', t:'gold'}, 
-                {id:'story_bad', n:'Tragédia', d:'Alcance o Final: Morte.', t:'gold'}, 
-                {id:'story_true', n:'A Verdade', d:'Alcance o Final Secreto.', t:'gold'},
-                {id:'rank_max', n:'Deus da Máquina', d:'Atinja o Rank 60 no Modo Arcade.', t:'gold'}, 
-                {id:'lore_all', n:'Onisciente', d:'Desbloqueie e decodifique toda a Lore.', t:'gold'},
-                {id:'platinum', n:'A CONSCIÊNCIA FINAL', d:'Obtenha todos os outros troféus.', t:'plat'}
+                {id:'die1', n:'Fim da Linha', d:'Morrer pela primeira vez.', t:'bronze', earned:false}, {id:'door1', n:'Porteiro', d:'Deixe um humano entrar.', t:'bronze', earned:false}, 
+                {id:'kill1', n:'Gatilho Rápido', d:'Use a escopeta.', t:'bronze', earned:false}, {id:'scav1', n:'Lixeiro', d:'Vasculhe algo com sucesso.', t:'bronze', earned:false}, 
+                {id:'trav1', n:'Viajante', d:'Viaje para qualquer local.', t:'bronze', earned:false}, {id:'lore1', n:'Curioso', d:'Decodifique um arquivo de Lore.', t:'bronze', earned:false},
+                {id:'feed1', n:'Nutridor', d:'Alimente um membro da equipe.', t:'bronze', earned:false}, {id:'talk1', n:'Ouvinte', d:'Converse com um membro da equipe.', t:'bronze', earned:false}, 
+                {id:'heal1', n:'Médico', d:'Cure um membro da equipe.', t:'bronze', earned:false}, {id:'cam1', n:'Vigilante', d:'Use as câmeras.', t:'bronze', earned:false}, 
+                {id:'uv1', n:'Revelador', d:'Use a Luz UV em um visitante.', t:'bronze', earned:false}, {id:'repair1', n:'Soldador', d:'Repare a porta.', t:'bronze', earned:false},
+                {id:'snake1', n:'Cobrinha', d:'Jogue uma partida de Snake.', t:'bronze', earned:false}, {id:'pac1', n:'Comilão', d:'Jogue uma partida de Pac-Man.', t:'bronze', earned:false}, 
+                {id:'echo1', n:'Memória', d:'Jogue uma partida de Echo.', t:'bronze', earned:false}, {id:'day2', n:'Amanhecer', d:'Chegue ao Dia 2.', t:'silver', earned:false}, 
+                {id:'day4', n:'Meio Termo', d:'Chegue ao Dia 4.', t:'silver', earned:false}, {id:'day6', n:'Veterano', d:'Chegue ao Dia 6.', t:'silver', earned:false},
+                {id:'full_crew', n:'Líder', d:'Tenha 3 pessoas na equipe.', t:'silver', earned:false}, {id:'solo', n:'Lobo Solitário', d:'Chegue ao Dia 4 sozinho.', t:'silver', earned:false}, 
+                {id:'pac_score', n:'Hacker Pac', d:'500 pts no Pac-Man.', t:'silver', earned:false}, {id:'snake_score', n:'Hacker Snake', d:'20 pts no Snake.', t:'silver', earned:false}, 
+                {id:'lore5', n:'Arquivista', d:'Decodifique 5 arquivos.', t:'silver', earned:false}, {id:'map_all', n:'Explorador', d:'Visite todos os locais.', t:'silver', earned:false},
+                {id:'flappy_play', n:'Piloto', d:'Jogue Flappy.', t:'bronze', earned:false}, {id:'dino_play', n:'Corredor', d:'Jogue Dino.', t:'bronze', earned:false},
+                {id:'flappy_score', n:'Ás dos Céus', d:'50 pts no Flappy.', t:'silver', earned:false}, {id:'dino_score', n:'Maratonista', d:'1000 pts no Dino.', t:'silver', earned:false},
+                {id:'calm_down', n:'Negociador', d:'Acalme um visitante.', t:'bronze', earned:false}, {id:'uv_human', n:'Paranóico', d:'Use UV em um humano.', t:'bronze', earned:false},
+                {id:'reject_human', n:'Coração Frio', d:'Recuse um humano.', t:'bronze', earned:false}, {id:'low_san', n:'No Limite', d:'Sobreviva com < 10% Sanidade.', t:'bronze', earned:false},
+                {id:'low_nrg', n:'Apagão', d:'Sobreviva com < 10% Energia.', t:'bronze', earned:false}, {id:'door_full', n:'Fortaleza', d:'Porta 100% no Dia 3.', t:'bronze', earned:false},
+                {id:'radio_fail', n:'Sinal Perdido', d:'Falhe no Rádio.', t:'bronze', earned:false}, {id:'radio_streak', n:'DJ do Fim', d:'5 Acertos no Rádio.', t:'silver', earned:false},
+                {id:'stealth_master', n:'Sombra', d:'Use Esgueirar 10 vezes.', t:'silver', earned:false}, {id:'risk_taker', n:'Risco Calculado', d:'Vasculhe com < 20 Energia.', t:'silver', earned:false},
+                {id:'key_found', n:'Chaveiro', d:'Ache a Chave do Esgoto.', t:'silver', earned:false}, {id:'cure_found', n:'Cientista', d:'Ache a Amostra Zero.', t:'silver', earned:false},
+                {id:'map_found', n:'Cartógrafo', d:'Ache o Mapa dos Túneis.', t:'silver', earned:false}, {id:'shotgun_spree', n:'Sem Piedade', d:'Use Escopeta 3x num dia.', t:'silver', earned:false},
+                {id:'pacifist', n:'Pacifista', d:'Dia 3 sem usar armas.', t:'silver', earned:false}, {id:'insight_max', n:'Iluminado', d:'Insight 100%.', t:'gold', earned:false},
+                {id:'story_good', n:'Herói', d:'Final: Resgate.', t:'gold', earned:false}, {id:'story_bad', n:'Tragédia', d:'Final: Morte.', t:'gold', earned:false}, 
+                {id:'story_true', n:'A Verdade', d:'Final Secreto.', t:'gold', earned:false}, {id:'rank_max', n:'Deus da Máquina', d:'Rank 60 Arcade.', t:'gold', earned:false}, 
+                {id:'lore_all', n:'Onisciente', d:'Toda Lore desbloqueada.', t:'gold', earned:false}, {id:'platinum', n:'A CONSCIÊNCIA FINAL', d:'Todos os troféus.', t:'plat', earned:false}
             ],
             init: function() {
-                const saved = localStorage.getItem('pluribus_trophies_v6');
+                const saved = localStorage.getItem('pluribus_trophies_v7');
                 if (saved) { const ids = JSON.parse(saved); this.trophies.forEach(t => { if(ids.includes(t.id)) t.earned = true; }); }
             },
             unlock: function(id) {
@@ -474,7 +444,7 @@
                 if(t && !t.earned) { t.earned = true; this.save(); this.notify(t); this.checkPlat(); }
             },
             checkPlat: function() { if(this.trophies.filter(t=>t.id!=='platinum').every(t=>t.earned)) this.unlock('platinum'); },
-            save: function() { localStorage.setItem('pluribus_trophies_v6', JSON.stringify(this.trophies.filter(t=>t.earned).map(t=>t.id))); },
+            save: function() { localStorage.setItem('pluribus_trophies_v7', JSON.stringify(this.trophies.filter(t=>t.earned).map(t=>t.id))); },
             notify: function(t) {
                 const n = document.getElementById('trophy-notification');
                 document.getElementById('trophy-label').innerText = t.t.toUpperCase();
@@ -523,36 +493,41 @@
         };
         arcadeMode.init();
 
+        // --- EXPANDED NARRATIVE MODE ---
         const narrativeSys = {
             scene: 0,
-            stats: { humanity: 50, logic: 50, rebellion: 0, hive: 0 },
             scenes: [
-                { t: "INTRO", b: "O ano é 2084. O mundo acabou em silêncio. A 'Junção' conectou 99% da humanidade via wi-fi neural. Você é um dos poucos desconectados, vivendo em um bunker subterrâneo.\n\nAlguém bate na porta de metal pesado.", c: [{t:"Verificar Câmeras", eff:{logic:10}, next: 1}, {t:"Perguntar quem é", eff:{humanity:10}, next: 1}, {t:"Gritar para irem embora", eff:{rebellion:10}, next: 2}] },
-                { t: "O VISITANTE", b: "Pelo visor, você vê uma criança. Ela parece assustada, mas seus olhos... brilham com um tom azul elétrico de vez em quando. Ela segura um urso de pelúcia.\n\n'Por favor', ela sussurra. 'Eles estão vindo.'", c: [{t:"Deixar entrar.", eff:{humanity:20, hive:5}, notif:"A criança lembrará disso.", next: 3}, {t:"Deixar fora.", eff:{logic:20}, notif:"Sua consciência pesa.", next: 3}] },
-                { t: "O RÁDIO", b: "Dias depois, uma transmissão quebra o silêncio do rádio. Uma voz distorcida fala coordenadas. Parece humano, mas o padrão de fala é muito... rítmico.\n\n'Setor 7. Seguro. Comida.'", c: [{t:"Responder ao chamado.", eff:{humanity:10}, next: 4}, {t:"Desligar o rádio. É armadilha.", eff:{logic:10}, next: 4}] },
-                { t: "CRISE", b: "A comida acabou. Seus estoques estão vazios. A criança (se você a salvou) te olha com olhos fundos. Você tem uma última lata de pêssegos.", c: [{t:"Dar sua comida para ela.", eff:{humanity:20}, next: 5}, {t:"Comer escondido.", eff:{logic:20}, next: 5}] },
-                { t: "O ATAQUE", b: "Eles encontraram o bunker. Batidas violentas na porta. Não são batidas de mão, são corpos se jogando contra o metal. A estrutura range.", c: [{t:"Preparar a escopeta e lutar.", eff:{rebellion:20}, next: 6}, {t:"Fugir pelos túneis de ventilação.", eff:{logic:10}, next: 6}] },
-                { t: "A CIDADE", b: "Você emerge nas ruínas da cidade. O céu é cinza. Drones silenciosos patrulham as ruas como abutres de metal. Você precisa atravessar a avenida principal.", c: [{t:"Esgueirar pelas sombras.", eff:{logic:10}, next: 7}, {t:"Correr entre os carros destruídos.", eff:{rebellion:10}, next: 7}] },
-                { t: "O LABORATÓRIO", b: "No caminho, você encontra um laboratório da Corp. Pluribus. Lá dentro, a fonte do sinal. Um servidor central pulsando com luz azul.", c: [{t:"Tentar hackear para achar a cura.", eff:{logic:20}, next: 8}, {t:"Plantar explosivos. Destruir tudo.", eff:{rebellion:20}, next: 8}] },
-                { t: "A VERDADE", b: "Você acessa os logs. A Junção não foi uma invasão alienígena. Foi uma evolução forçada criada por nós mesmos para acabar com as guerras. Paz através da assimilação total.", c: [{t:"Entender a lógica deles.", eff:{hive:20}, next: 9}, {t:"Rejeitar essa paz falsa.", eff:{rebellion:20}, next: 9}] },
-                { t: "O ULTIMATO", b: "Você chega ao terraço. O helicóptero de resgate está lá, mas o piloto tem olhos azuis brilhantes. O 'Arquiteto' fala através dele:\n\n'A dor acaba aqui. Junte-se a nós e viva para sempre na nuvem. Ou morra sozinho na carne.'", c: [{t:"ACEITAR A JUNÇÃO", eff:{hive:100}, next: 'end_hive'}, {t:"RECUSAR E LUTAR", eff:{rebellion:100}, next: 'end_rebel'}] }
+                { t: "CAPÍTULO 1: O SILÊNCIO", b: "Você acorda no bunker. O zumbido do gerador é o único som. Faz 84 dias desde a 'Grande Conexão'. A humanidade aceitou o chip. Você fugiu.\n\nAlguém bate na porta de aço. O som ecoa como um tiro.", c: [{t:"Olhar pela câmera (Lógica)", next: 1}, {t:"Perguntar quem é (Humanidade)", next: 1}, {t:"Ignorar (Isolamento)", next: 2}] },
+                { t: "CAPÍTULO 2: OLHOS AZUIS", b: "Pelo visor, você vê uma mulher. Ela está suja, ferida. Mas quando ela levanta o rosto, um leve brilho azul pulsa em sua íris.\n\n'Eles pararam de me perseguir', ela diz. 'Mas estou com fome.'", c: [{t:"Abrir a porta (Risco Alto)", notif:"Ela lembrará disso.", next: 3}, {t:"Dizer que não tem comida (Mentira)", notif:"Sua humanidade diminui.", next: 4}] },
+                { t: "CAPÍTULO 3: O HÓSPEDE", b: "Ela entra. O nome dela é Sarah. Ela come vorazmente. Enquanto come, ela conta sobre a superfície. 'Eles não falam mais. Eles só... transmitem. É um silêncio barulhento lá fora.'\n\nEla olha para o seu rádio.", c: [{t:"Ligar o rádio", next: 5}, {t:"Manter silêncio", next: 6}] },
+                { t: "CAPÍTULO 3: SOLIDÃO", b: "Você a ouve chorar e depois ir embora. O silêncio retorna, mais pesado. À noite, você sonha com uma colmeia de abelhas feitas de vidro e luz.", c: [{t:"Acordar", next: 6}] },
+                { t: "CAPÍTULO 4: A MENSAGEM", b: "O rádio estala. Uma voz sintética recita números. Sarah fica pálida. 'Essas são as coordenadas dos não-convertidos. Eles estão caçando.'\n\nO sinal fica mais forte.", c: [{t:"Destruir o rádio", next: 7}, {t:"Anotar coordenadas", next: 8}] },
+                { t: "CAPÍTULO 5: INVASÃO", b: "Dias se passam. De repente, o teto do bunker treme. Poeira cai. Eles não bateram dessa vez. Estão cavando. O som de metal rasgando metal preenche o ar.", c: [{t:"Pegar a Escopeta", next: 9}, {t:"Fugir pelos túneis", next: 10}] },
+                { t: "CAPÍTULO 6: O CERCO", b: "A porta explode. Silhuetas com olhos azuis entram em sincronia perfeita. Eles não correm, eles fluem. Você dispara. Um cai, dois tomam o lugar. Sarah (se estiver lá) luta com uma faca.", c: [{t:"Lutar até o fim", next: 'end_fight'}, {t:"Detonar o bunker", next: 'end_boom'}] },
+                { t: "CAPÍTULO 7: OS TÚNEIS", b: "Você rasteja pela ventilação. O ar é viciado. Você sai no esgoto antigo. O cheiro é horrível, mas é o cheiro da liberdade. Você vê luz no fim do túnel.", c: [{t:"Seguir para a luz", next: 11}] },
+                { t: "CAPÍTULO 8: SUPERFÍCIE", b: "A cidade está... limpa. Sem lixo, sem carros, sem barulho. Pessoas andam em linhas perfeitas, construindo torres de cristal. É lindo e aterrorizante.", c: [{t:"Observar", next: 12}] },
+                { t: "CAPÍTULO 9: A OFERTA", b: "Um drone pousa suavemente na sua frente. Ele projeta um holograma. É você mesmo, mas feliz, limpo, sem dor. 'Por que resistir?', sua cópia pergunta. 'A dor é opcional.'", c: [{t:"Aceitar a Junção", next: 'end_hive'}, {t:"Recusar a Perfeição", next: 'end_rebel'}] }
             ],
             start: function() { document.getElementById('start-menu').style.display='none'; document.getElementById('narrative-ui').style.display='flex'; this.scene = 0; this.render(); },
             render: function() {
                 if(typeof this.scene === 'string') { this.end(this.scene); return; }
                 const s = this.scenes[this.scene]; if(!s) return;
+                document.getElementById('narrative-chapter').innerText = s.t;
                 document.getElementById('narrative-text').innerText = s.b;
                 const box = document.getElementById('narrative-choices'); box.innerHTML = "";
                 s.c.forEach(opt => {
-                    const d = document.createElement('div'); d.className='narrative-choice'; d.innerText = opt.t;
+                    const d = document.createElement('div'); d.className='narrative-choice'; d.innerHTML = `<span>${opt.t}</span>`;
                     d.onclick = () => { if(opt.notif) { const n = document.createElement('div'); n.className='narrative-notification'; n.innerText = opt.notif; document.getElementById('narrative-text').appendChild(n); } setTimeout(() => { this.scene = opt.next; this.render(); }, 1000); };
                     box.appendChild(d);
                 });
             },
             end: function(type) {
-                let txt = "";
-                if(type === 'end_hive') { txt = "Você largou a arma. O piloto sorriu. Você sentiu a agulha entrar no seu pescoço e, de repente, não estava mais sozinho. Você era todos. A dor acabou. A individualidade acabou. FINAL: HARMONIA."; achievementSys.unlock('story_bad'); }
-                else { txt = "Você puxou o gatilho. O piloto caiu. Mas eram muitos drones. Você morreu lutando, gritando sua própria voz até o fim. Você morreu livre. FINAL: RESISTÊNCIA."; achievementSys.unlock('story_good'); }
+                let txt = ""; let title = "";
+                if(type === 'end_hive') { title="FINAL: HARMONIA"; txt = "Você aceitou. A agulha foi indolor. De repente, você não estava mais sozinho. Você era todos. A fome sumiu. O medo sumiu. Você é Pluribus."; achievementSys.unlock('story_bad'); }
+                else if(type === 'end_rebel') { title="FINAL: RESISTÊNCIA"; txt = "Você quebrou o drone. Correu para as ruínas antigas. Você vive na lama, com frio e medo. Mas seus pensamentos são apenas seus. Você é livre."; achievementSys.unlock('story_good'); }
+                else if(type === 'end_fight') { title="FINAL: MÁRTIR"; txt = "Eles eram muitos. Mas você levou muitos com você. Sua última visão foi o teto do bunker desabando sobre todos."; achievementSys.unlock('die1'); }
+                else if(type === 'end_boom') { title="FINAL: TERRA ARRASADA"; txt = "Você acionou os explosivos. O bunker virou uma cratera. Ninguém venceu hoje."; }
+                document.getElementById('narrative-chapter').innerText = title;
                 document.getElementById('narrative-text').innerText = txt; document.getElementById('narrative-choices').innerHTML = "";
             },
             exit: function() { document.getElementById('narrative-ui').style.display='none'; document.getElementById('start-menu').style.display='flex'; }
