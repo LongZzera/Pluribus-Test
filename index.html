@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLURIBUS: A JUNÇÃO - Edição Mestre dos Segredos</title>
+    <title>PLURIBUS: A JUNÇÃO - Final Cut</title>
     <style>
         :root {
             --bg-color: #050505;
@@ -13,7 +13,7 @@
             --text-danger: #ff3333;
             --text-safe: #33ff33;
             --text-lore: #00ccff;
-            --text-insight: #ff00ff; /* Magenta para Insight */
+            --text-rare: #bd00ff;
             --border-style: 1px solid var(--text-dim);
             --scan-color: rgba(255, 204, 0, 0.03);
             --cam-bg: #001100;
@@ -49,24 +49,46 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg-color); z-index: 2000; display: flex; flex-direction: column;
             align-items: center; justify-content: center; text-align: center; border: 2px solid var(--text-dim);
+            overflow-y: auto;
         }
         
         .menu-btn {
-            margin-top: 10px; font-size: 1.1em; padding: 10px 30px; width: 350px;
+            margin-top: 12px; font-size: 1.1em; padding: 12px 30px; width: 450px;
             border: 2px solid var(--text-alert); color: var(--bg-color);
             background: var(--text-alert); font-weight: bold; cursor: pointer;
-            transition: transform 0.2s; position: relative;
+            transition: transform 0.2s; text-transform: uppercase; position: relative;
         }
-        .menu-btn:hover:not(:disabled) { transform: scale(1.05); }
+        .menu-btn:hover:not(:disabled) { transform: scale(1.02); }
         .menu-btn.secondary { background: transparent; color: var(--text-alert); border: 1px solid var(--text-alert); }
+        .menu-btn.narrative { border-color: var(--text-lore); color: var(--text-lore); background: transparent; }
+        .menu-btn.narrative:hover { background: rgba(0, 204, 255, 0.1); }
         .menu-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: #444; color: #444; background: #111; }
-        .lock-icon { position: absolute; right: 15px; }
 
-        #arcade-menu, #trophy-menu { display: none; }
-        #arcade-stats { border: 1px solid var(--text-lore); padding: 15px; margin-bottom: 15px; width: 400px; background: #080808; }
-        .rank-title { font-size: 1.5em; color: var(--text-lore); font-weight: bold; margin-bottom: 5px; }
-        .xp-bar-container { width: 100%; height: 10px; background: #222; border: 1px solid #555; margin-top: 5px; }
+        /* --- ARCADE & RANKS --- */
+        #arcade-menu { display: none; }
+        #arcade-stats { border: 1px solid var(--text-lore); padding: 20px; margin-bottom: 20px; width: 500px; background: #080808; }
+        .rank-title { font-size: 1.8em; color: var(--text-lore); font-weight: bold; margin-bottom: 5px; text-shadow: 0 0 10px var(--text-lore); }
+        .xp-bar-container { width: 100%; height: 12px; background: #222; border: 1px solid #555; margin-top: 5px; position: relative; }
         .xp-bar-fill { height: 100%; background: var(--text-lore); width: 0%; transition: width 0.5s; }
+        .xp-text { font-size: 0.8em; color: #fff; position: absolute; width: 100%; text-align: center; top: -2px; text-shadow: 1px 1px #000; }
+
+        /* --- TROPHIES --- */
+        #trophy-menu { display: none; }
+        #trophy-list { 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; 
+            max-height: 60vh; overflow-y: auto; width: 80%; max-width: 900px;
+            padding: 10px; background: #111; border: 1px solid #333;
+        }
+        .trophy-item { 
+            background: #0a0a0a; border: 1px solid #333; padding: 10px; 
+            display: flex; align-items: center; gap: 15px; opacity: 0.4; transition: 0.3s; 
+        }
+        .trophy-item.unlocked { opacity: 1; border-color: var(--text-safe); background: #1a2a1a; }
+        .trophy-item.gold { border-color: var(--text-alert); }
+        .trophy-item.plat { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        .t-icon { font-size: 2em; width: 50px; text-align: center; }
+        .t-info h4 { margin: 0; color: #fff; font-size: 0.9em; }
+        .t-info p { margin: 3px 0 0 0; font-size: 0.75em; color: #888; }
 
         /* --- HUD --- */
         #hud {
@@ -105,25 +127,7 @@
         button.danger-action:hover { background: #300; }
         button.decrypt-btn { border-color: var(--text-lore); color: var(--text-lore); }
 
-        /* --- CCTV STYLES --- */
-        #cctv-screen {
-            width: 100%; height: 180px; background: var(--cam-bg); border: 2px solid #334433;
-            margin-bottom: 10px; position: relative; overflow: hidden;
-            display: flex; align-items: center; justify-content: center;
-            font-family: monospace; color: #558855; white-space: pre;
-        }
-        #cctv-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px);
-            pointer-events: none; animation: scrollScan 10s linear infinite;
-        }
-        #cctv-label { position: absolute; top: 5px; left: 5px; color: #33ff33; background: rgba(0,0,0,0.7); padding: 2px 5px; font-size: 0.8em; }
-        #cctv-rec { position: absolute; top: 5px; right: 5px; color: red; animation: blink 1s infinite; font-weight: bold; }
-        .cam-btn-group { display: flex; gap: 5px; }
-        .cam-btn-group button { flex: 1; justify-content: center; font-size: 0.8em; }
-        @keyframes scrollScan { from { background-position: 0 0; } to { background-position: 0 100%; } }
-
-        /* --- TROPHY & LORE UI --- */
+        /* --- TROPHY NOTIFICATION --- */
         #trophy-notification {
             position: fixed; top: 20px; right: 20px;
             background: rgba(20, 20, 20, 0.95); border: 1px solid #333; border-radius: 50px;
@@ -137,77 +141,45 @@
         #trophy-details { display: flex; flex-direction: column; }
         #trophy-label { font-size: 0.7em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
         #trophy-name { font-size: 1em; font-weight: bold; }
-        
-        #trophy-list { display: grid; grid-template-columns: 1fr; gap: 10px; max-height: 400px; overflow-y: auto; width: 500px; text-align: left; }
-        .trophy-item { background: #0f0f0f; border: 1px solid #333; padding: 15px; display: flex; align-items: center; gap: 15px; opacity: 0.5; transition: 0.3s; }
-        .trophy-item.unlocked { opacity: 1; border-color: var(--text-primary); background: #1a1a1a; }
-        
-        .lore-file { border: 1px solid #333; padding: 8px; margin-bottom: 5px; cursor: pointer; background: #080808; display: flex; justify-content: space-between; align-items: center; }
-        .lore-file:hover { border-color: var(--text-lore); }
-        .lore-file.encrypted { border-style: dashed; border-color: var(--text-dim); color: var(--text-dim); }
-        .lore-file.decrypted { border-color: var(--text-lore); color: #fff; }
 
-        /* --- MODALS & GAMEPLAY --- */
+        /* --- NARRATIVE MODE UI --- */
+        #narrative-ui {
+            display: none; flex-direction: column; height: 100%; 
+            max-width: 800px; margin: 0 auto; padding: 40px;
+            background: #080808; border-left: 1px solid #333; border-right: 1px solid #333;
+        }
+        .narrative-text { font-size: 1.2em; line-height: 1.6; color: #ddd; flex: 1; overflow-y: auto; margin-bottom: 20px; white-space: pre-wrap; border-bottom: 1px dashed #333; padding-bottom: 20px; }
+        .narrative-choice { 
+            background: #111; border: 1px solid var(--text-lore); padding: 15px; margin-bottom: 10px; 
+            cursor: pointer; transition: 0.2s; color: var(--text-lore); font-weight: bold;
+        }
+        .narrative-choice:hover { background: rgba(0, 204, 255, 0.1); padding-left: 25px; color: #fff; }
+        .narrative-notification { color: #888; font-style: italic; font-size: 0.9em; margin-bottom: 5px; animation: fadeIn 1s; }
+
+        /* --- GAMEPLAY MODALS --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 100; display: flex; align-items: center; justify-content: center; visibility: hidden; opacity: 0; transition: opacity 0.2s; }
         .modal-overlay.active { visibility: visible; opacity: 1; }
 
         #map-modal-content { background: #0a0a0a; border: 2px solid var(--text-alert); padding: 20px; width: 80%; max-width: 600px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
-        .map-btn { padding: 15px; font-size: 1.1em; text-align: left; border: 1px solid #444; transition: 0.2s; cursor: pointer; color: #fff; background: #000; }
-        .map-btn:hover { border-color: var(--text-safe); background: #111; color: var(--text-safe); }
-        .map-btn small { display: block; font-size: 0.7em; color: #888; margin-top: 3px; }
-
         #peephole-layout { display: flex; gap: 20px; width: 95%; max-width: 1100px; height: 700px; }
         #visor-section { flex: 1; display: flex; flex-direction: column; align-items: center; border: 1px solid var(--text-dim); padding: 20px; background: #080808; position: relative; }
         #visor-circle { width: 280px; height: 280px; border-radius: 50%; border: 4px solid #333; background: #000; overflow: hidden; position: relative; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
         #visor-circle.stress-high { border-color: var(--text-danger); box-shadow: 0 0 15px var(--text-danger); animation: shake 0.5s infinite; }
         #visitor-face { white-space: pre; font-size: 14px; text-align: center; z-index: 2; color: var(--text-primary); transition: opacity 0.1s; }
-        #visor-circle.uv-active #visitor-face { opacity: 0.3; }
-        .uv-hidden-text { position: absolute; color: transparent; font-weight: bold; z-index: 3; font-size: 1.2em; pointer-events: none;}
-        #visor-circle.uv-active .uv-hidden-text { color: var(--text-safe); text-shadow: 0 0 8px var(--text-safe); }
-        
         #data-section { flex: 1.4; display: flex; flex-direction: column; gap: 8px; }
+        
         .investigation-card { background: #111; border: 1px solid var(--text-dim); padding: 12px; display: flex; flex-direction: column; gap: 5px; }
         .inv-header { color: var(--text-dim); font-size: 0.75em; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 3px; display: flex; justify-content: space-between; }
         #id-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9em; font-family: monospace; color: #aaa; }
-        .id-field strong { color: #fff; }
-        .highlight-diff { color: var(--text-danger); animation: blink 1s infinite; }
-        #stress-meter-container { width: 100%; height: 6px; background: #222; margin-top: 5px; }
-        #stress-meter-fill { height: 100%; width: 0%; background: var(--text-safe); transition: width 0.3s, background 0.3s; }
         #dialogue-box { font-style: italic; color: #fff; height: 70px; overflow-y: auto; border-left: 2px solid var(--text-primary); padding-left: 10px; font-size: 0.95em; }
         .dialogue-options { display: flex; gap: 5px; }
         .dialogue-btn { flex: 1; font-size: 0.8em; padding: 8px; text-align: center; justify-content: center; background: #1a1a1a; border-color: #444; }
         .dialogue-btn:hover { background: #333; border-color: #888; }
-        .scan-result-box { min-height: 25px; font-weight: bold; text-align: center; font-size: 1.1em; }
-        .decision-area { margin-top: auto; border-top: 1px solid #333; padding-top: 10px; }
-        .timer-bar-container { width: 100%; height: 15px; background: #000; border: 1px solid var(--text-danger); margin: 5px 0; }
-        #timer-bar { width: 100%; height: 100%; background: var(--text-danger); }
-        
-        .crew-card { border: 1px solid #333; background: #080808; margin-bottom: 10px; padding: 10px; }
-        .crew-header { display: flex; justify-content: space-between; border-bottom: 1px dashed #444; padding-bottom: 5px; margin-bottom: 5px; }
-        .crew-role { color: var(--text-alert); font-size: 0.8em; }
-        .crew-hp-bar { width: 100%; height: 6px; background: #222; margin-bottom: 8px; }
-        .crew-hp-fill { height: 100%; background: var(--text-safe); }
-        .crew-actions { display: flex; gap: 5px; }
-        .crew-actions button { font-size: 0.7em; padding: 5px; margin: 0; justify-content: center; text-align: center; }
-        
-        #log-container { height: 150px; overflow-y: auto; font-size: 12px; background: #000; border: 1px solid #333; padding: 8px; }
-        .log-entry { margin-bottom: 4px; padding-left: 5px; border-left: 2px solid transparent; }
-        .log-entry.alert { color: var(--text-danger); border-left-color: var(--text-danger); }
-        .log-entry.safe { color: var(--text-safe); border-left-color: var(--text-safe); }
-        .log-entry.lore { color: var(--text-lore); border-left-color: var(--text-lore); font-style: italic; }
 
-        #radio-minigame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; height: 200px; background: #000; border: 2px solid var(--text-alert); z-index: 300; display: none; flex-direction: column; padding: 20px; box-shadow: 0 0 30px #000; }
-        #radio-minigame.active { display: flex; }
-        #tuner-bar-bg { width: 100%; height: 30px; background: #222; position: relative; margin: 20px 0; border: 1px solid #555; }
-        #tuner-target { position: absolute; top: 0; height: 100%; width: 60px; background: rgba(0, 255, 0, 0.3); border-left: 1px solid #0f0; border-right: 1px solid #0f0; }
-        #tuner-cursor { position: absolute; top: -5px; bottom: -5px; width: 4px; background: #fff; box-shadow: 0 0 5px #fff; left: 0; }
-        #dream-modal { z-index: 3001; }
-        .dream-content { width: 600px; background: #0a0a0a; border: 1px solid var(--text-primary); padding: 30px; text-align: center; }
-        .dream-text { font-size: 1.1em; color: #bbb; margin-bottom: 30px; font-style: italic; line-height: 1.6; }
-        .dream-choices { display: flex; gap: 20px; }
-        .dream-choices button { text-align: center; justify-content: center; border-color: var(--text-dim); color: var(--text-dim); }
-        .dream-choices button:hover { border-color: var(--text-primary); color: var(--text-primary); }
-
+        /* --- MINIGAMES --- */
+        #minigame-container { text-align: center; }
+        #minigame-title { color: var(--text-alert); }
+        #minigame-canvas { border: 2px solid var(--text-alert); background: #000; }
         .d-pad { display: grid; grid-template-columns: 60px 60px 60px; grid-template-rows: 60px 60px; gap: 5px; margin-top: 20px; justify-content: center; }
         .d-pad-btn { width: 60px; height: 60px; background: #111; border: 2px solid var(--text-alert); color: var(--text-alert); font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: all 0.1s; }
         .d-pad-btn:active { background: var(--text-alert); color: #000; transform: scale(0.95); }
@@ -216,8 +188,36 @@
         .d-pad-down { grid-column: 2; grid-row: 2; }
         .d-pad-right { grid-column: 3; grid-row: 2; }
 
-        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
-        @keyframes blink { 50% { opacity: 0.5; } }
+        /* --- CAMERA & OTHERS --- */
+        #cctv-screen { width: 100%; height: 180px; background: var(--cam-bg); border: 2px solid #334433; margin-bottom: 10px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; font-family: monospace; color: #558855; white-space: pre; }
+        #cctv-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px); pointer-events: none; animation: scrollScan 10s linear infinite; }
+        
+        .crew-card { border: 1px solid #333; background: #080808; margin-bottom: 10px; padding: 10px; }
+        .crew-header { display: flex; justify-content: space-between; border-bottom: 1px dashed #444; padding-bottom: 5px; margin-bottom: 5px; }
+        .crew-role { color: var(--text-alert); font-size: 0.8em; }
+        .crew-hp-bar { width: 100%; height: 6px; background: #222; margin-bottom: 8px; }
+        .crew-hp-fill { height: 100%; background: var(--text-safe); }
+        .crew-actions { display: flex; gap: 5px; }
+        
+        .lore-file { border: 1px solid #333; padding: 8px; margin-bottom: 5px; cursor: pointer; background: #080808; display: flex; justify-content: space-between; align-items: center; }
+        .lore-file:hover { border-color: var(--text-lore); }
+        .lore-file.encrypted { border-style: dashed; border-color: var(--text-dim); color: var(--text-dim); }
+        .lore-file.decrypted { border-color: var(--text-lore); color: #fff; }
+        
+        #log-container { height: 150px; overflow-y: auto; font-size: 12px; background: #000; border: 1px solid #333; padding: 8px; }
+        .log-entry { margin-bottom: 4px; padding-left: 5px; border-left: 2px solid transparent; }
+        .log-entry.alert { color: var(--text-danger); border-left-color: var(--text-danger); }
+        .log-entry.safe { color: var(--text-safe); border-left-color: var(--text-safe); }
+        .log-entry.lore { color: var(--text-lore); border-left-color: var(--text-lore); font-style: italic; }
+
+        #radio-minigame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; height: 200px; background: #000; border: 2px solid var(--text-alert); z-index: 300; display: none; flex-direction: column; padding: 20px; box-shadow: 0 0 30px #000; }
+        #tuner-bar-bg { width: 100%; height: 30px; background: #222; position: relative; margin: 20px 0; border: 1px solid #555; }
+        #tuner-target { position: absolute; top: 0; height: 100%; width: 60px; background: rgba(0, 255, 0, 0.3); border-left: 1px solid #0f0; border-right: 1px solid #0f0; }
+        #tuner-cursor { position: absolute; top: -5px; bottom: -5px; width: 4px; background: #fff; box-shadow: 0 0 5px #fff; left: 0; }
+
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 100% { transform: translate(-1px, -2px) rotate(-1deg); } }
+        @keyframes scrollScan { from { background-position: 0 0; } to { background-position: 0 100%; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -225,55 +225,45 @@
     <div class="scanlines"></div>
     <div class="vignette"></div>
 
-    <!-- TROPHY NOTIFICATION -->
     <div id="trophy-notification">
         <div id="trophy-icon">🏆</div>
         <div id="trophy-details">
-            <span id="trophy-label">Troféu Conquistado</span>
-            <span id="trophy-name">First Blood</span>
+            <span id="trophy-label">CONQUISTA</span>
+            <span id="trophy-name">Nome</span>
         </div>
     </div>
 
-    <!-- MAIN START MENU -->
     <div id="start-menu" class="full-screen-menu">
         <h1>PLURIBUS</h1>
-        <h2 style="color: #888; letter-spacing: 3px;">MESTRE DOS SEGREDOS</h2>
-        
-        <button class="menu-btn" onclick="game.startStory()">MODO HISTÓRIA (CAMPANHA)</button>
-        <button class="menu-btn secondary" onclick="arcadeMode.openMenu()">MODO ARCADE (MINIGAMES)</button>
-        <button class="menu-btn secondary" style="border-color: var(--trophy-gold); color: var(--trophy-gold);" onclick="achievementSys.openMenu()">COLEÇÃO DE TROFÉUS</button>
-        
-        <div style="margin-top: 20px; font-size: 0.8em; color: #666;">V2.5.0 - LORE DECRYPTION</div>
+        <h2 style="color: #888; letter-spacing: 3px;">FINAL CUT</h2>
+        <button class="menu-btn" onclick="game.startSurvival()">MODO SOBREVIVÊNCIA</button>
+        <button class="menu-btn narrative" onclick="narrativeSys.start()">MODO NARRATIVO (ORIGENS)</button>
+        <button class="menu-btn secondary" onclick="arcadeMode.openMenu()">MODO ARCADE</button>
+        <button class="menu-btn secondary" style="border-color: var(--trophy-gold); color: var(--trophy-gold);" onclick="achievementSys.openMenu()">COLEÇÃO DE TROFÉUS [50]</button>
+        <div style="margin-top: 20px; font-size: 0.8em; color: #666;">V3.1.1</div>
     </div>
 
-    <!-- ARCADE MENU -->
     <div id="arcade-menu" class="full-screen-menu">
         <h1>SALA ARCADE</h1>
         <div id="arcade-stats">
             <div class="rank-title" id="rank-display">RANK: CIVIL</div>
-            <div style="display:flex; justify-content:space-between;">
-                <span>PONTUAÇÃO TOTAL:</span>
-                <span id="total-score-display" style="color:white; font-weight:bold;">0</span>
-            </div>
-            <div class="xp-bar-container"><div id="xp-bar" class="xp-bar-fill"></div></div>
-            <small id="next-rank-msg" style="color:#666;">PRÓXIMO NÍVEL: 100 PTS</small>
+            <div style="display:flex; justify-content:space-between;"><span>TOTAL XP:</span><span id="total-score-display" style="color:white;">0</span></div>
+            <div class="xp-bar-container"><div id="xp-bar" class="xp-bar-fill"></div><span class="xp-text" id="next-rank-msg"></span></div>
         </div>
-        
-        <h3 style="color:var(--text-dim); border-bottom:1px solid #333; width:300px; margin-bottom:15px;">PROTOCOLO DE TREINO</h3>
-        <!-- Buttons will be rendered by JS to handle locking -->
+        <h3 style="color:var(--text-dim);">JOGOS</h3>
         <div id="arcade-buttons" style="display:flex; flex-direction:column; gap:5px;"></div>
-        
-        <button class="menu-btn secondary" onclick="arcadeMode.closeMenu()" style="margin-top: 30px;">VOLTAR AO MENU</button>
+        <button class="menu-btn secondary" onclick="arcadeMode.closeMenu()" style="margin-top: 30px;">VOLTAR</button>
     </div>
 
-    <!-- TROPHY MENU -->
     <div id="trophy-menu" class="full-screen-menu">
-        <h1 style="color: var(--trophy-plat)">SALA DE TROFÉUS</h1>
+        <h1 style="color: var(--text-lore)">SALA DE TROFÉUS</h1>
+        <div style="display:flex; justify-content:space-between; width:80%; max-width:900px; color:#888; margin-bottom:10px;">
+            <span>TOTAL: <span id="trophy-count">0</span>/50</span><span>PLATINA: <span id="plat-status">BLOQUEADA</span></span>
+        </div>
         <div id="trophy-list"></div>
-        <button class="menu-btn secondary" onclick="achievementSys.closeMenu()" style="margin-top: 30px;">VOLTAR</button>
+        <button class="menu-btn secondary" onclick="achievementSys.closeMenu()" style="margin-top: 20px;">VOLTAR</button>
     </div>
 
-    <!-- GAME CONTAINER -->
     <div id="game-container" style="display:none;">
         <div id="hud">
             <div class="stat-box"><div class="stat-header"><span>SANIDADE</span><span id="val-san">100%</span></div><div class="bar-container"><div id="bar-san" class="bar-fill"></div></div></div>
@@ -282,14 +272,12 @@
             <div class="stat-box"><div class="stat-header"><span>INTIMIDADE</span><span id="val-int">100%</span></div><div class="bar-container"><div id="bar-int" class="bar-fill"></div></div></div>
             <div class="stat-box"><div class="stat-header"><span>PORTA</span><span id="val-door">100%</span></div><div class="bar-container"><div id="bar-door" class="bar-fill safe"></div></div></div>
         </div>
-
         <div id="main-hub">
             <div id="room-view">
-                <div id="location-name">BUNKER // ZONA SEGURA</div>
+                <div id="location-name">BUNKER</div>
                 <div id="ascii-art"></div>
                 <div id="crew-display" style="margin-top:20px; font-size:0.8em; color:#444;"></div>
             </div>
-
             <div id="controls-panel">
                 <div class="tabs">
                     <button class="tab-btn active" onclick="game.ui.switchTab('maint')">AÇÕES</button>
@@ -298,106 +286,83 @@
                     <button class="tab-btn" onclick="game.ui.switchTab('archive')">ARQUIVO</button>
                     <button class="tab-btn" onclick="game.ui.switchTab('inventory')">ITENS</button>
                 </div>
-                
                 <div id="tab-maint" class="tab-content active">
                     <div class="panel-section"><div class="panel-title" id="actions-title">COMANDOS</div><div id="dynamic-actions"></div></div>
                     <div class="panel-section" style="flex:1;"><div class="panel-title">REGISTRO</div><div id="log-container"></div></div>
                 </div>
-
-                <!-- CCTV TAB -->
                 <div id="tab-cams" class="tab-content">
                     <div class="panel-section" style="flex:1;">
-                        <div class="panel-title">MONITORAMENTO <span style="float:right; color:red;">REC ●</span></div>
-                        <div id="cctv-screen">
-                            <div id="cctv-overlay"></div>
-                            <div id="cctv-label">CAM 01 - CORREDOR</div>
-                            <div id="cctv-feed">SINAL PERDIDO</div>
-                        </div>
-                        <div class="cam-btn-group">
-                            <button onclick="cameraSys.switch(1)">CAM 01</button>
-                            <button onclick="cameraSys.switch(2)">CAM 02</button>
-                            <button onclick="cameraSys.switch(3)">CAM 03</button>
-                        </div>
-                        <p style="font-size:0.8em; color:#666; margin-top:10px;">STATUS: <span id="cam-status" style="color:lime">ONLINE</span><br>DRENO: -1 NRG/s</p>
+                        <div class="panel-title">CCTV <span style="float:right; color:red;">REC ●</span></div>
+                        <div id="cctv-screen"><div id="cctv-overlay"></div><div id="cctv-label">CAM 01</div><div id="cctv-feed">OFFLINE</div></div>
+                        <div class="cam-btn-group"><button onclick="cameraSys.switch(1)">CAM 1</button><button onclick="cameraSys.switch(2)">CAM 2</button><button onclick="cameraSys.switch(3)">CAM 3</button></div>
                     </div>
                 </div>
-
-                <div id="tab-crew" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">GESTÃO DE PESSOAL</div><div id="crew-container"></div></div></div>
-                
-                <!-- ARCHIVE TAB (UPDATED) -->
-                <div id="tab-archive" class="tab-content">
-                    <div class="panel-section" style="flex:1; overflow-y:auto;">
-                        <div class="panel-title">BANCO DE DADOS</div>
-                        <div style="margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color:var(--text-insight);">INSIGHT: <span id="insight-val">0</span>%</span>
-                            <button onclick="game.actions.deepScan()" style="width:auto; font-size:0.8em; border-color:var(--text-lore); color:var(--text-lore);">BUSCAR (-40E)</button>
-                        </div>
-                        <div id="lore-list"></div>
-                        <div id="lore-display" style="margin-top:10px; padding:10px; border:1px dashed var(--text-lore); color: var(--text-lore); font-size:0.9em; min-height:100px; display:none;"></div>
-                    </div>
-                </div>
-                
-                <div id="tab-inventory" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">ITENS CHAVE</div><div id="inventory-list" style="color: #888;">Vazio.</div></div></div>
+                <div id="tab-crew" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">EQUIPE</div><div id="crew-container"></div></div></div>
+                <div id="tab-archive" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">LORE</div><div style="margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:10px;"><button onclick="game.actions.deepScan()" style="border-color:var(--text-lore); color:var(--text-lore);">BUSCAR (-40E)</button><span style="color:var(--text-insight);">INSIGHT: <span id="insight-val">0</span></span></div><div id="lore-list"></div><div id="lore-display" style="margin-top:10px; padding:10px; border:1px dashed var(--text-lore); color: var(--text-lore); font-size:0.9em; display:none;"></div></div></div>
+                <div id="tab-inventory" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">ITENS</div><div id="inventory-list"></div></div></div>
             </div>
         </div>
     </div>
 
-    <!-- MODALS -->
-    <div id="radio-minigame">
-        <div class="panel-title">SINTONIA DE FREQUÊNCIA</div>
-        <div id="tuner-bar-bg"><div id="tuner-target"></div><div id="tuner-cursor"></div></div>
-        <p style="color: #888; font-size: 0.8em; text-align: center;">Clique para travar o sinal na área verde.</p>
-        <button onclick="radioGame.stop()" style="text-align: center; justify-content: center; margin-top: auto;">TRAVAR SINAL</button>
+    <div id="narrative-ui" class="full-screen-menu" style="display:none; justify-content: flex-start; text-align: left;">
+        <h1 style="border-bottom: 1px solid #333; padding-bottom: 10px; width: 100%; text-align: center; color: var(--text-lore);">MODO NARRATIVO</h1>
+        <div id="narrative-text" class="narrative-text"></div>
+        <div id="narrative-choices" style="width: 100%;"></div>
+        <button class="menu-btn secondary" onclick="narrativeSys.exit()" style="margin-top: 20px; align-self: center;">SAIR PARA O MENU</button>
     </div>
 
     <div id="peephole-modal" class="modal-overlay">
         <div id="peephole-layout">
             <div id="visor-section">
-                <div class="panel-title" style="width:100%; text-align:center;">CÂMERA DA PORTA</div>
+                <div class="panel-title" style="text-align:center;">VISOR</div>
                 <div id="visor-circle"><div id="visitor-face"></div></div>
-                <div style="width:100%; display:flex; flex-direction:column; gap:5px;">
-                    <button id="btn-uv" onclick="game.encounter.toggleUV()">LUZ UV [OFF]</button>
-                    <button id="btn-shotgun" onclick="game.encounter.shotgun()" class="danger-action">ESCOPETA (ELIMINAR)</button>
+                <div style="display:flex; flex-direction:column; gap:5px; width:100%;">
+                    <button onclick="game.encounter.toggleUV()">LUZ UV</button>
+                    <button class="danger-action" onclick="game.encounter.shotgun()">ESCOPETA</button>
                 </div>
             </div>
             <div id="data-section">
-                <div class="investigation-card">
-                    <div class="inv-header">CARTÃO DE ACESSO <span id="doc-status" style="float:right">VÁLIDO</span></div>
-                    <div id="id-card-grid">
-                        <div class="id-field">NOME: <strong id="id-name">---</strong></div>
-                        <div class="id-field">ID: <strong id="id-code">---</strong></div>
-                        <div class="id-field">ORIGEM: <strong id="id-origin">---</strong></div>
-                        <div class="id-field">TIPO SANG.: <strong id="id-blood">---</strong></div>
-                        <div class="id-field">VALIDADE: <strong id="id-date">---</strong></div>
-                    </div>
-                </div>
-                <div class="investigation-card">
-                    <div class="inv-header">INTERROGATÓRIO <span style="float:right">ESTRESSE</span></div>
-                    <div id="stress-meter-container"><div id="stress-meter-fill"></div></div>
-                    <div id="dialogue-box">"..."</div>
-                    <div class="dialogue-options">
-                        <button class="dialogue-btn" onclick="game.encounter.ask('origin')">ORIGEM?</button>
-                        <button class="dialogue-btn" onclick="game.encounter.ask('symptoms')">SINTOMAS?</button>
-                        <button class="dialogue-btn" onclick="game.encounter.ask('blood')">SANGUE?</button>
-                        <button class="dialogue-btn" onclick="game.encounter.ask('calm')">ACALMAR</button>
-                    </div>
-                </div>
-                <div class="investigation-card">
-                    <div class="inv-header">SCANNER BIOLÓGICO (-5 ENERGIA)</div>
-                    <button onclick="game.encounter.scan()" style="margin-bottom:5px;">INICIAR LEITURA</button>
-                    <div id="scan-result" class="scan-result-box">DADOS OCULTOS</div>
-                </div>
+                <div class="investigation-card"><div class="inv-header">CARTÃO</div><div id="id-card-grid"></div></div>
+                <div class="investigation-card"><div class="inv-header">DIALOGO</div><div id="dialogue-box"></div><div class="dialogue-options"><button class="dialogue-btn" onclick="game.encounter.ask('origin')">ORIGEM</button><button class="dialogue-btn" onclick="game.encounter.ask('symptoms')">SINTOMAS</button><button class="dialogue-btn" onclick="game.encounter.ask('blood')">SANGUE</button><button class="dialogue-btn" onclick="game.encounter.ask('calm')">ACALMAR</button></div></div>
+                <div class="investigation-card"><button onclick="game.encounter.scan()">SCANNER (-5E)</button><div id="scan-result" class="scan-result-box">---</div></div>
                 <div class="decision-area">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <span style="color:var(--text-danger)">TEMPO RESTANTE</span><span id="tension-display">30.0s</span>
-                    </div>
                     <div class="timer-bar-container"><div id="timer-bar"></div></div>
-                    <div style="display:flex; gap:10px; margin-top:10px;">
-                        <button onclick="game.encounter.decide(true)" style="background:#003300; border-color:var(--text-safe);">ABRIR PORTA</button>
-                        <button onclick="game.encounter.decide(false)" style="background:#330000; border-color:var(--text-danger);">RECUSAR</button>
-                    </div>
+                    <div style="display:flex; gap:10px;"><button onclick="game.encounter.decide(true)" style="border-color:lime;">ABRIR</button><button onclick="game.encounter.decide(false)" style="border-color:red;">RECUSAR</button></div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="minigame-container" class="modal-overlay" style="z-index: 2999;">
+        <div style="text-align:center;">
+            <h2 id="minigame-title" style="color:var(--text-alert)">ARCADE</h2>
+            <p id="minigame-info">SCORE: <span id="pac-dots">0</span></p>
+            <canvas id="minigame-canvas" width="400" height="400" style="border:2px solid var(--text-alert); background:#000;"></canvas>
+            <div class="d-pad">
+                <div class="d-pad-btn d-pad-up" onclick="minigameManager.handleInput('ArrowUp')">▲</div>
+                <div class="d-pad-btn d-pad-left" onclick="minigameManager.handleInput('ArrowLeft')">◄</div>
+                <div class="d-pad-btn d-pad-down" onclick="minigameManager.handleInput('ArrowDown')">▼</div>
+                <div class="d-pad-btn d-pad-right" onclick="minigameManager.handleInput('ArrowRight')">►</div>
+            </div>
+            <button id="arcade-back-btn" style="margin-top:10px; display:none; border-color:red; color:red;" onclick="minigameManager.exitArcade()">SAIR</button>
+        </div>
+    </div>
+
+    <div id="map-modal" class="modal-overlay">
+        <div id="map-modal-content">
+            <div class="panel-title">MAPA TÁTICO</div>
+            <button class="map-btn" onclick="game.actions.travel('mercado')">MERCADO <small>COMIDA</small></button>
+            <button class="map-btn" onclick="game.actions.travel('farmacia')">FARMÁCIA <small>REMÉDIOS</small></button>
+            <button class="map-btn" onclick="game.actions.travel('ruas')">RUAS <small>SUCATA</small></button>
+            <button onclick="game.ui.toggleMap()" style="margin-top:10px;">CANCELAR</button>
+        </div>
+    </div>
+
+    <div id="radio-minigame" class="modal-overlay" style="background:transparent; pointer-events:none;">
+        <div style="background:#000; border:2px solid #ffcc00; padding:20px; width:400px; pointer-events:auto;">
+            <div class="panel-title">SINTONIA</div>
+            <div id="tuner-bar-bg"><div id="tuner-target"></div><div id="tuner-cursor"></div></div>
+            <button onclick="radioGame.stop()" style="margin-top:10px;">TRAVAR</button>
         </div>
     </div>
 
@@ -409,39 +374,11 @@
         </div>
     </div>
 
-    <div id="map-modal" class="modal-overlay">
-        <div id="map-modal-content">
-            <div class="panel-title" style="font-size: 1.4em; border-bottom: 1px solid #444; padding-bottom: 10px;">MAPA TÁTICO</div>
-            <p style="color:#888; font-size:0.9em;">SELECIONE UM DESTINO. O TEMPO AVANÇARÁ.</p>
-            <button class="map-btn" onclick="game.actions.travel('mercado')"><strong>MERCADO CENTRAL</strong><small>ALIMENTOS • ENERGIA • RISCO MÉDIO</small></button>
-            <button class="map-btn" onclick="game.actions.travel('farmacia')"><strong>FARMÁCIA ANTIGA</strong><small>REMÉDIOS • LORE • RISCO ALTO</small></button>
-            <button class="map-btn" onclick="game.actions.travel('ruas')"><strong>ZONA URBANA (RUAS)</strong><small>ITENS RAROS • SUCATA • RISCO EXTREMO</small></button>
-            <button onclick="game.ui.toggleMap()" style="margin-top:10px; border-color: var(--text-dim); color: var(--text-dim);">CANCELAR</button>
-        </div>
-    </div>
-
     <div id="lore-modal" class="modal-overlay" style="z-index: 3000;">
         <div style="max-width:500px; background:#111; padding:30px; border:2px solid var(--text-primary); text-align:justify;">
             <h2 id="lore-title" style="color:var(--text-alert); text-align:center;">FIM DO DIA</h2>
             <p id="lore-text">...</p>
             <button id="next-day-btn" onclick="game.nextDay()" style="margin-top:20px; justify-content: center;">CONTINUAR</button>
-        </div>
-    </div>
-
-    <!-- MINIGAME CONTAINER -->
-    <div id="minigame-container" class="modal-overlay" style="z-index: 2999;">
-        <div style="text-align:center;">
-            <h2 id="minigame-title" style="color:var(--text-alert)">CALIBRAGEM NEURAL</h2>
-            <p id="minigame-info" style="color: #888;">DADOS: <span id="pac-dots">0</span></p>
-            <canvas id="minigame-canvas" width="400" height="400" style="border:2px solid var(--text-alert); background:#000;"></canvas>
-            <div class="d-pad">
-                <div class="d-pad-btn d-pad-up" onclick="minigameManager.handleInput('ArrowUp')">▲</div>
-                <div class="d-pad-btn d-pad-left" onclick="minigameManager.handleInput('ArrowLeft')">◄</div>
-                <div class="d-pad-btn d-pad-down" onclick="minigameManager.handleInput('ArrowDown')">▼</div>
-                <div class="d-pad-btn d-pad-right" onclick="minigameManager.handleInput('ArrowRight')">►</div>
-            </div>
-            <p style="font-size: 0.8em; color: #444; margin-top: 10px;">Use as setas ou o teclado.</p>
-            <button id="arcade-back-btn" style="display:none; margin-top:10px; border-color:red; color:red;" onclick="minigameManager.exitArcade()">SAIR DO JOGO</button>
         </div>
     </div>
 
@@ -451,23 +388,161 @@
             init: function() { if(!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)(); if(this.ctx.state==='suspended') this.ctx.resume(); },
             playTone: function(f,t,d,v=0.1) { if(!this.ctx) return; const o=this.ctx.createOscillator(); const g=this.ctx.createGain(); o.type=t; o.frequency.setValueAtTime(f,this.ctx.currentTime); g.gain.setValueAtTime(v,this.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+d); o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+d); },
             sfx: {
-                click: ()=>audioSys.playTone(1200,'square',0.05), error: ()=>audioSys.playTone(150,'sawtooth',0.3), success: ()=>{ audioSys.playTone(600,'sine',0.1); setTimeout(()=>audioSys.playTone(900,'sine',0.2),100); },
-                scan: ()=>audioSys.playTone(2000,'sine',0.2), lore: ()=> { audioSys.playTone(400,'sine',0.1); setTimeout(()=>audioSys.playTone(600,'sine',0.3), 150); },
-                travel: ()=>audioSys.playTone(100,'square',1.0,0.2), knock: ()=>audioSys.playTone(80, 'square', 0.1, 0.3), glitch: ()=>audioSys.playTone(Math.random()*500, 'sawtooth', 0.05, 0.1), trophy: ()=> { audioSys.playTone(800,'sine',0.1); setTimeout(()=>audioSys.playTone(1200,'sine',0.3),100); },
-                jump: ()=>audioSys.playTone(300, 'square', 0.1, 0.1)
+                click: ()=>audioSys.playTone(1200,'square',0.05), error: ()=>audioSys.playTone(150,'sawtooth',0.3), 
+                success: ()=>{ audioSys.playTone(600,'sine',0.1); setTimeout(()=>audioSys.playTone(900,'sine',0.2),100); },
+                trophy: ()=> { audioSys.playTone(800,'sine',0.1); setTimeout(()=>audioSys.playTone(1200,'sine',0.3),100); setTimeout(()=>audioSys.playTone(1500,'square',0.4),200); },
+                scan: ()=>audioSys.playTone(2000,'sine',0.2), knock: ()=>audioSys.playTone(80, 'square', 0.1, 0.3), glitch: ()=>audioSys.playTone(Math.random()*500, 'sawtooth', 0.05, 0.1),
+                jump: ()=>audioSys.playTone(300, 'square', 0.1, 0.1), travel: ()=>audioSys.playTone(100,'square',1.0,0.2)
             }
         };
 
-        // --- DATA ---
-        const loreDB = [
-            { id: 0, title: "Relatório Médico #01", text: "Paciente Zero exibe calcificação. Vírus digital. [BUFF: CUSTO DE CURA -5]", encrypted: true, decrypted: false, loc: 'bunker', buff: 'heal_cost', cost: 10 },
-            { id: 1, title: "Frequência Theta", text: "Eles sentem medo via rádio. [BUFF: RÁDIO GASTA MENOS ENERGIA]", encrypted: true, decrypted: false, loc: 'bunker', buff: 'radio_cost', cost: 10 },
-            { id: 2, title: "Chave do Esgoto", text: "ITEM CHAVE. Permite acesso aos túneis sob a cidade.", encrypted: false, decrypted: true, loc: 'ruas', isItem: true },
-            { id: 3, title: "Mapa dos Túneis", text: "Mostra a saída secreta para o Setor 7. [BUFF: VIAGEM RÁPIDA]", encrypted: true, decrypted: false, loc: 'mercado', isItem: true, buff: 'travel_time', cost: 15 },
-            { id: 4, title: "Amostra Zero", text: "Vial de sangue original. A cura potencial.", encrypted: false, decrypted: true, loc: 'farmacia', isItem: true },
-            { id: 5, title: "Diário do Soldado", text: "Não há resgate. É uma armadilha. [BUFF: DANO ESCOPETA]", encrypted: true, decrypted: false, loc: 'ruas', buff: 'shotgun_sanity', cost: 20 }
-        ];
-        const dreamsDB = [ { text: "Sonho: O dia do surto no metrô.", choices: [ {l:"Ajudar", e:"san", v:-10, r:"Mordida."}, {l:"Correr", e:"nrg", v:10, r:"Sobreviveu."} ] }, { text: "Sonho: A voz da colmeia chama.", choices: [ {l:"Resistir", e:"san", v:15, r:"Mente forte."}, {l:"Ouvir", e:"san", v:-15, r:"Paz falsa."} ] } ];
+        // 50 TROPHIES DEFINITION
+        const achievementSys = {
+            trophies: [
+                {id:'die1', n:'Fim da Linha', d:'Morrer pela primeira vez.', t:'bronze'}, 
+                {id:'door1', n:'Porteiro', d:'Deixe um humano entrar.', t:'bronze'}, 
+                {id:'kill1', n:'Gatilho Rápido', d:'Use a escopeta.', t:'bronze'},
+                {id:'scav1', n:'Lixeiro', d:'Vasculhe algo.', t:'bronze'}, 
+                {id:'trav1', n:'Viajante', d:'Viaje no mapa.', t:'bronze'}, 
+                {id:'lore1', n:'Curioso', d:'Ache um arquivo.', t:'bronze'},
+                {id:'feed1', n:'Nutridor', d:'Alimente a equipe.', t:'bronze'}, 
+                {id:'talk1', n:'Ouvinte', d:'Converse com alguém.', t:'bronze'}, 
+                {id:'heal1', n:'Médico', d:'Cure alguém.', t:'bronze'},
+                {id:'cam1', n:'Vigilante', d:'Use as câmeras.', t:'bronze'}, 
+                {id:'uv1', n:'Revelador', d:'Use a Luz UV.', t:'bronze'}, 
+                {id:'repair1', n:'Soldador', d:'Repare a porta.', t:'bronze'},
+                {id:'snake1', n:'Cobrinha', d:'Jogue Snake.', t:'bronze'}, 
+                {id:'pac1', n:'Comilão', d:'Jogue Pac-Man.', t:'bronze'}, 
+                {id:'echo1', n:'Memória', d:'Jogue Echo.', t:'bronze'},
+                {id:'day2', n:'Amanhecer', d:'Chegue ao Dia 2.', t:'silver'}, 
+                {id:'day4', n:'Meio Termo', d:'Chegue ao Dia 4.', t:'silver'}, 
+                {id:'day6', n:'Veterano', d:'Chegue ao Dia 6.', t:'silver'},
+                {id:'full_crew', n:'Líder', d:'Tenha 3 pessoas na equipe.', t:'silver'}, 
+                {id:'solo', n:'Lobo Solitário', d:'Chegue ao Dia 4 sozinho.', t:'silver'}, 
+                {id:'pac_score', n:'Hacker Pac', d:'500 pts no Pac-Man.', t:'silver'},
+                {id:'snake_score', n:'Hacker Snake', d:'20 pts no Snake.', t:'silver'}, 
+                {id:'lore5', n:'Arquivista', d:'Decodifique 5 arquivos.', t:'silver'}, 
+                {id:'map_all', n:'Explorador', d:'Visite todos os locais.', t:'silver'},
+                {id:'flappy_play', n:'Piloto', d:'Jogue Flappy.', t:'bronze'},
+                {id:'dino_play', n:'Corredor', d:'Jogue Dino.', t:'bronze'},
+                {id:'flappy_score', n:'Ás dos Céus', d:'50 pts no Flappy.', t:'silver'},
+                {id:'dino_score', n:'Maratonista', d:'1000 pts no Dino.', t:'silver'},
+                {id:'calm_down', n:'Negociador', d:'Acalme um visitante.', t:'bronze'},
+                {id:'uv_human', n:'Paranóico', d:'Use UV em um humano.', t:'bronze'},
+                {id:'reject_human', n:'Coração Frio', d:'Recuse um humano.', t:'bronze'},
+                {id:'low_san', n:'No Limite', d:'Sobreviva com < 10% Sanidade.', t:'bronze'},
+                {id:'low_nrg', n:'Apagão', d:'Sobreviva com < 10% Energia.', t:'bronze'},
+                {id:'door_full', n:'Fortaleza', d:'Porta em 100% no Dia 3.', t:'bronze'},
+                {id:'radio_fail', n:'Sinal Perdido', d:'Falhe no Rádio.', t:'bronze'},
+                {id:'radio_streak', n:'DJ do Fim', d:'5 Acertos no Rádio.', t:'silver'},
+                {id:'stealth_master', n:'Sombra', d:'Use Esgueirar 10 vezes.', t:'silver'},
+                {id:'risk_taker', n:'Risco Calculado', d:'Vasculhe com < 20 Energia.', t:'silver'},
+                {id:'key_found', n:'Chaveiro', d:'Ache a Chave do Esgoto.', t:'silver'},
+                {id:'cure_found', n:'Cientista', d:'Ache a Amostra Zero.', t:'silver'},
+                {id:'map_found', n:'Cartógrafo', d:'Ache o Mapa dos Túneis.', t:'silver'},
+                {id:'shotgun_spree', n:'Sem Piedade', d:'Use Escopeta 3x num dia.', t:'silver'},
+                {id:'pacifist', n:'Pacifista', d:'Dia 3 sem usar armas.', t:'silver'},
+                {id:'insight_max', n:'Iluminado', d:'Insight 100%.', t:'gold'},
+                {id:'story_good', n:'Herói', d:'Final: Resgate.', t:'gold'}, 
+                {id:'story_bad', n:'Tragédia', d:'Final: Morte.', t:'gold'}, 
+                {id:'story_true', n:'A Verdade', d:'Final Secreto.', t:'gold'},
+                {id:'rank_max', n:'Deus da Máquina', d:'Rank 60 no Arcade.', t:'gold'}, 
+                {id:'lore_all', n:'Onisciente', d:'Toda Lore desbloqueada.', t:'gold'},
+                {id:'platinum', n:'A SINGULARIDADE', d:'Obtenha todos os troféus.', t:'plat'}
+            ],
+            init: function() {
+                const saved = localStorage.getItem('pluribus_trophies_v4');
+                if (saved) { const ids = JSON.parse(saved); this.trophies.forEach(t => { if(ids.includes(t.id)) t.earned = true; }); }
+            },
+            unlock: function(id) {
+                const t = this.trophies.find(x=>x.id===id);
+                if(t && !t.earned) { t.earned = true; this.save(); this.notify(t); this.checkPlat(); }
+            },
+            checkPlat: function() { if(this.trophies.filter(t=>t.id!=='platinum').every(t=>t.earned)) this.unlock('platinum'); },
+            save: function() { localStorage.setItem('pluribus_trophies_v4', JSON.stringify(this.trophies.filter(t=>t.earned).map(t=>t.id))); },
+            notify: function(t) {
+                const n = document.getElementById('trophy-notification');
+                document.getElementById('trophy-label').innerText = t.t.toUpperCase();
+                document.getElementById('trophy-name').innerText = t.n;
+                let c = '#cd7f32'; if(t.t=='silver')c='#c0c0c0'; if(t.t=='gold')c='#ffd700'; if(t.t=='plat')c='#e5e4e2';
+                document.getElementById('trophy-icon').style.borderColor = c; document.getElementById('trophy-icon').style.color = c;
+                audioSys.sfx.trophy(); n.classList.add('active'); setTimeout(()=>n.classList.remove('active'),4000);
+            },
+            openMenu: function() {
+                document.getElementById('start-menu').style.display='none'; document.getElementById('trophy-menu').style.display='flex';
+                const l = document.getElementById('trophy-list'); l.innerHTML="";
+                let c=0;
+                this.trophies.forEach(t => {
+                    if(t.earned) c++;
+                    let col = '#333'; if(t.earned) { if(t.t=='bronze')col='#cd7f32'; if(t.t=='silver')col='#c0c0c0'; if(t.t=='gold')col='#ffd700'; if(t.t=='plat')col='#e5e4e2'; }
+                    l.innerHTML += `<div class="trophy-item ${t.earned?'unlocked':''} ${t.t}"><div class="t-icon" style="color:${col}">🏆</div><div class="t-info"><h4>${t.n}</h4><p>${t.d}</p></div></div>`;
+                });
+                document.getElementById('trophy-count').innerText = c;
+                document.getElementById('plat-status').innerText = this.trophies.find(x=>x.id==='platinum').earned ? "DESBLOQUEADA" : "BLOQUEADA";
+                document.getElementById('plat-status').style.color = this.trophies.find(x=>x.id==='platinum').earned ? "#e5e4e2" : "#666";
+            },
+            closeMenu: function() { document.getElementById('trophy-menu').style.display='none'; document.getElementById('start-menu').style.display='flex'; }
+        };
+        achievementSys.init();
+
+        const arcadeMode = {
+            xp: 0,
+            ranks: Array.from({length:61}, (_,i) => ({name: `NÍVEL ${i}`, req: i*100})),
+            init: function() {
+                this.ranks[0].name="VAGABUNDO DIGITAL"; this.ranks[10].name="SCRIPTER"; this.ranks[20].name="HACKER";
+                this.ranks[30].name="FANTASMA"; this.ranks[40].name="SISTEMA"; this.ranks[50].name="IA CONSCIENTE"; this.ranks[60].name="ARQUITETO DA MATRIX";
+                const saved = localStorage.getItem('pluribus_rank_v4'); if(saved) this.xp = parseInt(saved);
+            },
+            addXP: function(v) { this.xp += v; localStorage.setItem('pluribus_rank_v4', this.xp); if(this.xp>=6000) achievementSys.unlock('rank_max'); this.update(); },
+            update: function() {
+                document.getElementById('total-score-display').innerText = this.xp;
+                let c=this.ranks[0], n=this.ranks[1]; for(let i=0;i<this.ranks.length;i++){ if(this.xp>=this.ranks[i].req){c=this.ranks[i]; n=this.ranks[i+1]||null;} }
+                document.getElementById('rank-display').innerText = c.name;
+                if(n) { document.getElementById('next-rank-msg').innerText = `PRÓXIMO: ${n.req} XP`; document.getElementById('xp-bar').style.width = `${((this.xp-c.req)/(n.req-c.req))*100}%`; } else { document.getElementById('next-rank-msg').innerText = "MÁXIMO"; document.getElementById('xp-bar').style.width = "100%"; }
+                const btns = document.getElementById('arcade-buttons'); btns.innerHTML = "";
+                const games = [ {id:'snake',n:'SNAKE-LINK',r:0}, {id:'pac',n:'PAC-DATA',r:500}, {id:'flappy',n:'FLAP-LINK',r:1500}, {id:'dino',n:'RUN-DATA',r:3000}, {id:'echo',n:'ECHO-MIND',r:5500} ];
+                games.forEach(g => { const locked = this.xp < g.r; btns.innerHTML += `<button class="menu-btn" ${locked?'disabled':''} onclick="minigameManager.startSpecific('${g.id}', 'arcade')">${g.n} ${locked?`[LVL ${g.r/100}]`:''}</button>`; });
+            },
+            openMenu: function() { document.getElementById('start-menu').style.display='none'; document.getElementById('arcade-menu').style.display='flex'; this.update(); },
+            closeMenu: function() { document.getElementById('arcade-menu').style.display='none'; document.getElementById('start-menu').style.display='flex'; }
+        };
+        arcadeMode.init();
+
+        const narrativeSys = {
+            scene: 0,
+            stats: { humanity: 50, logic: 50, rebellion: 0, hive: 0 },
+            scenes: [
+                { t: "INTRO", b: "O mundo acabou em silêncio. A 'Junção' conectou a todos.\n\nVocê está no bunker. Alguém bate na porta.", c: [{t:"Verificar Câmeras", eff:{logic:10}, next: 1}, {t:"Perguntar quem é", eff:{humanity:10}, next: 1}, {t:"Gritar", eff:{rebellion:10}, next: 2}] },
+                { t: "VISITANTE", b: "É uma criança. Olhos brilhantes. 'Por favor', ela diz.", c: [{t:"Abrir", eff:{humanity:20, hive:5}, notif:"Ela lembrará disso.", next: 3}, {t:"Recusar", eff:{logic:20}, notif:"Consciência pesa.", next: 3}] },
+                { t: "O RÁDIO", b: "Uma transmissão quebra o silêncio. Vozes humanas ou armadilha?", c: [{t:"Responder", eff:{humanity:10}, next: 4}, {t:"Desligar", eff:{logic:10}, next: 4}] },
+                { t: "CRISE", b: "A comida acabou. A criança te olha com fome.", c: [{t:"Dar sua comida", eff:{humanity:20}, next: 5}, {t:"Comer escondido", eff:{logic:20}, next: 5}] },
+                { t: "O ATAQUE", b: "Eles encontraram o bunker. Batidas violentas.", c: [{t:"Lutar", eff:{rebellion:20}, next: 6}, {t:"Fugir pelos fundos", eff:{logic:10}, next: 6}] },
+                { t: "A CIDADE", b: "Ruínas lá fora. Drones no céu.", c: [{t:"Esgueirar", eff:{logic:10}, next: 7}, {t:"Correr", eff:{rebellion:10}, next: 7}] },
+                { t: "O LABORATÓRIO", b: "Você encontra a fonte do sinal. Um servidor central.", c: [{t:"Hackear", eff:{logic:20}, next: 8}, {t:"Destruir", eff:{rebellion:20}, next: 8}] },
+                { t: "A VERDADE", b: "A Junção não é invasão. É evolução forçada.", c: [{t:"Entender", eff:{hive:20}, next: 9}, {t:"Rejeitar", eff:{rebellion:20}, next: 9}] },
+                { t: "ULTIMATO", b: "O Arquiteto aparece. 'Junte-se a nós ou morra'.", c: [{t:"ACEITAR", eff:{hive:100}, next: 'end_hive'}, {t:"RECUSAR", eff:{rebellion:100}, next: 'end_rebel'}] }
+            ],
+            start: function() { document.getElementById('start-menu').style.display='none'; document.getElementById('narrative-ui').style.display='flex'; this.scene = 0; this.render(); },
+            render: function() {
+                if(typeof this.scene === 'string') { this.end(this.scene); return; }
+                const s = this.scenes[this.scene]; if(!s) return;
+                document.getElementById('narrative-text').innerText = s.b;
+                const box = document.getElementById('narrative-choices'); box.innerHTML = "";
+                s.c.forEach(opt => {
+                    const d = document.createElement('div'); d.className='narrative-choice'; d.innerText = opt.t;
+                    d.onclick = () => { if(opt.notif) { const n = document.createElement('div'); n.className='narrative-notification'; n.innerText = opt.notif; document.getElementById('narrative-text').appendChild(n); } setTimeout(() => { this.scene = opt.next; this.render(); }, 1000); };
+                    box.appendChild(d);
+                });
+            },
+            end: function(type) {
+                let txt = "";
+                if(type === 'end_hive') { txt = "Você se tornou parte da harmonia. A dor acabou. FINAL: COLMEIA."; achievementSys.unlock('story_bad'); }
+                else { txt = "Você morreu livre, gritando contra a máquina. FINAL: RESISTÊNCIA."; achievementSys.unlock('story_good'); }
+                document.getElementById('narrative-text').innerText = txt; document.getElementById('narrative-choices').innerHTML = "";
+            },
+            exit: function() { document.getElementById('narrative-ui').style.display='none'; document.getElementById('start-menu').style.display='flex'; }
+        };
+
         const scenes = {
             bunker: `\n      _______________________\n     /                       \\\n    /    [RÁDIO]   [TV]       \\\n   |                          |\n   |    +------+              |\n   |    | CAMA |   [PORTA]    |\n   |    |      |      ||      |\n   |    +------+      ||      |\n   |                          |\n    \\                        /\n     \\______________________/`,
             mercado: `\n       _____________________\n      /   MERCADO CENTRAL   \\\n     /  [PRATELEIRAS VAZIAS] \\\n    |    __   __   __   __    |\n    |   |  | |  | |XX| |  |   |\n    |   |__| |__| |XX| |__|   |\n    |           /    \\        |\n    |          ( LIXO )       |\n     \\_______________________/`,
@@ -475,61 +550,15 @@
             ruas: `\n         _    _      _    _\n       _| |__| |____| |__| |_\n      /  RUÍNAS DA CIDADE    \\\n     |   _   _        _   _   |\n     |  | | | |      | | | |  |\n     |  |_| |_|      |_| |_|  |\n     |      [CARRO DESTR.]    |\n      \\______________________/`
         };
 
-        // --- SYSTEMS ---
-        const arcadeMode = {
-            totalScore: 0,
-            ranks: [ { name: "CIVIL", threshold: 0 }, { name: "RECRUTA", threshold: 100 }, { name: "SOBREVIVENTE", threshold: 300 }, { name: "EXPLORADOR", threshold: 600 }, { name: "OPERADOR", threshold: 1000 }, { name: "VETERANO", threshold: 1500 }, { name: "ELITE", threshold: 2200 }, { name: "HACKER NEURAL", threshold: 3000 }, { name: "MESTRE DO SISTEMA", threshold: 4000 }, { name: "A SINGULARIDADE", threshold: 5500 }, { name: "DEUS DA MÁQUINA", threshold: 7500 } ],
-            minigames: [
-                { id: 'snake', name: 'SNAKE-LINK', req: 0 },
-                { id: 'pac', name: 'PAC-DATA', req: 300 },
-                { id: 'flappy', name: 'FLAP-LINK', req: 1000 },
-                { id: 'dino', name: 'RUN-DATA', req: 3000 },
-                { id: 'echo', name: 'ECHO-MIND', req: 5500 }
-            ],
-            init: function() { const saved = localStorage.getItem('pluribus_rank'); if(saved) this.totalScore = parseInt(saved); this.updateUI(); },
-            openMenu: function() { document.getElementById('start-menu').style.display = 'none'; document.getElementById('arcade-menu').style.display = 'flex'; this.updateUI(); },
-            closeMenu: function() { document.getElementById('arcade-menu').style.display = 'none'; document.getElementById('start-menu').style.display = 'flex'; },
-            addScore: function(amount) { this.totalScore += amount; localStorage.setItem('pluribus_rank', this.totalScore); if (this.totalScore >= 2000) achievementSys.unlock('arcade_2k'); if (this.totalScore >= 7500) achievementSys.unlock('arcade_max'); this.updateUI(); },
-            updateUI: function() {
-                document.getElementById('total-score-display').innerText = this.totalScore;
-                let c = this.ranks[0], n = this.ranks[1]; for (let i = 0; i < this.ranks.length; i++) { if (this.totalScore >= this.ranks[i].threshold) { c = this.ranks[i]; n = this.ranks[i+1] || null; } }
-                document.getElementById('rank-display').innerText = "RANK: " + c.name;
-                if (n) { document.getElementById('next-rank-msg').innerText = `PRÓXIMO NÍVEL: ${n.threshold} PTS`; document.getElementById('xp-bar').style.width = `${((this.totalScore - c.threshold) / (n.threshold - c.threshold)) * 100}%`; } else { document.getElementById('next-rank-msg').innerText = "NÍVEL MÁXIMO"; document.getElementById('xp-bar').style.width = "100%"; }
-                
-                // Update Game Buttons
-                const btnContainer = document.getElementById('arcade-buttons');
-                btnContainer.innerHTML = "";
-                this.minigames.forEach(g => {
-                    const locked = this.totalScore < g.req;
-                    const btn = document.createElement('button');
-                    btn.className = "menu-btn";
-                    btn.disabled = locked;
-                    btn.innerHTML = `JOGAR: ${g.name} ${locked ? '<span class="lock-icon">🔒</span>' : ''}`;
-                    btn.onclick = () => minigameManager.startSpecific(g.id, 'arcade');
-                    btnContainer.appendChild(btn);
-                });
-            }
-        };
-
-        const achievementSys = {
-            trophies: [ { id: 'first_death', name: 'Primeiro Sangue', desc: 'Morra pela primeira vez.', type: 'bronze', earned: false }, { id: 'first_human', name: 'Porteiro', desc: 'Deixe um humano entrar.', type: 'bronze', earned: false }, { id: 'first_kill', name: 'Exterminador', desc: 'Use a escopeta.', type: 'bronze', earned: false }, { id: 'lore_hunter', name: 'Curioso', desc: 'Encontre um arquivo de Lore.', type: 'bronze', earned: false }, { id: 'survivor_5', name: 'Veterano', desc: 'Chegue ao Dia 5.', type: 'silver', earned: false }, { id: 'arcade_2k', name: 'Hacker Neural', desc: '2000 pts no Arcade.', type: 'silver', earned: false }, { id: 'true_end', name: 'A Verdade', desc: 'Descubra o final secreto.', type: 'silver', earned: false }, { id: 'story_complete', name: 'Sobrevivente Real', desc: 'Complete o Modo História.', type: 'gold', earned: false }, { id: 'arcade_max', name: 'Lenda do Arcade', desc: 'Alcance o Rank Deus da Máquina.', type: 'gold', earned: false }, { id: 'platinum', name: 'A Consciência Final', desc: 'Obtenha todos os troféus.', type: 'plat', earned: false } ],
-            init: function() { const saved = localStorage.getItem('pluribus_trophies'); if (saved) { const savedData = JSON.parse(saved); this.trophies.forEach(t => { if (savedData.includes(t.id)) t.earned = true; }); } },
-            unlock: function(id) { const trophy = this.trophies.find(t => t.id === id); if (trophy && !trophy.earned) { trophy.earned = true; this.save(); this.notify(trophy); this.checkPlatinum(); } },
-            checkPlatinum: function() { const allEarned = this.trophies.filter(t => t.id !== 'platinum').every(t => t.earned); if (allEarned) this.unlock('platinum'); },
-            save: function() { localStorage.setItem('pluribus_trophies', JSON.stringify(this.trophies.filter(t => t.earned).map(t => t.id))); },
-            notify: function(trophy) { const notif = document.getElementById('trophy-notification'); document.getElementById('trophy-label').innerText = trophy.type === 'plat' ? "PLATINA OBTIDA" : "TROFÉU CONQUISTADO"; document.getElementById('trophy-name').innerText = trophy.name; let c = '#cd7f32'; if(trophy.type === 'silver') c = '#c0c0c0'; if(trophy.type === 'gold') c = '#ffd700'; if(trophy.type === 'plat') c = '#e5e4e2'; document.getElementById('trophy-icon').style.borderColor = c; document.getElementById('trophy-icon').style.color = c; audioSys.sfx.trophy(); notif.classList.add('active'); setTimeout(() => notif.classList.remove('active'), 4000); },
-            openMenu: function() { document.getElementById('start-menu').style.display = 'none'; document.getElementById('trophy-menu').style.display = 'flex'; const list = document.getElementById('trophy-list'); list.innerHTML = ""; this.trophies.forEach(t => { let c = '#444'; if(t.earned) { if(t.type==='bronze')c='#cd7f32'; if(t.type==='silver')c='#c0c0c0'; if(t.type==='gold')c='#ffd700'; if(t.type==='plat')c='#e5e4e2'; } list.innerHTML += `<div class="trophy-item ${t.earned?'unlocked':''}"><div class="t-icon" style="color:${c}">🏆</div><div class="t-info"><h4>${t.name}</h4><p>${t.desc}</p></div></div>`; }); },
-            closeMenu: function() { document.getElementById('trophy-menu').style.display = 'none'; document.getElementById('start-menu').style.display = 'flex'; }
-        };
-        achievementSys.init(); arcadeMode.init();
-
-        const cameraSys = {
-            activeCam: 1,
-            feeds: { 1: `\n  [CAM 01: CORREDOR]\n\n   [PORTA]   (vazio)\n\n`, 2: `\n  [CAM 02: VENTILAÇÃO]\n\n   |||||||   (silêncio)\n\n`, 3: `\n  [CAM 03: RUA]\n\n   _ _ _     (chuva)\n\n` },
-            switch: function(id) { this.activeCam = id; this.render(); audioSys.sfx.click(); },
-            update: function() { if (Math.random() > 0.9) { const events = ["(vulto)", "(ruído)", "(olhos)", "!!!", "(estática)"]; const ev = events[Math.floor(Math.random()*events.length)]; if(this.activeCam === 1) this.feeds[1] = `\n  [CAM 01: CORREDOR]\n\n   [PORTA]   ${ev}\n\n`; if(this.activeCam === 2) this.feeds[2] = `\n  [CAM 02: VENTILAÇÃO]\n\n   |||||||   ${ev}\n\n`; if(this.activeCam === 3) this.feeds[3] = `\n  [CAM 03: RUA]\n\n   _ _ _     ${ev}\n\n`; this.render(); } },
-            render: function() { const screen = document.getElementById('cctv-feed'); if(screen) screen.innerText = this.feeds[this.activeCam]; document.getElementById('cctv-label').innerText = `CAM 0${this.activeCam}`; }
-        };
+        const loreDB = [
+            { id: 0, title: "Relatório Médico #01", text: "Paciente Zero exibe calcificação. Vírus digital. [BUFF: CUSTO DE CURA -5]", unlocked: false, decrypted: false, loc: 'bunker', buff: 'heal_cost', cost: 10, isItem:false },
+            { id: 1, title: "Frequência Theta", text: "Eles sentem medo via rádio. [BUFF: RÁDIO GASTA MENOS ENERGIA]", unlocked: false, decrypted: false, loc: 'bunker', buff: 'radio_cost', cost: 10, isItem:false },
+            { id: 2, title: "Chave do Esgoto", text: "ITEM CHAVE. Permite acesso aos túneis sob a cidade.", unlocked: false, decrypted: true, loc: 'ruas', isItem: true },
+            { id: 3, title: "Mapa dos Túneis", text: "Mostra a saída secreta para o Setor 7. [BUFF: VIAGEM RÁPIDA]", unlocked: false, decrypted: false, loc: 'mercado', isItem: true, buff: 'travel_time', cost: 15 },
+            { id: 4, title: "Amostra Zero", text: "Vial de sangue original. A cura potencial.", unlocked: false, decrypted: true, loc: 'farmacia', isItem: true },
+            { id: 5, title: "Diário do Soldado", text: "Não há resgate. É uma armadilha. [BUFF: DANO ESCOPETA]", unlocked: false, decrypted: false, loc: 'ruas', buff: 'shotgun_sanity', cost: 20, isItem:false }
+        ];
+        const dreamsDB = [ { text: "Sonho: O dia do surto no metrô.", choices: [ {l:"Ajudar", e:"san", v:-10, r:"Mordida."}, {l:"Correr", e:"nrg", v:10, r:"Sobreviveu."} ] }, { text: "Sonho: A voz da colmeia chama.", choices: [ {l:"Resistir", e:"san", v:15, r:"Mente forte."}, {l:"Ouvir", e:"san", v:-15, r:"Paz falsa."} ] } ];
 
         const minigameManager = {
             activeGame: null, canvas: null, ctx: null, mode: 'story',
@@ -538,7 +567,7 @@
             launch: function(c) { document.getElementById('minigame-container').classList.add('active'); this.canvas = document.getElementById('minigame-canvas'); this.ctx = this.canvas.getContext('2d'); this.startCountdown(() => { if(c==='pac'){ pacGame.init(this.canvas); pacGame.start(); this.activeGame=pacGame; } else if(c==='snake'){ snakeGame.init(this.canvas); snakeGame.start(); this.activeGame=snakeGame; } else if(c==='echo'){ echoGame.init(this.canvas); echoGame.start(); this.activeGame=echoGame; } else if(c==='flappy'){ flappyGame.init(this.canvas); flappyGame.start(); this.activeGame=flappyGame; } else if(c==='dino'){ dinoGame.init(this.canvas); dinoGame.start(); this.activeGame=dinoGame; } }); },
             startCountdown: function(cb) { let c=3; const i=setInterval(()=>{ this.ctx.fillStyle='#000'; this.ctx.fillRect(0,0,400,400); this.ctx.font="100px Courier New"; this.ctx.textAlign="center"; this.ctx.textBaseline="middle"; if(c>0){this.ctx.fillStyle="var(--text-alert)";this.ctx.fillText(c,200,200);audioSys.sfx.click();} else{this.ctx.fillStyle="var(--text-safe)";this.ctx.fillText("VAI!",200,200);audioSys.sfx.success();} c--; if(c<-1){clearInterval(i);cb();} },1000); },
             handleInput: function(k) { if(this.activeGame) this.activeGame.handleInput(k); },
-            endGame: function(won, score = 0) { if(this.activeGame) this.activeGame.active=false; document.getElementById('minigame-container').classList.remove('active'); if(score > 0) { arcadeMode.addScore(score); if(this.mode === 'story') game.log(`XP GANHO: ${score}`, "safe"); } if (this.mode === 'story') game.resolveDay(won); else { if (won) { alert(`VITÓRIA! +${score} PONTOS`); } else alert("GAME OVER"); document.getElementById('arcade-menu').style.display = 'flex'; } },
+            endGame: function(won, score = 0) { if(this.activeGame) this.activeGame.active=false; document.getElementById('minigame-container').classList.remove('active'); if(score > 0) { arcadeMode.addXP(score); if(this.mode === 'story') game.log(`XP GANHO: ${score}`, "safe"); } if (this.mode === 'story') game.resolveDay(won); else { if (won) { alert(`VITÓRIA! +${score} PONTOS`); } else alert("GAME OVER"); document.getElementById('arcade-menu').style.display = 'flex'; } },
             exitArcade: function() { if(this.activeGame) this.activeGame.active=false; document.getElementById('minigame-container').classList.remove('active'); document.getElementById('arcade-menu').style.display = 'flex'; }
         };
         window.addEventListener('keydown', (e)=>{if(document.getElementById('minigame-container').classList.contains('active'))minigameManager.handleInput(e.key);});
@@ -549,14 +578,16 @@
         const flappyGame = { active: false, canvas: null, ctx: null, bird: { y: 200, vel: 0, size: 15 }, pipes: [], frame: 0, score: 0, target: 10, init: function(c) { this.canvas = c; this.ctx = c.getContext('2d'); }, start: function() { this.active = true; this.bird = { y: 200, vel: 0, size: 15 }; this.pipes = []; this.frame = 0; this.score = 0; this.target = minigameManager.mode === 'arcade' ? 30 : 10; document.getElementById('minigame-title').innerText = "FLAP-LINK"; document.getElementById('minigame-info').innerText = `ALVO: ${this.target}`; this.loop(); }, handleInput: function(k) { if(k==='ArrowUp' || k===' ') { this.bird.vel = -6; audioSys.sfx.jump(); } }, loop: function() { if(!this.active) return; this.frame++; this.bird.vel += 0.4; this.bird.y += this.bird.vel; if(this.frame % 90 === 0) { let gapY = Math.floor(Math.random() * 200) + 50; this.pipes.push({ x: 400, topH: gapY, bottomY: gapY + 120, passed: false }); } this.pipes.forEach(p => p.x -= 3); this.pipes = this.pipes.filter(p => p.x > -30); if(this.bird.y < 0 || this.bird.y > 400) { minigameManager.endGame(false, this.score); return; } this.pipes.forEach(p => { if(50 + this.bird.size > p.x && 50 < p.x + 30) { if(this.bird.y < p.topH || this.bird.y + this.bird.size > p.bottomY) { minigameManager.endGame(false, this.score); return; } } if(!p.passed && p.x < 50) { this.score++; p.passed = true; audioSys.sfx.click(); if(minigameManager.mode === 'story' && this.score >= this.target) minigameManager.endGame(true, 50); } }); this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400); this.ctx.fillStyle = '#ffcc00'; this.ctx.fillRect(50, this.bird.y, this.bird.size, this.bird.size); this.ctx.fillStyle = '#33ff33'; this.pipes.forEach(p => { this.ctx.fillRect(p.x, 0, 30, p.topH); this.ctx.fillRect(p.x, p.bottomY, 30, 400 - p.bottomY); }); document.getElementById('minigame-info').innerText = `PONTOS: ${this.score} / ${this.target}`; setTimeout(() => requestAnimationFrame(() => this.loop()), 20); } };
         const dinoGame = { active: false, canvas: null, ctx: null, dino: { y: 350, vel: 0, grounded: true }, obst: [], frame: 0, score: 0, target: 500, init: function(c) { this.canvas = c; this.ctx = c.getContext('2d'); }, start: function() { this.active = true; this.dino = { y: 350, vel: 0, grounded: true }; this.obst = []; this.frame = 0; this.score = 0; this.target = minigameManager.mode === 'arcade' ? 1000 : 500; document.getElementById('minigame-title').innerText = "RUN-DATA"; document.getElementById('minigame-info').innerText = `DISTÂNCIA: 0`; this.loop(); }, handleInput: function(k) { if((k==='ArrowUp' || k===' ') && this.dino.grounded) { this.dino.vel = -12; this.dino.grounded = false; audioSys.sfx.jump(); } }, loop: function() { if(!this.active) return; this.score += 2; this.frame++; if(!this.dino.grounded) { this.dino.vel += 0.8; this.dino.y += this.dino.vel; if(this.dino.y >= 350) { this.dino.y = 350; this.dino.vel = 0; this.dino.grounded = true; } } if(this.frame % 100 === 0 || (this.frame % 60 === 0 && Math.random() > 0.7)) { this.obst.push({ x: 400, h: Math.random()>0.5?30:50 }); } this.obst.forEach(o => o.x -= 5); this.obst = this.obst.filter(o => o.x > -20); this.obst.forEach(o => { if(o.x < 70 && o.x > 30 && this.dino.y > (350 - o.h + 10)) { minigameManager.endGame(false, this.score); return; } }); this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400); this.ctx.fillStyle = '#fff'; this.ctx.fillRect(0, 380, 400, 2); this.ctx.fillStyle = '#00ccff'; this.ctx.fillRect(50, this.dino.y, 20, 30); this.ctx.fillStyle = '#ff3333'; this.obst.forEach(o => this.ctx.fillRect(o.x, 380 - o.h, 15, o.h)); document.getElementById('minigame-info').innerText = `DISTÂNCIA: ${this.score} / ${this.target}`; if(minigameManager.mode === 'story' && this.score >= this.target) minigameManager.endGame(true, 50); else setTimeout(() => requestAnimationFrame(() => this.loop()), 20); } };
         const radioGame = { active:false, pos:0, dir:1, target:0, anim:null, start: function() { this.active=true; document.getElementById('radio-minigame').classList.add('active'); this.target=20+Math.random()*60; document.getElementById('tuner-target').style.left=this.target+'%'; document.getElementById('tuner-target').style.width='20%'; this.loop(); }, loop: function() { if(!this.active)return; this.pos+=1.5*this.dir; if(this.pos>100||this.pos<0)this.dir*=-1; document.getElementById('tuner-cursor').style.left=this.pos+'%'; this.anim=requestAnimationFrame(()=>this.loop()); }, stop: function() { cancelAnimationFrame(this.anim); this.active=false; document.getElementById('radio-minigame').classList.remove('active'); if(this.pos>=this.target&&this.pos<=this.target+20){audioSys.sfx.success();game.state.sanity=Math.min(100,game.state.sanity+15);if(Math.random()>0.7)game.unlockLore('bunker');else game.log("Sinal limpo.", "safe");}else{audioSys.sfx.error();game.state.sanity-=5;game.log("Ruído.", "alert");} game.updateHUD(); } };
+        
+        const cameraSys = { active: 1, switch: function(n) { this.active=n; document.getElementById('cctv-label').innerText = `CAM 0${n} [ONLINE]`; document.getElementById('cctv-feed').innerText = n===1 ? " CORREDOR " : (n===2 ? " VENTILAÇÃO " : " RUA "); }, update: function() {}, render: function() { const screen = document.getElementById('cctv-feed'); if(screen) screen.innerText = this.active === 1 ? " CORREDOR " : (this.active === 2 ? " VENTILAÇÃO " : " RUA "); } };
 
         const game = {
             running: false, tickCount: 0,
             state: { day: 1, hour: 8.0, sanity: 100, energy: 100, intimacy: 100, doorHealth: 100, location: 'bunker', paused: false, insight: 0 },
             crew: [], unlocks: { map: true, uv: false, shotgun: false }, currentVisitor: null, tensionTimer: null, tensionVal: 30,
 
-            startStory: function() { document.getElementById('start-menu').style.display = 'none'; audioSys.init(); this.running = true; this.tickCount = 0; this.crew = []; this.state = { day: 1, hour: 8.0, sanity: 100, energy: 100, intimacy: 100, doorHealth: 100, location: 'bunker', paused: false, insight: 0 }; this.unlocks = { map: true, uv: false, shotgun: false }; document.getElementById('game-container').style.display = 'flex'; this.updateHUD(); this.ui.renderScene(); this.ui.renderLoreList(); this.ui.renderCrew(); cameraSys.render(); this.log("SISTEMA ONLINE. ZONA SEGURA.", "safe"); setInterval(() => { if(this.running && !this.state.paused && this.state.doorHealth > 0) this.tick(); }, 1000); },
-            tick: function() { this.tickCount++; const timeMod = this.state.location === 'bunker' ? 0.05 : 0.15; this.state.hour += timeMod; if(document.getElementById('tab-cams').classList.contains('active')) { game.state.energy -= 0.1; cameraSys.update(); } if(this.state.location === 'bunker' && this.tickCount % 40 === 0 && this.state.hour < 13.9) this.encounter.trigger(); if(this.state.location !== 'bunker' && Math.random() > 0.95) { this.state.sanity -= 2; this.log("Sons de passos...", "alert"); } if(this.state.hour >= 14) this.triggerEndSequence(); if(this.state.doorHealth <= 0) this.gameOver("A PORTA CAIU."); if(this.state.sanity <= 0) this.gameOver("COLAPSO MENTAL."); if(this.state.energy <= 0) this.state.energy = 0; this.updateHUD(); },
+            startSurvival: function() { document.getElementById('start-menu').style.display = 'none'; document.getElementById('game-container').style.display = 'flex'; audioSys.init(); this.running = true; this.tickCount = 0; this.crew = []; this.state = { day: 1, hour: 8.0, sanity: 100, energy: 100, intimacy: 100, doorHealth: 100, location: 'bunker', paused: false, insight: 0 }; this.unlocks = { map: true, uv: false, shotgun: false }; this.updateHUD(); this.ui.renderScene(); this.ui.renderLoreList(); this.ui.renderCrew(); cameraSys.render(); this.log("SISTEMA ONLINE. ZONA SEGURA.", "safe"); setInterval(() => { if(this.running && !this.state.paused && this.state.doorHealth > 0) this.tick(); }, 1000); },
+            tick: function() { this.tickCount++; const timeMod = this.state.location === 'bunker' ? 0.05 : 0.15; this.state.hour += timeMod; if(document.getElementById('tab-cams') && document.getElementById('tab-cams').classList.contains('active')) { game.state.energy -= 0.1; cameraSys.update(); } if(this.state.location === 'bunker' && this.tickCount % 40 === 0 && this.state.hour < 13.9) this.encounter.trigger(); if(this.state.location !== 'bunker' && Math.random() > 0.95) { this.state.sanity -= 2; this.log("Sons de passos...", "alert"); } if(this.state.hour >= 14) this.triggerEndSequence(); if(this.state.doorHealth <= 0) this.gameOver("A PORTA CAIU."); if(this.state.sanity <= 0) this.gameOver("COLAPSO MENTAL."); if(this.state.energy <= 0) this.state.energy = 0; this.updateHUD(); },
             triggerEndSequence: function() { if(this.state.location !== 'bunker') { this.log("DESMAIO FORA DE CASA.", "alert"); this.state.sanity -= 30; this.state.energy -= 30; this.state.location = 'bunker'; this.ui.renderScene(); } this.state.paused = true; this.triggerDream(); },
             triggerDream: function() { const modal = document.getElementById('dream-modal'); const dream = dreamsDB[Math.floor(Math.random()*dreamsDB.length)]; document.getElementById('dream-text').innerText = dream.text; const opts = document.getElementById('dream-options'); opts.innerHTML = ""; dream.choices.forEach(c => { const btn = document.createElement('button'); btn.innerText = c.l; btn.onclick = () => { game.state[c.e] = Math.min(100, game.state[c.e] + c.v); modal.classList.remove('active'); setTimeout(() => minigameManager.startRandom(), 500); }; opts.appendChild(btn); }); modal.classList.add('active'); },
             resolveDay: function(won) { this.state.day++; this.state.hour = 8; this.state.energy = 100; this.tickCount = 0; if(this.state.day == 3) this.unlocks.uv = true; if(this.state.day == 5) this.unlocks.shotgun = true; if(this.state.day == 5) achievementSys.unlock('survivor_5'); document.getElementById('lore-modal').classList.add('active'); document.getElementById('lore-text').innerText = won ? "Teste concluído." : "Falha no teste."; if(won) this.state.sanity = Math.min(100, this.state.sanity + 20); if(this.state.day > 8) this.checkEndings(); },
@@ -564,7 +595,6 @@
             nextDay: function() { document.getElementById('lore-modal').classList.remove('active'); this.state.paused = false; this.log(`DIA ${this.state.day}.`, "safe"); },
             
             unlockLore: function(locationFilter) {
-                // Can find items that are locked (encrypted: true)
                 const candidates = loreDB.filter(l => !l.unlocked && (l.loc === locationFilter || locationFilter === 'any'));
                 if(candidates.length > 0) {
                     const item = candidates[0]; item.unlocked = true;
