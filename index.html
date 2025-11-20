@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLURIBUS: A JUNÇÃO - Vigilante Edition v2.4</title>
+    <title>PLURIBUS: A JUNÇÃO - Edição Mestre dos Segredos</title>
     <style>
         :root {
             --bg-color: #050505;
@@ -13,6 +13,7 @@
             --text-danger: #ff3333;
             --text-safe: #33ff33;
             --text-lore: #00ccff;
+            --text-insight: #ff00ff; /* Magenta para Insight */
             --border-style: 1px solid var(--text-dim);
             --scan-color: rgba(255, 204, 0, 0.03);
             --cam-bg: #001100;
@@ -51,13 +52,15 @@
         }
         
         .menu-btn {
-            margin-top: 10px; font-size: 1.1em; padding: 10px 30px; width: 320px;
+            margin-top: 10px; font-size: 1.1em; padding: 10px 30px; width: 350px;
             border: 2px solid var(--text-alert); color: var(--bg-color);
             background: var(--text-alert); font-weight: bold; cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.2s; position: relative;
         }
-        .menu-btn:hover { transform: scale(1.05); }
+        .menu-btn:hover:not(:disabled) { transform: scale(1.05); }
         .menu-btn.secondary { background: transparent; color: var(--text-alert); border: 1px solid var(--text-alert); }
+        .menu-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: #444; color: #444; background: #111; }
+        .lock-icon { position: absolute; right: 15px; }
 
         #arcade-menu, #trophy-menu { display: none; }
         #arcade-stats { border: 1px solid var(--text-lore); padding: 15px; margin-bottom: 15px; width: 400px; background: #080808; }
@@ -100,6 +103,7 @@
         button:disabled { color: #444; border-color: #222; cursor: not-allowed; opacity: 0.6; }
         button.danger-action { border-color: var(--text-danger); color: var(--text-danger); }
         button.danger-action:hover { background: #300; }
+        button.decrypt-btn { border-color: var(--text-lore); color: var(--text-lore); }
 
         /* --- CCTV STYLES --- */
         #cctv-screen {
@@ -119,7 +123,7 @@
         .cam-btn-group button { flex: 1; justify-content: center; font-size: 0.8em; }
         @keyframes scrollScan { from { background-position: 0 0; } to { background-position: 0 100%; } }
 
-        /* --- TROPHY NOTIFICATION --- */
+        /* --- TROPHY & LORE UI --- */
         #trophy-notification {
             position: fixed; top: 20px; right: 20px;
             background: rgba(20, 20, 20, 0.95); border: 1px solid #333; border-radius: 50px;
@@ -133,15 +137,16 @@
         #trophy-details { display: flex; flex-direction: column; }
         #trophy-label { font-size: 0.7em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
         #trophy-name { font-size: 1em; font-weight: bold; }
-
-        /* --- TROPHY MENU LIST --- */
+        
         #trophy-list { display: grid; grid-template-columns: 1fr; gap: 10px; max-height: 400px; overflow-y: auto; width: 500px; text-align: left; }
         .trophy-item { background: #0f0f0f; border: 1px solid #333; padding: 15px; display: flex; align-items: center; gap: 15px; opacity: 0.5; transition: 0.3s; }
         .trophy-item.unlocked { opacity: 1; border-color: var(--text-primary); background: #1a1a1a; }
-        .t-icon { font-size: 2em; width: 50px; text-align: center; }
-        .t-info h4 { margin: 0; color: #fff; }
-        .t-info p { margin: 3px 0 0 0; font-size: 0.8em; color: #888; }
         
+        .lore-file { border: 1px solid #333; padding: 8px; margin-bottom: 5px; cursor: pointer; background: #080808; display: flex; justify-content: space-between; align-items: center; }
+        .lore-file:hover { border-color: var(--text-lore); }
+        .lore-file.encrypted { border-style: dashed; border-color: var(--text-dim); color: var(--text-dim); }
+        .lore-file.decrypted { border-color: var(--text-lore); color: #fff; }
+
         /* --- MODALS & GAMEPLAY --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 100; display: flex; align-items: center; justify-content: center; visibility: hidden; opacity: 0; transition: opacity 0.2s; }
         .modal-overlay.active { visibility: visible; opacity: 1; }
@@ -184,9 +189,7 @@
         .crew-hp-fill { height: 100%; background: var(--text-safe); }
         .crew-actions { display: flex; gap: 5px; }
         .crew-actions button { font-size: 0.7em; padding: 5px; margin: 0; justify-content: center; text-align: center; }
-        .lore-file { border: 1px solid #333; padding: 8px; margin-bottom: 5px; cursor: pointer; background: #080808; display: flex; justify-content: space-between; }
-        .lore-file:hover { border-color: var(--text-lore); }
-        .lore-file.locked { opacity: 0.5; cursor: default; border-style: dashed; }
+        
         #log-container { height: 150px; overflow-y: auto; font-size: 12px; background: #000; border: 1px solid #333; padding: 8px; }
         .log-entry { margin-bottom: 4px; padding-left: 5px; border-left: 2px solid transparent; }
         .log-entry.alert { color: var(--text-danger); border-left-color: var(--text-danger); }
@@ -234,13 +237,13 @@
     <!-- MAIN START MENU -->
     <div id="start-menu" class="full-screen-menu">
         <h1>PLURIBUS</h1>
-        <h2 style="color: #888; letter-spacing: 3px;">VIGILANTE EDITION</h2>
+        <h2 style="color: #888; letter-spacing: 3px;">MESTRE DOS SEGREDOS</h2>
         
         <button class="menu-btn" onclick="game.startStory()">MODO HISTÓRIA (CAMPANHA)</button>
         <button class="menu-btn secondary" onclick="arcadeMode.openMenu()">MODO ARCADE (MINIGAMES)</button>
         <button class="menu-btn secondary" style="border-color: var(--trophy-gold); color: var(--trophy-gold);" onclick="achievementSys.openMenu()">COLEÇÃO DE TROFÉUS</button>
         
-        <div style="margin-top: 20px; font-size: 0.8em; color: #666;">V2.4.0 - SISTEMA DE CÂMERAS</div>
+        <div style="margin-top: 20px; font-size: 0.8em; color: #666;">V2.5.0 - LORE DECRYPTION</div>
     </div>
 
     <!-- ARCADE MENU -->
@@ -257,20 +260,16 @@
         </div>
         
         <h3 style="color:var(--text-dim); border-bottom:1px solid #333; width:300px; margin-bottom:15px;">PROTOCOLO DE TREINO</h3>
-        <button class="menu-btn" onclick="minigameManager.startSpecific('snake', 'arcade')">JOGAR: SNAKE-LINK</button>
-        <button class="menu-btn" onclick="minigameManager.startSpecific('pac', 'arcade')">JOGAR: PAC-DATA</button>
-        <button class="menu-btn" onclick="minigameManager.startSpecific('flappy', 'arcade')">JOGAR: FLAP-LINK</button>
-        <button class="menu-btn" onclick="minigameManager.startSpecific('dino', 'arcade')">JOGAR: RUN-DATA</button>
-        <button class="menu-btn" onclick="minigameManager.startSpecific('echo', 'arcade')">JOGAR: ECHO-MIND</button>
+        <!-- Buttons will be rendered by JS to handle locking -->
+        <div id="arcade-buttons" style="display:flex; flex-direction:column; gap:5px;"></div>
+        
         <button class="menu-btn secondary" onclick="arcadeMode.closeMenu()" style="margin-top: 30px;">VOLTAR AO MENU</button>
     </div>
 
     <!-- TROPHY MENU -->
     <div id="trophy-menu" class="full-screen-menu">
         <h1 style="color: var(--trophy-plat)">SALA DE TROFÉUS</h1>
-        <div id="trophy-list">
-            <!-- Filled by JS -->
-        </div>
+        <div id="trophy-list"></div>
         <button class="menu-btn secondary" onclick="achievementSys.closeMenu()" style="margin-top: 30px;">VOLTAR</button>
     </div>
 
@@ -319,15 +318,25 @@
                             <button onclick="cameraSys.switch(2)">CAM 02</button>
                             <button onclick="cameraSys.switch(3)">CAM 03</button>
                         </div>
-                        <p style="font-size:0.8em; color:#666; margin-top:10px;">
-                            STATUS: <span id="cam-status" style="color:lime">ONLINE</span><br>
-                            DRENO: -1 NRG/s
-                        </p>
+                        <p style="font-size:0.8em; color:#666; margin-top:10px;">STATUS: <span id="cam-status" style="color:lime">ONLINE</span><br>DRENO: -1 NRG/s</p>
                     </div>
                 </div>
 
                 <div id="tab-crew" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">GESTÃO DE PESSOAL</div><div id="crew-container"></div></div></div>
-                <div id="tab-archive" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">FRAGMENTOS DE DADOS</div><div style="margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:10px;"><button onclick="game.actions.deepScan()" style="border-color:var(--text-lore); color:var(--text-lore);">VARREDURA PROFUNDA (-40 NRG)</button><small style="color:#666">Garante um arquivo de Lore se disponível.</small></div><div id="lore-list"></div><div id="lore-display" style="margin-top:10px; padding:10px; border:1px dashed var(--text-lore); color: var(--text-lore); font-size:0.9em; min-height:100px; display:none;"></div></div></div>
+                
+                <!-- ARCHIVE TAB (UPDATED) -->
+                <div id="tab-archive" class="tab-content">
+                    <div class="panel-section" style="flex:1; overflow-y:auto;">
+                        <div class="panel-title">BANCO DE DADOS</div>
+                        <div style="margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:var(--text-insight);">INSIGHT: <span id="insight-val">0</span>%</span>
+                            <button onclick="game.actions.deepScan()" style="width:auto; font-size:0.8em; border-color:var(--text-lore); color:var(--text-lore);">BUSCAR (-40E)</button>
+                        </div>
+                        <div id="lore-list"></div>
+                        <div id="lore-display" style="margin-top:10px; padding:10px; border:1px dashed var(--text-lore); color: var(--text-lore); font-size:0.9em; min-height:100px; display:none;"></div>
+                    </div>
+                </div>
+                
                 <div id="tab-inventory" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">ITENS CHAVE</div><div id="inventory-list" style="color: #888;">Vazio.</div></div></div>
             </div>
         </div>
@@ -449,83 +458,16 @@
             }
         };
 
-        // --- PERSISTENT RANK ---
-        const arcadeMode = {
-            totalScore: 0,
-            ranks: [ { name: "CIVIL", threshold: 0 }, { name: "RECRUTA", threshold: 100 }, { name: "SOBREVIVENTE", threshold: 300 }, { name: "EXPLORADOR", threshold: 600 }, { name: "OPERADOR", threshold: 1000 }, { name: "VETERANO", threshold: 1500 }, { name: "ELITE", threshold: 2200 }, { name: "HACKER NEURAL", threshold: 3000 }, { name: "MESTRE DO SISTEMA", threshold: 4000 }, { name: "A SINGULARIDADE", threshold: 5500 }, { name: "DEUS DA MÁQUINA", threshold: 7500 } ],
-            
-            init: function() {
-                const saved = localStorage.getItem('pluribus_rank');
-                if(saved) this.totalScore = parseInt(saved);
-                this.updateUI();
-            },
-            openMenu: function() { document.getElementById('start-menu').style.display = 'none'; document.getElementById('arcade-menu').style.display = 'flex'; this.updateUI(); },
-            closeMenu: function() { document.getElementById('arcade-menu').style.display = 'none'; document.getElementById('start-menu').style.display = 'flex'; },
-            addScore: function(amount) { 
-                this.totalScore += amount; 
-                localStorage.setItem('pluribus_rank', this.totalScore); // Save
-                if (this.totalScore >= 2000) achievementSys.unlock('arcade_2k'); if (this.totalScore >= 7500) achievementSys.unlock('arcade_max'); 
-                this.updateUI(); 
-            },
-            updateUI: function() {
-                const el = document.getElementById('total-score-display');
-                if(el) el.innerText = this.totalScore;
-                let c = this.ranks[0], n = this.ranks[1]; for (let i = 0; i < this.ranks.length; i++) { if (this.totalScore >= this.ranks[i].threshold) { c = this.ranks[i]; n = this.ranks[i+1] || null; } }
-                const rankEl = document.getElementById('rank-display');
-                if(rankEl) rankEl.innerText = "RANK: " + c.name;
-                const msgEl = document.getElementById('next-rank-msg');
-                if (n && msgEl) { msgEl.innerText = `PRÓXIMO NÍVEL: ${n.threshold} PTS`; document.getElementById('xp-bar').style.width = `${((this.totalScore - c.threshold) / (n.threshold - c.threshold)) * 100}%`; } 
-                else if(msgEl) { msgEl.innerText = "NÍVEL MÁXIMO"; document.getElementById('xp-bar').style.width = "100%"; }
-            }
-        };
-
-        const achievementSys = {
-            trophies: [
-                { id: 'first_death', name: 'Primeiro Sangue', desc: 'Morra pela primeira vez.', type: 'bronze', earned: false },
-                { id: 'first_human', name: 'Porteiro', desc: 'Deixe um humano entrar.', type: 'bronze', earned: false },
-                { id: 'first_kill', name: 'Exterminador', desc: 'Use a escopeta.', type: 'bronze', earned: false },
-                { id: 'lore_hunter', name: 'Curioso', desc: 'Encontre um arquivo de Lore.', type: 'bronze', earned: false },
-                { id: 'survivor_5', name: 'Veterano', desc: 'Chegue ao Dia 5.', type: 'silver', earned: false },
-                { id: 'arcade_2k', name: 'Hacker Neural', desc: '2000 pts no Arcade.', type: 'silver', earned: false },
-                { id: 'true_end', name: 'A Verdade', desc: 'Descubra o final secreto.', type: 'silver', earned: false },
-                { id: 'story_complete', name: 'Sobrevivente Real', desc: 'Complete o Modo História.', type: 'gold', earned: false },
-                { id: 'arcade_max', name: 'Lenda do Arcade', desc: 'Alcance o Rank Deus da Máquina.', type: 'gold', earned: false },
-                { id: 'platinum', name: 'A Consciência Final', desc: 'Obtenha todos os troféus.', type: 'plat', earned: false }
-            ],
-            init: function() {
-                const saved = localStorage.getItem('pluribus_trophies');
-                if (saved) { const savedData = JSON.parse(saved); this.trophies.forEach(t => { if (savedData.includes(t.id)) t.earned = true; }); }
-            },
-            unlock: function(id) {
-                const trophy = this.trophies.find(t => t.id === id);
-                if (trophy && !trophy.earned) { trophy.earned = true; this.save(); this.notify(trophy); this.checkPlatinum(); }
-            },
-            checkPlatinum: function() {
-                const allEarned = this.trophies.filter(t => t.id !== 'platinum').every(t => t.earned);
-                if (allEarned) this.unlock('platinum');
-            },
-            save: function() { localStorage.setItem('pluribus_trophies', JSON.stringify(this.trophies.filter(t => t.earned).map(t => t.id))); },
-            notify: function(trophy) {
-                const notif = document.getElementById('trophy-notification');
-                document.getElementById('trophy-label').innerText = trophy.type === 'plat' ? "PLATINA OBTIDA" : "TROFÉU CONQUISTADO";
-                document.getElementById('trophy-name').innerText = trophy.name;
-                let c = '#cd7f32'; if(trophy.type === 'silver') c = '#c0c0c0'; if(trophy.type === 'gold') c = '#ffd700'; if(trophy.type === 'plat') c = '#e5e4e2';
-                document.getElementById('trophy-icon').style.borderColor = c; document.getElementById('trophy-icon').style.color = c;
-                audioSys.sfx.trophy(); notif.classList.add('active'); setTimeout(() => notif.classList.remove('active'), 4000);
-            },
-            openMenu: function() {
-                document.getElementById('start-menu').style.display = 'none'; document.getElementById('trophy-menu').style.display = 'flex';
-                const list = document.getElementById('trophy-list'); list.innerHTML = "";
-                this.trophies.forEach(t => {
-                    let c = '#444'; if(t.earned) { if(t.type==='bronze')c='#cd7f32'; if(t.type==='silver')c='#c0c0c0'; if(t.type==='gold')c='#ffd700'; if(t.type==='plat')c='#e5e4e2'; }
-                    list.innerHTML += `<div class="trophy-item ${t.earned?'unlocked':''}"><div class="t-icon" style="color:${c}">🏆</div><div class="t-info"><h4>${t.name}</h4><p>${t.desc}</p></div></div>`;
-                });
-            },
-            closeMenu: function() { document.getElementById('trophy-menu').style.display = 'none'; document.getElementById('start-menu').style.display = 'flex'; }
-        };
-        achievementSys.init();
-        arcadeMode.init(); // Init arcade persistence
-
+        // --- DATA ---
+        const loreDB = [
+            { id: 0, title: "Relatório Médico #01", text: "Paciente Zero exibe calcificação. Vírus digital. [BUFF: CUSTO DE CURA -5]", encrypted: true, decrypted: false, loc: 'bunker', buff: 'heal_cost', cost: 10 },
+            { id: 1, title: "Frequência Theta", text: "Eles sentem medo via rádio. [BUFF: RÁDIO GASTA MENOS ENERGIA]", encrypted: true, decrypted: false, loc: 'bunker', buff: 'radio_cost', cost: 10 },
+            { id: 2, title: "Chave do Esgoto", text: "ITEM CHAVE. Permite acesso aos túneis sob a cidade.", encrypted: false, decrypted: true, loc: 'ruas', isItem: true },
+            { id: 3, title: "Mapa dos Túneis", text: "Mostra a saída secreta para o Setor 7. [BUFF: VIAGEM RÁPIDA]", encrypted: true, decrypted: false, loc: 'mercado', isItem: true, buff: 'travel_time', cost: 15 },
+            { id: 4, title: "Amostra Zero", text: "Vial de sangue original. A cura potencial.", encrypted: false, decrypted: true, loc: 'farmacia', isItem: true },
+            { id: 5, title: "Diário do Soldado", text: "Não há resgate. É uma armadilha. [BUFF: DANO ESCOPETA]", encrypted: true, decrypted: false, loc: 'ruas', buff: 'shotgun_sanity', cost: 20 }
+        ];
+        const dreamsDB = [ { text: "Sonho: O dia do surto no metrô.", choices: [ {l:"Ajudar", e:"san", v:-10, r:"Mordida."}, {l:"Correr", e:"nrg", v:10, r:"Sobreviveu."} ] }, { text: "Sonho: A voz da colmeia chama.", choices: [ {l:"Resistir", e:"san", v:15, r:"Mente forte."}, {l:"Ouvir", e:"san", v:-15, r:"Paz falsa."} ] } ];
         const scenes = {
             bunker: `\n      _______________________\n     /                       \\\n    /    [RÁDIO]   [TV]       \\\n   |                          |\n   |    +------+              |\n   |    | CAMA |   [PORTA]    |\n   |    |      |      ||      |\n   |    +------+      ||      |\n   |                          |\n    \\                        /\n     \\______________________/`,
             mercado: `\n       _____________________\n      /   MERCADO CENTRAL   \\\n     /  [PRATELEIRAS VAZIAS] \\\n    |    __   __   __   __    |\n    |   |  | |  | |XX| |  |   |\n    |   |__| |__| |XX| |__|   |\n    |           /    \\        |\n    |          ( LIXO )       |\n     \\_______________________/`,
@@ -533,406 +475,134 @@
             ruas: `\n         _    _      _    _\n       _| |__| |____| |__| |_\n      /  RUÍNAS DA CIDADE    \\\n     |   _   _        _   _   |\n     |  | | | |      | | | |  |\n     |  |_| |_|      |_| |_|  |\n     |      [CARRO DESTR.]    |\n      \\______________________/`
         };
 
-        const loreDB = [
-            { id: 0, title: "Relatório Médico #01", text: "Paciente Zero exibe calcificação. Vírus digital. [BUFF: CUSTO DE CURA -5]", unlocked: false, loc: 'bunker', buff: 'heal_cost' },
-            { id: 1, title: "Frequência Theta", text: "Eles sentem medo via rádio. [BUFF: RÁDIO GASTA MENOS ENERGIA]", unlocked: false, loc: 'bunker', buff: 'radio_cost' },
-            { id: 2, title: "Chave do Esgoto", text: "ITEM CHAVE. Permite acesso aos túneis sob a cidade.", unlocked: false, loc: 'ruas', isItem: true },
-            { id: 3, title: "Mapa dos Túneis", text: "Mostra a saída secreta para o Setor 7. [BUFF: VIAGEM RÁPIDA]", unlocked: false, loc: 'mercado', isItem: true, buff: 'travel_time' },
-            { id: 4, title: "Amostra Zero", text: "Vial de sangue original. A cura potencial.", unlocked: false, loc: 'farmacia', isItem: true },
-            { id: 5, title: "Diário do Soldado", text: "Não há resgate. É uma armadilha. [BUFF: DANO ESCOPETA]", unlocked: false, loc: 'ruas', buff: 'shotgun_sanity' }
-        ];
-        const dreamsDB = [ { text: "Sonho: O dia do surto no metrô.", choices: [ {l:"Ajudar", e:"san", v:-10, r:"Mordida."}, {l:"Correr", e:"nrg", v:10, r:"Sobreviveu."} ] }, { text: "Sonho: A voz da colmeia chama.", choices: [ {l:"Resistir", e:"san", v:15, r:"Mente forte."}, {l:"Ouvir", e:"san", v:-15, r:"Paz falsa."} ] } ];
+        // --- SYSTEMS ---
+        const arcadeMode = {
+            totalScore: 0,
+            ranks: [ { name: "CIVIL", threshold: 0 }, { name: "RECRUTA", threshold: 100 }, { name: "SOBREVIVENTE", threshold: 300 }, { name: "EXPLORADOR", threshold: 600 }, { name: "OPERADOR", threshold: 1000 }, { name: "VETERANO", threshold: 1500 }, { name: "ELITE", threshold: 2200 }, { name: "HACKER NEURAL", threshold: 3000 }, { name: "MESTRE DO SISTEMA", threshold: 4000 }, { name: "A SINGULARIDADE", threshold: 5500 }, { name: "DEUS DA MÁQUINA", threshold: 7500 } ],
+            minigames: [
+                { id: 'snake', name: 'SNAKE-LINK', req: 0 },
+                { id: 'pac', name: 'PAC-DATA', req: 300 },
+                { id: 'flappy', name: 'FLAP-LINK', req: 1000 },
+                { id: 'dino', name: 'RUN-DATA', req: 3000 },
+                { id: 'echo', name: 'ECHO-MIND', req: 5500 }
+            ],
+            init: function() { const saved = localStorage.getItem('pluribus_rank'); if(saved) this.totalScore = parseInt(saved); this.updateUI(); },
+            openMenu: function() { document.getElementById('start-menu').style.display = 'none'; document.getElementById('arcade-menu').style.display = 'flex'; this.updateUI(); },
+            closeMenu: function() { document.getElementById('arcade-menu').style.display = 'none'; document.getElementById('start-menu').style.display = 'flex'; },
+            addScore: function(amount) { this.totalScore += amount; localStorage.setItem('pluribus_rank', this.totalScore); if (this.totalScore >= 2000) achievementSys.unlock('arcade_2k'); if (this.totalScore >= 7500) achievementSys.unlock('arcade_max'); this.updateUI(); },
+            updateUI: function() {
+                document.getElementById('total-score-display').innerText = this.totalScore;
+                let c = this.ranks[0], n = this.ranks[1]; for (let i = 0; i < this.ranks.length; i++) { if (this.totalScore >= this.ranks[i].threshold) { c = this.ranks[i]; n = this.ranks[i+1] || null; } }
+                document.getElementById('rank-display').innerText = "RANK: " + c.name;
+                if (n) { document.getElementById('next-rank-msg').innerText = `PRÓXIMO NÍVEL: ${n.threshold} PTS`; document.getElementById('xp-bar').style.width = `${((this.totalScore - c.threshold) / (n.threshold - c.threshold)) * 100}%`; } else { document.getElementById('next-rank-msg').innerText = "NÍVEL MÁXIMO"; document.getElementById('xp-bar').style.width = "100%"; }
+                
+                // Update Game Buttons
+                const btnContainer = document.getElementById('arcade-buttons');
+                btnContainer.innerHTML = "";
+                this.minigames.forEach(g => {
+                    const locked = this.totalScore < g.req;
+                    const btn = document.createElement('button');
+                    btn.className = "menu-btn";
+                    btn.disabled = locked;
+                    btn.innerHTML = `JOGAR: ${g.name} ${locked ? '<span class="lock-icon">🔒</span>' : ''}`;
+                    btn.onclick = () => minigameManager.startSpecific(g.id, 'arcade');
+                    btnContainer.appendChild(btn);
+                });
+            }
+        };
 
-        // --- CCTV SYSTEM ---
+        const achievementSys = {
+            trophies: [ { id: 'first_death', name: 'Primeiro Sangue', desc: 'Morra pela primeira vez.', type: 'bronze', earned: false }, { id: 'first_human', name: 'Porteiro', desc: 'Deixe um humano entrar.', type: 'bronze', earned: false }, { id: 'first_kill', name: 'Exterminador', desc: 'Use a escopeta.', type: 'bronze', earned: false }, { id: 'lore_hunter', name: 'Curioso', desc: 'Encontre um arquivo de Lore.', type: 'bronze', earned: false }, { id: 'survivor_5', name: 'Veterano', desc: 'Chegue ao Dia 5.', type: 'silver', earned: false }, { id: 'arcade_2k', name: 'Hacker Neural', desc: '2000 pts no Arcade.', type: 'silver', earned: false }, { id: 'true_end', name: 'A Verdade', desc: 'Descubra o final secreto.', type: 'silver', earned: false }, { id: 'story_complete', name: 'Sobrevivente Real', desc: 'Complete o Modo História.', type: 'gold', earned: false }, { id: 'arcade_max', name: 'Lenda do Arcade', desc: 'Alcance o Rank Deus da Máquina.', type: 'gold', earned: false }, { id: 'platinum', name: 'A Consciência Final', desc: 'Obtenha todos os troféus.', type: 'plat', earned: false } ],
+            init: function() { const saved = localStorage.getItem('pluribus_trophies'); if (saved) { const savedData = JSON.parse(saved); this.trophies.forEach(t => { if (savedData.includes(t.id)) t.earned = true; }); } },
+            unlock: function(id) { const trophy = this.trophies.find(t => t.id === id); if (trophy && !trophy.earned) { trophy.earned = true; this.save(); this.notify(trophy); this.checkPlatinum(); } },
+            checkPlatinum: function() { const allEarned = this.trophies.filter(t => t.id !== 'platinum').every(t => t.earned); if (allEarned) this.unlock('platinum'); },
+            save: function() { localStorage.setItem('pluribus_trophies', JSON.stringify(this.trophies.filter(t => t.earned).map(t => t.id))); },
+            notify: function(trophy) { const notif = document.getElementById('trophy-notification'); document.getElementById('trophy-label').innerText = trophy.type === 'plat' ? "PLATINA OBTIDA" : "TROFÉU CONQUISTADO"; document.getElementById('trophy-name').innerText = trophy.name; let c = '#cd7f32'; if(trophy.type === 'silver') c = '#c0c0c0'; if(trophy.type === 'gold') c = '#ffd700'; if(trophy.type === 'plat') c = '#e5e4e2'; document.getElementById('trophy-icon').style.borderColor = c; document.getElementById('trophy-icon').style.color = c; audioSys.sfx.trophy(); notif.classList.add('active'); setTimeout(() => notif.classList.remove('active'), 4000); },
+            openMenu: function() { document.getElementById('start-menu').style.display = 'none'; document.getElementById('trophy-menu').style.display = 'flex'; const list = document.getElementById('trophy-list'); list.innerHTML = ""; this.trophies.forEach(t => { let c = '#444'; if(t.earned) { if(t.type==='bronze')c='#cd7f32'; if(t.type==='silver')c='#c0c0c0'; if(t.type==='gold')c='#ffd700'; if(t.type==='plat')c='#e5e4e2'; } list.innerHTML += `<div class="trophy-item ${t.earned?'unlocked':''}"><div class="t-icon" style="color:${c}">🏆</div><div class="t-info"><h4>${t.name}</h4><p>${t.desc}</p></div></div>`; }); },
+            closeMenu: function() { document.getElementById('trophy-menu').style.display = 'none'; document.getElementById('start-menu').style.display = 'flex'; }
+        };
+        achievementSys.init(); arcadeMode.init();
+
         const cameraSys = {
             activeCam: 1,
-            feeds: {
-                1: `\n  [CAM 01: CORREDOR]\n\n   [PORTA]   (vazio)\n\n`,
-                2: `\n  [CAM 02: VENTILAÇÃO]\n\n   |||||||   (silêncio)\n\n`,
-                3: `\n  [CAM 03: RUA]\n\n   _ _ _     (chuva)\n\n`
-            },
-            switch: function(id) {
-                this.activeCam = id;
-                this.render();
-                audioSys.sfx.click();
-            },
-            update: function() {
-                // Random events
-                if (Math.random() > 0.9) {
-                    const events = ["(vulto)", "(ruído)", "(olhos)", "!!!", "(estática)"];
-                    const ev = events[Math.floor(Math.random()*events.length)];
-                    if(this.activeCam === 1) this.feeds[1] = `\n  [CAM 01: CORREDOR]\n\n   [PORTA]   ${ev}\n\n`;
-                    if(this.activeCam === 2) this.feeds[2] = `\n  [CAM 02: VENTILAÇÃO]\n\n   |||||||   ${ev}\n\n`;
-                    if(this.activeCam === 3) this.feeds[3] = `\n  [CAM 03: RUA]\n\n   _ _ _     ${ev}\n\n`;
-                    this.render();
-                }
-            },
-            render: function() {
-                const screen = document.getElementById('cctv-feed');
-                if(screen) screen.innerText = this.feeds[this.activeCam];
-                document.getElementById('cctv-label').innerText = `CAM 0${this.activeCam}`;
-            }
+            feeds: { 1: `\n  [CAM 01: CORREDOR]\n\n   [PORTA]   (vazio)\n\n`, 2: `\n  [CAM 02: VENTILAÇÃO]\n\n   |||||||   (silêncio)\n\n`, 3: `\n  [CAM 03: RUA]\n\n   _ _ _     (chuva)\n\n` },
+            switch: function(id) { this.activeCam = id; this.render(); audioSys.sfx.click(); },
+            update: function() { if (Math.random() > 0.9) { const events = ["(vulto)", "(ruído)", "(olhos)", "!!!", "(estática)"]; const ev = events[Math.floor(Math.random()*events.length)]; if(this.activeCam === 1) this.feeds[1] = `\n  [CAM 01: CORREDOR]\n\n   [PORTA]   ${ev}\n\n`; if(this.activeCam === 2) this.feeds[2] = `\n  [CAM 02: VENTILAÇÃO]\n\n   |||||||   ${ev}\n\n`; if(this.activeCam === 3) this.feeds[3] = `\n  [CAM 03: RUA]\n\n   _ _ _     ${ev}\n\n`; this.render(); } },
+            render: function() { const screen = document.getElementById('cctv-feed'); if(screen) screen.innerText = this.feeds[this.activeCam]; document.getElementById('cctv-label').innerText = `CAM 0${this.activeCam}`; }
         };
 
         const minigameManager = {
             activeGame: null, canvas: null, ctx: null, mode: 'story',
             startRandom: function() { this.mode = 'story'; this.launch(['pac', 'snake', 'echo', 'flappy', 'dino'][Math.floor(Math.random()*5)]); },
             startSpecific: function(n, m) { this.mode = m; this.launch(n); document.getElementById('arcade-menu').style.display = 'none'; document.getElementById('arcade-back-btn').style.display = m === 'arcade' ? 'inline-block' : 'none'; },
-            launch: function(c) {
-                document.getElementById('minigame-container').classList.add('active');
-                this.canvas = document.getElementById('minigame-canvas'); this.ctx = this.canvas.getContext('2d');
-                this.startCountdown(() => {
-                    if(c==='pac'){ pacGame.init(this.canvas); pacGame.start(); this.activeGame=pacGame; }
-                    else if(c==='snake'){ snakeGame.init(this.canvas); snakeGame.start(); this.activeGame=snakeGame; }
-                    else if(c==='echo'){ echoGame.init(this.canvas); echoGame.start(); this.activeGame=echoGame; }
-                    else if(c==='flappy'){ flappyGame.init(this.canvas); flappyGame.start(); this.activeGame=flappyGame; }
-                    else if(c==='dino'){ dinoGame.init(this.canvas); dinoGame.start(); this.activeGame=dinoGame; }
-                });
-            },
-            startCountdown: function(cb) {
-                let c=3; const i=setInterval(()=>{
-                    this.ctx.fillStyle='#000'; this.ctx.fillRect(0,0,400,400); this.ctx.font="100px Courier New"; this.ctx.textAlign="center"; this.ctx.textBaseline="middle";
-                    if(c>0){this.ctx.fillStyle="var(--text-alert)";this.ctx.fillText(c,200,200);audioSys.sfx.click();}
-                    else{this.ctx.fillStyle="var(--text-safe)";this.ctx.fillText("VAI!",200,200);audioSys.sfx.success();}
-                    c--; if(c<-1){clearInterval(i);cb();}
-                },1000);
-            },
+            launch: function(c) { document.getElementById('minigame-container').classList.add('active'); this.canvas = document.getElementById('minigame-canvas'); this.ctx = this.canvas.getContext('2d'); this.startCountdown(() => { if(c==='pac'){ pacGame.init(this.canvas); pacGame.start(); this.activeGame=pacGame; } else if(c==='snake'){ snakeGame.init(this.canvas); snakeGame.start(); this.activeGame=snakeGame; } else if(c==='echo'){ echoGame.init(this.canvas); echoGame.start(); this.activeGame=echoGame; } else if(c==='flappy'){ flappyGame.init(this.canvas); flappyGame.start(); this.activeGame=flappyGame; } else if(c==='dino'){ dinoGame.init(this.canvas); dinoGame.start(); this.activeGame=dinoGame; } }); },
+            startCountdown: function(cb) { let c=3; const i=setInterval(()=>{ this.ctx.fillStyle='#000'; this.ctx.fillRect(0,0,400,400); this.ctx.font="100px Courier New"; this.ctx.textAlign="center"; this.ctx.textBaseline="middle"; if(c>0){this.ctx.fillStyle="var(--text-alert)";this.ctx.fillText(c,200,200);audioSys.sfx.click();} else{this.ctx.fillStyle="var(--text-safe)";this.ctx.fillText("VAI!",200,200);audioSys.sfx.success();} c--; if(c<-1){clearInterval(i);cb();} },1000); },
             handleInput: function(k) { if(this.activeGame) this.activeGame.handleInput(k); },
-            endGame: function(won, score = 0) {
-                if(this.activeGame) this.activeGame.active=false;
-                document.getElementById('minigame-container').classList.remove('active');
-                
-                // SAVE SCORE PERSISTENTLY
-                if(score > 0) {
-                    arcadeMode.addScore(score);
-                    if(this.mode === 'story') game.log(`XP GANHO: ${score}`, "safe");
-                }
-
-                if (this.mode === 'story') game.resolveDay(won);
-                else {
-                    if (won) { alert(`VITÓRIA! +${score} PONTOS`); } else alert("GAME OVER");
-                    document.getElementById('arcade-menu').style.display = 'flex';
-                }
-            },
+            endGame: function(won, score = 0) { if(this.activeGame) this.activeGame.active=false; document.getElementById('minigame-container').classList.remove('active'); if(score > 0) { arcadeMode.addScore(score); if(this.mode === 'story') game.log(`XP GANHO: ${score}`, "safe"); } if (this.mode === 'story') game.resolveDay(won); else { if (won) { alert(`VITÓRIA! +${score} PONTOS`); } else alert("GAME OVER"); document.getElementById('arcade-menu').style.display = 'flex'; } },
             exitArcade: function() { if(this.activeGame) this.activeGame.active=false; document.getElementById('minigame-container').classList.remove('active'); document.getElementById('arcade-menu').style.display = 'flex'; }
         };
         window.addEventListener('keydown', (e)=>{if(document.getElementById('minigame-container').classList.contains('active'))minigameManager.handleInput(e.key);});
 
-        // --- GAMES ---
-        const snakeGame = {
-            active:false, canvas:null, ctx:null, grid:20, snake:[], food:{}, velocity:{x:1,y:0}, inputQueue:[], score:0, target:20,
-            init: function(c){this.canvas=c;this.ctx=c.getContext('2d');},
-            start: function(){
-                this.active=true; this.snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}]; this.score=0; this.velocity={x:1,y:0}; this.inputQueue=[]; this.spawnFood(); 
-                this.target = minigameManager.mode === 'arcade' ? 15 : 5; 
-                document.getElementById('minigame-title').innerText="SNAKE-LINK"; 
-                document.getElementById('minigame-info').innerText=`ALVOS: ${this.target}`; 
-                this.loop();
-            },
-            spawnFood: function(){let v=false; while(!v){this.food={x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*20)}; v=!this.snake.some(s=>s.x===this.food.x&&s.y===this.food.y);}},
-            handleInput: function(k){if(this.inputQueue.length>2)return; const last=this.inputQueue.length>0?this.inputQueue[this.inputQueue.length-1]:this.velocity; if(k==='ArrowUp'&&last.y===0)this.inputQueue.push({x:0,y:-1}); if(k==='ArrowDown'&&last.y===0)this.inputQueue.push({x:0,y:1}); if(k==='ArrowLeft'&&last.x===0)this.inputQueue.push({x:-1,y:0}); if(k==='ArrowRight'&&last.x===0)this.inputQueue.push({x:1,y:0});},
-            loop: function(){if(!this.active)return; if(this.inputQueue.length>0)this.velocity=this.inputQueue.shift(); const h={x:this.snake[0].x+this.velocity.x, y:this.snake[0].y+this.velocity.y}; if(h.x<0||h.x>=20||h.y<0||h.y>=20||this.snake.some(s=>s.x===h.x&&s.y===h.y)){minigameManager.endGame(false, 0);return;} this.snake.unshift(h); if(h.x===this.food.x&&h.y===this.food.y){this.score++;audioSys.sfx.click();if(minigameManager.mode==='story' && this.score>=this.target){minigameManager.endGame(true, 50);return;} if(minigameManager.mode==='arcade' && this.score>=this.target){minigameManager.endGame(true, 100);return;} this.spawnFood();}else{this.snake.pop();} 
-            this.ctx.fillStyle='#000';this.ctx.fillRect(0,0,400,400); this.ctx.fillStyle='#fc0';this.ctx.fillRect(this.food.x*20+2,this.food.y*20+2,16,16); this.ctx.fillStyle='#3f3';this.snake.forEach(s=>this.ctx.fillRect(s.x*20,s.y*20,18,18)); setTimeout(()=>requestAnimationFrame(()=>this.loop()),120);}
-        };
-
-        const echoGame = {
-            active:false, canvas:null, ctx:null, seq:[], userSeq:[], level:1, showing:false,
-            init: function(c){this.canvas=c;this.ctx=c.getContext('2d');},
-            start: function(){this.active=true; this.level=1; 
-            document.getElementById('minigame-title').innerText="ECHO-MIND"; 
-            document.getElementById('minigame-info').innerText="MEMORIZE"; 
-            this.startLevel();},
-            startLevel: function(){this.seq=[]; this.userSeq=[]; for(let i=0;i<this.level+2;i++)this.seq.push(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'][Math.floor(Math.random()*4)]); this.showing=true; this.showSequence(0);},
-            showSequence: function(i){if(i>=this.seq.length){this.showing=false;this.draw(null);return;} this.draw(this.seq[i]); audioSys.sfx.click(); setTimeout(()=>{this.draw(null);setTimeout(()=>this.showSequence(i+1),200)},600);},
-            draw: function(d){this.ctx.fillStyle='#000';this.ctx.fillRect(0,0,400,400); if(!d)return; this.ctx.font="100px monospace"; this.ctx.fillStyle="#3f3"; this.ctx.textAlign="center"; this.ctx.fillText({'ArrowUp':'↑','ArrowDown':'↓','ArrowLeft':'←','ArrowRight':'→'}[d],200,240);},
-            handleInput: function(k){if(this.showing)return; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(k)){this.userSeq.push(k); this.draw(k); audioSys.sfx.click(); setTimeout(()=>this.draw(null),200); if(this.userSeq[this.userSeq.length-1]!==this.seq[this.userSeq.length-1]){minigameManager.endGame(false, 0);return;} if(this.userSeq.length===this.seq.length){this.level++; if(minigameManager.mode==='story' && this.level>3) minigameManager.endGame(true, 50); else if (minigameManager.mode==='arcade' && this.level>5) minigameManager.endGame(true, 150); else setTimeout(()=>this.startLevel(),1000);}}}
-        };
-
-        const pacGame = {
-            active: false, canvas: null, ctx: null, grid: 20, map: [],
-            player: {x:1, y:1, dir:{x:0,y:0}, nextDir:{x:0,y:0}, mouthOpen: 0, mouthSpeed: 0.2},
-            ghosts: [], dots: 0, maxDots: 0, level: 1, score: 0, frame: 0,
-            init: function(c) { this.canvas = c; this.ctx = c.getContext('2d'); },
-            start: function() { this.active = true; this.score = 0; this.level = 1; this.initLevel(); this.loop(); },
-            initLevel: function() {
-                this.dots = 0; this.map = [];
-                let ghostCount = 1 + (this.level - 1);
-                this.ghosts = [];
-                for(let i=0; i<ghostCount; i++) this.ghosts.push({x:9, y:9, color: i===0?'#ff0000':(i===1?'#ffb8ae':'#00ffff'), dir:{x:0,y:0}});
-                document.getElementById('minigame-title').innerText = `PAC-DATA - LVL ${this.level}`;
-                document.getElementById('minigame-info').innerHTML = 'DADOS: <span id="pac-dots">0</span>';
-                for(let y=0; y<20; y++) { let row = []; for(let x=0; x<20; x++) { if (x===0 || x===19 || y===0 || y===19 || (x%2===0 && y%2===0)) row.push(0); else { row.push(1); this.dots++; } } this.map.push(row); }
-                this.map[1][1] = 2; this.dots--; this.map[1][2] = 2; this.dots--; this.map[2][1] = 2; this.dots--; this.map[9][9] = 2; this.dots--;
-                this.maxDots = this.dots; this.player = { x: 1, y: 1, dir: {x:0,y:0}, nextDir: {x:1,y:0}, mouthOpen: 0, mouthSpeed: 0.2 };
-            },
-            handleInput: function(k) { if(k==='ArrowUp') this.player.nextDir = {x:0, y:-1}; if(k==='ArrowDown') this.player.nextDir = {x:0, y:1}; if(k==='ArrowLeft') this.player.nextDir = {x:-1, y:0}; if(k==='ArrowRight') this.player.nextDir = {x:1, y:0}; },
-            loop: function() {
-                if(!this.active) return;
-                this.frame++;
-                let pd = this.player.nextDir; if (this.map[this.player.y + pd.y][this.player.x + pd.x] !== 0) this.player.dir = pd;
-                let nx = this.player.x + this.player.dir.x; let ny = this.player.y + this.player.dir.y;
-                if (this.map[ny][nx] !== 0) { this.player.x = nx; this.player.y = ny; }
-                if (this.map[this.player.y][this.player.x] === 1) { this.map[this.player.y][this.player.x] = 2; this.dots--; this.score += 10; audioSys.sfx.click(); }
-                
-                if (this.frame % 2 === 0) { // Ghosts move at half speed
-                    this.ghosts.forEach(g => {
-                        if (Math.random() > 0.5) {
-                             let dirs = [];
-                             if (this.player.x > g.x) dirs.push({x:1,y:0}); if (this.player.x < g.x) dirs.push({x:-1,y:0}); if (this.player.y > g.y) dirs.push({x:0,y:1}); if (this.player.y < g.y) dirs.push({x:0,y:-1});
-                             dirs = dirs.filter(d => this.map[g.y+d.y][g.x+d.x] !== 0);
-                             if(dirs.length > 0) { let move = dirs[Math.floor(Math.random()*dirs.length)]; g.x += move.x; g.y += move.y; }
-                        } else {
-                            let moves = [{x:0,y:1}, {x:0,y:-1}, {x:1,y:0}, {x:-1,y:0}];
-                            let valid = moves.filter(d => this.map[g.y+d.y][g.x+d.x] !== 0);
-                            if(valid.length > 0) { let move = valid[Math.floor(Math.random()*valid.length)]; g.x += move.x; g.y += move.y; }
-                        }
-                    });
-                }
-                this.ghosts.forEach(g => { if(g.x === this.player.x && g.y === this.player.y) { minigameManager.endGame(false, this.score); return; } });
-                
-                this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400);
-                for(let y=0; y<20; y++) { for(let x=0; x<20; x++) { let cell = this.map[y][x]; if (cell === 0) { this.ctx.strokeStyle = '#1919A6'; this.ctx.lineWidth = 2; this.ctx.strokeRect(x*20+5, y*20+5, 10, 10); } else if (cell === 1) { this.ctx.fillStyle = '#ffb8ae'; this.ctx.beginPath(); this.ctx.arc(x*20+10, y*20+10, 3, 0, Math.PI*2); this.ctx.fill(); } } }
-                
-                this.player.mouthOpen += this.player.mouthSpeed; if (this.player.mouthOpen > 0.25 || this.player.mouthOpen < 0) this.player.mouthSpeed *= -1;
-                let angle = 0; if (this.player.dir.x === -1) angle = Math.PI; if (this.player.dir.y === -1) angle = -Math.PI/2; if (this.player.dir.y === 1) angle = Math.PI/2;
-                this.ctx.fillStyle = '#FFFF00'; this.ctx.beginPath(); this.ctx.arc(this.player.x*20+10, this.player.y*20+10, 8, angle + Math.PI*this.player.mouthOpen, angle + Math.PI*(2 - this.player.mouthOpen)); this.ctx.lineTo(this.player.x*20+10, this.player.y*20+10); this.ctx.fill();
-                
-                this.ghosts.forEach(g => {
-                    this.ctx.fillStyle = g.color; this.ctx.beginPath(); this.ctx.arc(g.x*20+10, g.y*20+10, 8, Math.PI, 0); this.ctx.lineTo(g.x*20+18, g.y*20+18); this.ctx.lineTo(g.x*20+10, g.y*20+14); this.ctx.lineTo(g.x*20+2, g.y*20+18); this.ctx.fill();
-                    this.ctx.fillStyle = '#fff'; this.ctx.beginPath(); this.ctx.arc(g.x*20+7, g.y*20+8, 2.5, 0, Math.PI*2); this.ctx.arc(g.x*20+13, g.y*20+8, 2.5, 0, Math.PI*2); this.ctx.fill();
-                    this.ctx.fillStyle = '#000'; this.ctx.beginPath(); this.ctx.arc(g.x*20+7, g.y*20+8, 1, 0, Math.PI*2); this.ctx.arc(g.x*20+13, g.y*20+8, 1, 0, Math.PI*2); this.ctx.fill();
-                });
-                
-                const scoreEl = document.getElementById('pac-dots'); if(scoreEl) scoreEl.innerText = this.dots;
-                if(this.dots <= 0) { this.level++; if(this.level > 3) minigameManager.endGame(true, this.score + 500); else { alert(`NÍVEL ${this.level-1} COMPLETO!`); this.initLevel(); setTimeout(() => requestAnimationFrame(() => this.loop()), 120); } } 
-                else setTimeout(() => requestAnimationFrame(() => this.loop()), 120);
-            }
-        };
-
-        const flappyGame = {
-            active: false, canvas: null, ctx: null,
-            bird: { y: 200, vel: 0, size: 15 }, pipes: [], frame: 0, score: 0, target: 10,
-            init: function(c) { this.canvas = c; this.ctx = c.getContext('2d'); },
-            start: function() {
-                this.active = true; this.bird = { y: 200, vel: 0, size: 15 }; this.pipes = []; this.frame = 0; this.score = 0; 
-                this.target = minigameManager.mode === 'arcade' ? 30 : 10;
-                document.getElementById('minigame-title').innerText = "FLAP-LINK";
-                document.getElementById('minigame-info').innerText = `ALVO: ${this.target}`;
-                this.loop();
-            },
-            handleInput: function(k) { if(k==='ArrowUp' || k===' ') { this.bird.vel = -6; audioSys.sfx.jump(); } },
-            loop: function() {
-                if(!this.active) return;
-                this.frame++;
-                this.bird.vel += 0.4; this.bird.y += this.bird.vel;
-                if(this.frame % 90 === 0) {
-                    let gapY = Math.floor(Math.random() * 200) + 50;
-                    this.pipes.push({ x: 400, topH: gapY, bottomY: gapY + 120, passed: false });
-                }
-                this.pipes.forEach(p => p.x -= 3);
-                this.pipes = this.pipes.filter(p => p.x > -30);
-                if(this.bird.y < 0 || this.bird.y > 400) { minigameManager.endGame(false, this.score); return; }
-                this.pipes.forEach(p => {
-                    if(50 + this.bird.size > p.x && 50 < p.x + 30) {
-                        if(this.bird.y < p.topH || this.bird.y + this.bird.size > p.bottomY) { minigameManager.endGame(false, this.score); return; }
-                    }
-                    if(!p.passed && p.x < 50) { this.score++; p.passed = true; audioSys.sfx.click(); if(minigameManager.mode === 'story' && this.score >= this.target) minigameManager.endGame(true, 50); }
-                });
-                this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400);
-                this.ctx.fillStyle = '#ffcc00'; this.ctx.fillRect(50, this.bird.y, this.bird.size, this.bird.size);
-                this.ctx.fillStyle = '#33ff33';
-                this.pipes.forEach(p => { this.ctx.fillRect(p.x, 0, 30, p.topH); this.ctx.fillRect(p.x, p.bottomY, 30, 400 - p.bottomY); });
-                document.getElementById('minigame-info').innerText = `PONTOS: ${this.score} / ${this.target}`;
-                setTimeout(() => requestAnimationFrame(() => this.loop()), 20);
-            }
-        };
-
-        const dinoGame = {
-            active: false, canvas: null, ctx: null,
-            dino: { y: 350, vel: 0, grounded: true }, obst: [], frame: 0, score: 0, target: 500,
-            init: function(c) { this.canvas = c; this.ctx = c.getContext('2d'); },
-            start: function() {
-                this.active = true; this.dino = { y: 350, vel: 0, grounded: true }; this.obst = []; this.frame = 0; this.score = 0;
-                this.target = minigameManager.mode === 'arcade' ? 1000 : 500;
-                document.getElementById('minigame-title').innerText = "RUN-DATA";
-                document.getElementById('minigame-info').innerText = `DISTÂNCIA: 0`;
-                this.loop();
-            },
-            handleInput: function(k) { if((k==='ArrowUp' || k===' ') && this.dino.grounded) { this.dino.vel = -12; this.dino.grounded = false; audioSys.sfx.jump(); } },
-            loop: function() {
-                if(!this.active) return;
-                this.score += 2; this.frame++;
-                if(!this.dino.grounded) { this.dino.vel += 0.8; this.dino.y += this.dino.vel; if(this.dino.y >= 350) { this.dino.y = 350; this.dino.vel = 0; this.dino.grounded = true; } }
-                if(this.frame % 100 === 0 || (this.frame % 60 === 0 && Math.random() > 0.7)) { this.obst.push({ x: 400, h: Math.random()>0.5?30:50 }); }
-                this.obst.forEach(o => o.x -= 5);
-                this.obst = this.obst.filter(o => o.x > -20);
-                this.obst.forEach(o => { if(o.x < 70 && o.x > 30 && this.dino.y > (350 - o.h + 10)) { minigameManager.endGame(false, this.score); return; } });
-                this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400);
-                this.ctx.fillStyle = '#fff'; this.ctx.fillRect(0, 380, 400, 2); 
-                this.ctx.fillStyle = '#00ccff'; this.ctx.fillRect(50, this.dino.y, 20, 30); 
-                this.ctx.fillStyle = '#ff3333'; this.obst.forEach(o => this.ctx.fillRect(o.x, 380 - o.h, 15, o.h)); 
-                document.getElementById('minigame-info').innerText = `DISTÂNCIA: ${this.score} / ${this.target}`;
-                if(minigameManager.mode === 'story' && this.score >= this.target) minigameManager.endGame(true, 50);
-                else setTimeout(() => requestAnimationFrame(() => this.loop()), 20);
-            }
-        };
-
-        const radioGame = {
-            active:false, pos:0, dir:1, target:0, anim:null,
-            start: function() { this.active=true; document.getElementById('radio-minigame').classList.add('active'); this.target=20+Math.random()*60; document.getElementById('tuner-target').style.left=this.target+'%'; document.getElementById('tuner-target').style.width='20%'; this.loop(); },
-            loop: function() { if(!this.active)return; this.pos+=1.5*this.dir; if(this.pos>100||this.pos<0)this.dir*=-1; document.getElementById('tuner-cursor').style.left=this.pos+'%'; this.anim=requestAnimationFrame(()=>this.loop()); },
-            stop: function() { cancelAnimationFrame(this.anim); this.active=false; document.getElementById('radio-minigame').classList.remove('active'); if(this.pos>=this.target&&this.pos<=this.target+20){audioSys.sfx.success();game.state.sanity=Math.min(100,game.state.sanity+15);if(Math.random()>0.7)game.unlockLore('bunker');else game.log("Sinal limpo.", "safe");}else{audioSys.sfx.error();game.state.sanity-=5;game.log("Ruído.", "alert");} game.updateHUD(); }
-        };
+        const snakeGame = { active:false, canvas:null, ctx:null, grid:20, snake:[], food:{}, velocity:{x:1,y:0}, inputQueue:[], score:0, target:20, init: function(c){this.canvas=c;this.ctx=c.getContext('2d');}, start: function(){this.active=true; this.snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}]; this.score=0; this.velocity={x:1,y:0}; this.inputQueue=[]; this.spawnFood(); this.target = minigameManager.mode === 'arcade' ? 15 : 5; document.getElementById('minigame-title').innerText="SNAKE-LINK"; document.getElementById('minigame-info').innerText=`ALVOS: ${this.target}`; this.loop();}, spawnFood: function(){let v=false; while(!v){this.food={x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*20)}; v=!this.snake.some(s=>s.x===this.food.x&&s.y===this.food.y);}}, handleInput: function(k){if(this.inputQueue.length>2)return; const last=this.inputQueue.length>0?this.inputQueue[this.inputQueue.length-1]:this.velocity; if(k==='ArrowUp'&&last.y===0)this.inputQueue.push({x:0,y:-1}); if(k==='ArrowDown'&&last.y===0)this.inputQueue.push({x:0,y:1}); if(k==='ArrowLeft'&&last.x===0)this.inputQueue.push({x:-1,y:0}); if(k==='ArrowRight'&&last.x===0)this.inputQueue.push({x:1,y:0});}, loop: function(){if(!this.active)return; if(this.inputQueue.length>0)this.velocity=this.inputQueue.shift(); const h={x:this.snake[0].x+this.velocity.x, y:this.snake[0].y+this.velocity.y}; if(h.x<0||h.x>=20||h.y<0||h.y>=20||this.snake.some(s=>s.x===h.x&&s.y===h.y)){minigameManager.endGame(false, 0);return;} this.snake.unshift(h); if(h.x===this.food.x&&h.y===this.food.y){this.score++;audioSys.sfx.click();if(minigameManager.mode==='story' && this.score>=this.target){minigameManager.endGame(true, 50);return;} if(minigameManager.mode==='arcade' && this.score>=this.target){minigameManager.endGame(true, 100);return;} this.spawnFood();}else{this.snake.pop();} this.ctx.fillStyle='#000';this.ctx.fillRect(0,0,400,400); this.ctx.fillStyle='#fc0';this.ctx.fillRect(this.food.x*20+2,this.food.y*20+2,16,16); this.ctx.fillStyle='#3f3';this.snake.forEach(s=>this.ctx.fillRect(s.x*20,s.y*20,18,18)); setTimeout(()=>requestAnimationFrame(()=>this.loop()),120);} };
+        const echoGame = { active:false, canvas:null, ctx:null, seq:[], userSeq:[], level:1, showing:false, init: function(c){this.canvas=c;this.ctx=c.getContext('2d');}, start: function(){this.active=true; this.level=1; document.getElementById('minigame-title').innerText="ECHO-MIND"; document.getElementById('minigame-info').innerText="MEMORIZE"; this.startLevel();}, startLevel: function(){this.seq=[]; this.userSeq=[]; for(let i=0;i<this.level+2;i++)this.seq.push(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'][Math.floor(Math.random()*4)]); this.showing=true; this.showSequence(0);}, showSequence: function(i){if(i>=this.seq.length){this.showing=false;this.draw(null);return;} this.draw(this.seq[i]); audioSys.sfx.click(); setTimeout(()=>{this.draw(null);setTimeout(()=>this.showSequence(i+1),200)},600);}, draw: function(d){this.ctx.fillStyle='#000';this.ctx.fillRect(0,0,400,400); if(!d)return; this.ctx.font="100px monospace"; this.ctx.fillStyle="#3f3"; this.ctx.textAlign="center"; this.ctx.fillText({'ArrowUp':'↑','ArrowDown':'↓','ArrowLeft':'←','ArrowRight':'→'}[d],200,240);}, handleInput: function(k){if(this.showing)return; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(k)){this.userSeq.push(k); this.draw(k); audioSys.sfx.click(); setTimeout(()=>this.draw(null),200); if(this.userSeq[this.userSeq.length-1]!==this.seq[this.userSeq.length-1]){minigameManager.endGame(false, 0);return;} if(this.userSeq.length===this.seq.length){this.level++; if(minigameManager.mode==='story' && this.level>3) minigameManager.endGame(true, 50); else if (minigameManager.mode==='arcade' && this.level>5) minigameManager.endGame(true, 150); else setTimeout(()=>this.startLevel(),1000);}}} };
+        const pacGame = { active: false, canvas: null, ctx: null, grid: 20, map: [], player: {x:1, y:1, dir:{x:0,y:0}, nextDir:{x:0,y:0}, mouthOpen: 0, mouthSpeed: 0.2}, ghosts: [], dots: 0, maxDots: 0, level: 1, score: 0, frame: 0, init: function(c) { this.canvas = c; this.ctx = c.getContext('2d'); }, start: function() { this.active = true; this.score = 0; this.level = 1; this.initLevel(); this.loop(); }, initLevel: function() { this.dots = 0; this.map = []; let ghostCount = 1 + (this.level - 1); this.ghosts = []; for(let i=0; i<ghostCount; i++) this.ghosts.push({x:9, y:9, color: i===0?'#ff0000':(i===1?'#ffb8ae':'#00ffff'), dir:{x:0,y:0}}); document.getElementById('minigame-title').innerText = `PAC-DATA - LVL ${this.level}`; document.getElementById('minigame-info').innerHTML = 'DADOS: <span id="pac-dots">0</span>'; for(let y=0; y<20; y++) { let row = []; for(let x=0; x<20; x++) { if (x===0 || x===19 || y===0 || y===19 || (x%2===0 && y%2===0)) row.push(0); else { row.push(1); this.dots++; } } this.map.push(row); } this.map[1][1] = 2; this.dots--; this.map[1][2] = 2; this.dots--; this.map[2][1] = 2; this.dots--; this.map[9][9] = 2; this.dots--; this.maxDots = this.dots; this.player = { x: 1, y: 1, dir: {x:0,y:0}, nextDir: {x:1,y:0}, mouthOpen: 0, mouthSpeed: 0.2 }; }, handleInput: function(k) { if(k==='ArrowUp') this.player.nextDir = {x:0, y:-1}; if(k==='ArrowDown') this.player.nextDir = {x:0, y:1}; if(k==='ArrowLeft') this.player.nextDir = {x:-1, y:0}; if(k==='ArrowRight') this.player.nextDir = {x:1, y:0}; }, loop: function() { if(!this.active) return; this.frame++; let pd = this.player.nextDir; if (this.map[this.player.y + pd.y][this.player.x + pd.x] !== 0) this.player.dir = pd; let nx = this.player.x + this.player.dir.x; let ny = this.player.y + this.player.dir.y; if (this.map[ny][nx] !== 0) { this.player.x = nx; this.player.y = ny; } if (this.map[this.player.y][this.player.x] === 1) { this.map[this.player.y][this.player.x] = 2; this.dots--; this.score += 10; audioSys.sfx.click(); } if (this.frame % 2 === 0) { this.ghosts.forEach(g => { if (Math.random() > 0.5) { let dirs = []; if (this.player.x > g.x) dirs.push({x:1,y:0}); if (this.player.x < g.x) dirs.push({x:-1,y:0}); if (this.player.y > g.y) dirs.push({x:0,y:1}); if (this.player.y < g.y) dirs.push({x:0,y:-1}); dirs = dirs.filter(d => this.map[g.y+d.y][g.x+d.x] !== 0); if(dirs.length > 0) { let move = dirs[Math.floor(Math.random()*dirs.length)]; g.x += move.x; g.y += move.y; } } else { let moves = [{x:0,y:1}, {x:0,y:-1}, {x:1,y:0}, {x:-1,y:0}]; let valid = moves.filter(d => this.map[g.y+d.y][g.x+d.x] !== 0); if(valid.length > 0) { let move = valid[Math.floor(Math.random()*valid.length)]; g.x += move.x; g.y += move.y; } } }); } this.ghosts.forEach(g => { if(g.x === this.player.x && g.y === this.player.y) { minigameManager.endGame(false, this.score); return; } }); this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400); for(let y=0; y<20; y++) { for(let x=0; x<20; x++) { let cell = this.map[y][x]; if (cell === 0) { this.ctx.strokeStyle = '#1919A6'; this.ctx.lineWidth = 2; this.ctx.strokeRect(x*20+5, y*20+5, 10, 10); } else if (cell === 1) { this.ctx.fillStyle = '#ffb8ae'; this.ctx.beginPath(); this.ctx.arc(x*20+10, y*20+10, 3, 0, Math.PI*2); this.ctx.fill(); } } } this.player.mouthOpen += this.player.mouthSpeed; if (this.player.mouthOpen > 0.25 || this.player.mouthOpen < 0) this.player.mouthSpeed *= -1; let angle = 0; if (this.player.dir.x === -1) angle = Math.PI; if (this.player.dir.y === -1) angle = -Math.PI/2; if (this.player.dir.y === 1) angle = Math.PI/2; this.ctx.fillStyle = '#FFFF00'; this.ctx.beginPath(); this.ctx.arc(this.player.x*20+10, this.player.y*20+10, 8, angle + Math.PI*this.player.mouthOpen, angle + Math.PI*(2 - this.player.mouthOpen)); this.ctx.lineTo(this.player.x*20+10, this.player.y*20+10); this.ctx.fill(); this.ghosts.forEach(g => { this.ctx.fillStyle = g.color; this.ctx.beginPath(); this.ctx.arc(g.x*20+10, g.y*20+10, 8, Math.PI, 0); this.ctx.lineTo(g.x*20+18, g.y*20+18); this.ctx.lineTo(g.x*20+10, g.y*20+14); this.ctx.lineTo(g.x*20+2, g.y*20+18); this.ctx.fill(); this.ctx.fillStyle = '#fff'; this.ctx.beginPath(); this.ctx.arc(g.x*20+7, g.y*20+8, 2.5, 0, Math.PI*2); this.ctx.arc(g.x*20+13, g.y*20+8, 2.5, 0, Math.PI*2); this.ctx.fill(); this.ctx.fillStyle = '#000'; this.ctx.beginPath(); this.ctx.arc(g.x*20+7, g.y*20+8, 1, 0, Math.PI*2); this.ctx.arc(g.x*20+13, g.y*20+8, 1, 0, Math.PI*2); this.ctx.fill(); }); const scoreEl = document.getElementById('pac-dots'); if(scoreEl) scoreEl.innerText = this.dots; if(this.dots <= 0) { this.level++; if(this.level > 3) minigameManager.endGame(true, this.score + 500); else { alert(`NÍVEL ${this.level-1} COMPLETO!`); this.initLevel(); setTimeout(() => requestAnimationFrame(() => this.loop()), 120); } } else setTimeout(() => requestAnimationFrame(() => this.loop()), 120); } };
+        const flappyGame = { active: false, canvas: null, ctx: null, bird: { y: 200, vel: 0, size: 15 }, pipes: [], frame: 0, score: 0, target: 10, init: function(c) { this.canvas = c; this.ctx = c.getContext('2d'); }, start: function() { this.active = true; this.bird = { y: 200, vel: 0, size: 15 }; this.pipes = []; this.frame = 0; this.score = 0; this.target = minigameManager.mode === 'arcade' ? 30 : 10; document.getElementById('minigame-title').innerText = "FLAP-LINK"; document.getElementById('minigame-info').innerText = `ALVO: ${this.target}`; this.loop(); }, handleInput: function(k) { if(k==='ArrowUp' || k===' ') { this.bird.vel = -6; audioSys.sfx.jump(); } }, loop: function() { if(!this.active) return; this.frame++; this.bird.vel += 0.4; this.bird.y += this.bird.vel; if(this.frame % 90 === 0) { let gapY = Math.floor(Math.random() * 200) + 50; this.pipes.push({ x: 400, topH: gapY, bottomY: gapY + 120, passed: false }); } this.pipes.forEach(p => p.x -= 3); this.pipes = this.pipes.filter(p => p.x > -30); if(this.bird.y < 0 || this.bird.y > 400) { minigameManager.endGame(false, this.score); return; } this.pipes.forEach(p => { if(50 + this.bird.size > p.x && 50 < p.x + 30) { if(this.bird.y < p.topH || this.bird.y + this.bird.size > p.bottomY) { minigameManager.endGame(false, this.score); return; } } if(!p.passed && p.x < 50) { this.score++; p.passed = true; audioSys.sfx.click(); if(minigameManager.mode === 'story' && this.score >= this.target) minigameManager.endGame(true, 50); } }); this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400); this.ctx.fillStyle = '#ffcc00'; this.ctx.fillRect(50, this.bird.y, this.bird.size, this.bird.size); this.ctx.fillStyle = '#33ff33'; this.pipes.forEach(p => { this.ctx.fillRect(p.x, 0, 30, p.topH); this.ctx.fillRect(p.x, p.bottomY, 30, 400 - p.bottomY); }); document.getElementById('minigame-info').innerText = `PONTOS: ${this.score} / ${this.target}`; setTimeout(() => requestAnimationFrame(() => this.loop()), 20); } };
+        const dinoGame = { active: false, canvas: null, ctx: null, dino: { y: 350, vel: 0, grounded: true }, obst: [], frame: 0, score: 0, target: 500, init: function(c) { this.canvas = c; this.ctx = c.getContext('2d'); }, start: function() { this.active = true; this.dino = { y: 350, vel: 0, grounded: true }; this.obst = []; this.frame = 0; this.score = 0; this.target = minigameManager.mode === 'arcade' ? 1000 : 500; document.getElementById('minigame-title').innerText = "RUN-DATA"; document.getElementById('minigame-info').innerText = `DISTÂNCIA: 0`; this.loop(); }, handleInput: function(k) { if((k==='ArrowUp' || k===' ') && this.dino.grounded) { this.dino.vel = -12; this.dino.grounded = false; audioSys.sfx.jump(); } }, loop: function() { if(!this.active) return; this.score += 2; this.frame++; if(!this.dino.grounded) { this.dino.vel += 0.8; this.dino.y += this.dino.vel; if(this.dino.y >= 350) { this.dino.y = 350; this.dino.vel = 0; this.dino.grounded = true; } } if(this.frame % 100 === 0 || (this.frame % 60 === 0 && Math.random() > 0.7)) { this.obst.push({ x: 400, h: Math.random()>0.5?30:50 }); } this.obst.forEach(o => o.x -= 5); this.obst = this.obst.filter(o => o.x > -20); this.obst.forEach(o => { if(o.x < 70 && o.x > 30 && this.dino.y > (350 - o.h + 10)) { minigameManager.endGame(false, this.score); return; } }); this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400); this.ctx.fillStyle = '#fff'; this.ctx.fillRect(0, 380, 400, 2); this.ctx.fillStyle = '#00ccff'; this.ctx.fillRect(50, this.dino.y, 20, 30); this.ctx.fillStyle = '#ff3333'; this.obst.forEach(o => this.ctx.fillRect(o.x, 380 - o.h, 15, o.h)); document.getElementById('minigame-info').innerText = `DISTÂNCIA: ${this.score} / ${this.target}`; if(minigameManager.mode === 'story' && this.score >= this.target) minigameManager.endGame(true, 50); else setTimeout(() => requestAnimationFrame(() => this.loop()), 20); } };
+        const radioGame = { active:false, pos:0, dir:1, target:0, anim:null, start: function() { this.active=true; document.getElementById('radio-minigame').classList.add('active'); this.target=20+Math.random()*60; document.getElementById('tuner-target').style.left=this.target+'%'; document.getElementById('tuner-target').style.width='20%'; this.loop(); }, loop: function() { if(!this.active)return; this.pos+=1.5*this.dir; if(this.pos>100||this.pos<0)this.dir*=-1; document.getElementById('tuner-cursor').style.left=this.pos+'%'; this.anim=requestAnimationFrame(()=>this.loop()); }, stop: function() { cancelAnimationFrame(this.anim); this.active=false; document.getElementById('radio-minigame').classList.remove('active'); if(this.pos>=this.target&&this.pos<=this.target+20){audioSys.sfx.success();game.state.sanity=Math.min(100,game.state.sanity+15);if(Math.random()>0.7)game.unlockLore('bunker');else game.log("Sinal limpo.", "safe");}else{audioSys.sfx.error();game.state.sanity-=5;game.log("Ruído.", "alert");} game.updateHUD(); } };
 
         const game = {
             running: false, tickCount: 0,
-            state: { day: 1, hour: 8.0, sanity: 100, energy: 100, intimacy: 100, doorHealth: 100, location: 'bunker', paused: false },
-            crew: [], unlocks: { map: true, uv: false, shotgun: false },
-            currentVisitor: null, tensionTimer: null, tensionVal: 30,
+            state: { day: 1, hour: 8.0, sanity: 100, energy: 100, intimacy: 100, doorHealth: 100, location: 'bunker', paused: false, insight: 0 },
+            crew: [], unlocks: { map: true, uv: false, shotgun: false }, currentVisitor: null, tensionTimer: null, tensionVal: 30,
 
-            startStory: function() {
-                document.getElementById('start-menu').style.display = 'none'; audioSys.init();
-                this.running = true; this.tickCount = 0; this.crew = [];
-                this.state = { day: 1, hour: 8.0, sanity: 100, energy: 100, intimacy: 100, doorHealth: 100, location: 'bunker', paused: false };
-                this.unlocks = { map: true, uv: false, shotgun: false };
-                document.getElementById('game-container').style.display = 'flex';
-                this.updateHUD(); this.ui.renderScene(); this.ui.renderLoreList(); this.ui.renderCrew(); cameraSys.render();
-                this.log("SISTEMA ONLINE. ZONA SEGURA.", "safe");
-                setInterval(() => { if(this.running && !this.state.paused && this.state.doorHealth > 0) this.tick(); }, 1000);
-            },
-
-            tick: function() {
-                this.tickCount++;
-                const timeMod = this.state.location === 'bunker' ? 0.05 : 0.15; 
-                this.state.hour += timeMod;
-                // Camera Drain
-                if(document.getElementById('tab-cams').classList.contains('active')) {
-                    game.state.energy -= 0.1;
-                    cameraSys.update();
-                }
-                if(this.state.location === 'bunker' && this.tickCount % 40 === 0 && this.state.hour < 13.9) this.encounter.trigger();
-                if(this.state.location !== 'bunker' && Math.random() > 0.95) { this.state.sanity -= 2; this.log("Sons de passos...", "alert"); }
-                if(this.state.hour >= 14) this.triggerEndSequence();
-                if(this.state.doorHealth <= 0) this.gameOver("A PORTA CAIU.");
-                if(this.state.sanity <= 0) this.gameOver("COLAPSO MENTAL.");
-                if(this.state.energy <= 0) this.state.energy = 0;
-                this.updateHUD();
-            },
-
-            triggerEndSequence: function() {
-                if(this.state.location !== 'bunker') { this.log("DESMAIO FORA DE CASA.", "alert"); this.state.sanity -= 30; this.state.energy -= 30; this.state.location = 'bunker'; this.ui.renderScene(); }
-                this.state.paused = true; this.triggerDream();
-            },
-
-            triggerDream: function() {
-                const modal = document.getElementById('dream-modal');
-                const dream = dreamsDB[Math.floor(Math.random()*dreamsDB.length)];
-                document.getElementById('dream-text').innerText = dream.text;
-                const opts = document.getElementById('dream-options'); opts.innerHTML = "";
-                dream.choices.forEach(c => {
-                    const btn = document.createElement('button'); btn.innerText = c.l;
-                    btn.onclick = () => { game.state[c.e] = Math.min(100, game.state[c.e] + c.v); modal.classList.remove('active'); setTimeout(() => minigameManager.startRandom(), 500); };
-                    opts.appendChild(btn);
-                });
-                modal.classList.add('active');
-            },
-
-            resolveDay: function(won) {
-                this.state.day++; this.state.hour = 8; this.state.energy = 100; this.tickCount = 0;
-                if(this.state.day == 3) this.unlocks.uv = true; if(this.state.day == 5) this.unlocks.shotgun = true;
-                if(this.state.day == 5) achievementSys.unlock('survivor_5');
-                document.getElementById('lore-modal').classList.add('active');
-                document.getElementById('lore-text').innerText = won ? "Teste concluído." : "Falha no teste.";
-                if(won) this.state.sanity = Math.min(100, this.state.sanity + 20);
-                if(this.state.day > 8) this.checkEndings();
-            },
-
-            checkEndings: function() {
-                achievementSys.unlock('story_complete');
-                const hasKey = loreDB.find(l => l.id===2).unlocked;
-                const hasMap = loreDB.find(l => l.id===3).unlocked;
-                const hasCure = loreDB.find(l => l.id===4).unlocked;
-                const knowsTruth = loreDB.find(l => l.id===5).unlocked;
-                if(knowsTruth) achievementSys.unlock('true_end');
-                let title = "RESGATE"; let text = "Sobreviveu. Destino incerto.";
-                if(hasKey && hasMap) { title = "FUGA"; text = "Escapou pelos túneis."; } 
-                else if (hasCure) { title = "SACRIFÍCIO"; text = "A cura foi entregue. Você morreu."; } 
-                else if (knowsTruth) { title = "VERDADE"; text = "Resgate falso. Você se escondeu."; }
-                document.getElementById('lore-title').innerText = title;
-                document.getElementById('lore-text').innerText = text;
-                document.getElementById('next-day-btn').innerText = "REINICIAR";
-                document.getElementById('next-day-btn').onclick = () => location.reload();
-            },
-
+            startStory: function() { document.getElementById('start-menu').style.display = 'none'; audioSys.init(); this.running = true; this.tickCount = 0; this.crew = []; this.state = { day: 1, hour: 8.0, sanity: 100, energy: 100, intimacy: 100, doorHealth: 100, location: 'bunker', paused: false, insight: 0 }; this.unlocks = { map: true, uv: false, shotgun: false }; document.getElementById('game-container').style.display = 'flex'; this.updateHUD(); this.ui.renderScene(); this.ui.renderLoreList(); this.ui.renderCrew(); cameraSys.render(); this.log("SISTEMA ONLINE. ZONA SEGURA.", "safe"); setInterval(() => { if(this.running && !this.state.paused && this.state.doorHealth > 0) this.tick(); }, 1000); },
+            tick: function() { this.tickCount++; const timeMod = this.state.location === 'bunker' ? 0.05 : 0.15; this.state.hour += timeMod; if(document.getElementById('tab-cams').classList.contains('active')) { game.state.energy -= 0.1; cameraSys.update(); } if(this.state.location === 'bunker' && this.tickCount % 40 === 0 && this.state.hour < 13.9) this.encounter.trigger(); if(this.state.location !== 'bunker' && Math.random() > 0.95) { this.state.sanity -= 2; this.log("Sons de passos...", "alert"); } if(this.state.hour >= 14) this.triggerEndSequence(); if(this.state.doorHealth <= 0) this.gameOver("A PORTA CAIU."); if(this.state.sanity <= 0) this.gameOver("COLAPSO MENTAL."); if(this.state.energy <= 0) this.state.energy = 0; this.updateHUD(); },
+            triggerEndSequence: function() { if(this.state.location !== 'bunker') { this.log("DESMAIO FORA DE CASA.", "alert"); this.state.sanity -= 30; this.state.energy -= 30; this.state.location = 'bunker'; this.ui.renderScene(); } this.state.paused = true; this.triggerDream(); },
+            triggerDream: function() { const modal = document.getElementById('dream-modal'); const dream = dreamsDB[Math.floor(Math.random()*dreamsDB.length)]; document.getElementById('dream-text').innerText = dream.text; const opts = document.getElementById('dream-options'); opts.innerHTML = ""; dream.choices.forEach(c => { const btn = document.createElement('button'); btn.innerText = c.l; btn.onclick = () => { game.state[c.e] = Math.min(100, game.state[c.e] + c.v); modal.classList.remove('active'); setTimeout(() => minigameManager.startRandom(), 500); }; opts.appendChild(btn); }); modal.classList.add('active'); },
+            resolveDay: function(won) { this.state.day++; this.state.hour = 8; this.state.energy = 100; this.tickCount = 0; if(this.state.day == 3) this.unlocks.uv = true; if(this.state.day == 5) this.unlocks.shotgun = true; if(this.state.day == 5) achievementSys.unlock('survivor_5'); document.getElementById('lore-modal').classList.add('active'); document.getElementById('lore-text').innerText = won ? "Teste concluído." : "Falha no teste."; if(won) this.state.sanity = Math.min(100, this.state.sanity + 20); if(this.state.day > 8) this.checkEndings(); },
+            checkEndings: function() { achievementSys.unlock('story_complete'); const hasKey = loreDB.find(l => l.id===2).decrypted; const hasMap = loreDB.find(l => l.id===3).decrypted; const hasCure = loreDB.find(l => l.id===4).decrypted; const knowsTruth = loreDB.find(l => l.id===5).decrypted; if(knowsTruth) achievementSys.unlock('true_end'); let title = "RESGATE"; let text = "Sobreviveu. Destino incerto."; if(hasKey && hasMap) { title = "FUGA"; text = "Escapou pelos túneis, livre da Colmeia."; } else if (hasCure) { title = "SACRIFÍCIO"; text = "A cura foi entregue. Você morreu."; } else if (knowsTruth) { title = "VERDADE"; text = "Resgate falso. Você se escondeu."; } document.getElementById('lore-title').innerText = title; document.getElementById('lore-text').innerText = text; document.getElementById('next-day-btn').innerText = "REINICIAR"; document.getElementById('next-day-btn').onclick = () => location.reload(); },
             nextDay: function() { document.getElementById('lore-modal').classList.remove('active'); this.state.paused = false; this.log(`DIA ${this.state.day}.`, "safe"); },
-
+            
             unlockLore: function(locationFilter) {
+                // Can find items that are locked (encrypted: true)
                 const candidates = loreDB.filter(l => !l.unlocked && (l.loc === locationFilter || locationFilter === 'any'));
                 if(candidates.length > 0) {
                     const item = candidates[0]; item.unlocked = true;
-                    game.log(`DADOS: ${item.title}`, "lore"); audioSys.sfx.lore();
+                    game.log(`DADOS ENCRIPTADOS: ${item.title}`, "lore"); audioSys.sfx.lore();
                     achievementSys.unlock('lore_hunter');
                     this.ui.renderLoreList(); this.ui.renderInventory();
                 } else { game.log("Nada encontrado.", "dim"); }
             },
-
-            gameOver: function(reason) {
-                this.running = false; achievementSys.unlock('first_death');
-                document.body.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#000;color:red;font-family:Courier;flex-direction:column;text-align:center;"><h1>FALHA</h1><h2>${reason}</h2><button onclick="location.reload()" style="margin-top:20px;border:1px solid red;color:red;background:black;padding:10px;">REINICIAR</button></div>`;
+            
+            decryptLore: function(id) {
+                const item = loreDB.find(l => l.id === id);
+                if(item && !item.decrypted) {
+                    if(game.state.energy >= item.cost) {
+                        game.state.energy -= item.cost;
+                        item.decrypted = true;
+                        item.encrypted = false;
+                        game.state.insight += 10;
+                        game.log(`ARQUIVO ABERTO: ${item.title}`, "safe");
+                        audioSys.sfx.success();
+                        this.ui.renderLoreList();
+                        this.updateHUD();
+                    } else {
+                        game.log("Energia insuficiente para decodificar.", "alert");
+                    }
+                }
             },
 
+            gameOver: function(reason) { this.running = false; achievementSys.unlock('first_death'); document.body.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#000;color:red;font-family:Courier;flex-direction:column;text-align:center;"><h1>FALHA</h1><h2>${reason}</h2><button onclick="location.reload()" style="margin-top:20px;border:1px solid red;color:red;background:black;padding:10px;">REINICIAR</button></div>`; },
             actions: {
                 watchTV: function() { if(game.state.energy>=10){game.state.energy-=10;game.state.sanity+=5;game.log("TV assistida.");audioSys.sfx.click();} game.updateHUD(); },
-                radio: function() { 
-                    let cost = 5;
-                    if(loreDB[1].unlocked) cost = 2; // Buff from Lore
-                    if(game.state.energy>=cost){game.state.energy-=cost;radioGame.start();} 
-                    game.updateHUD(); 
-                },
+                radio: function() { let cost = 5; if(loreDB[1].decrypted) cost = 2; if(game.state.energy>=cost){game.state.energy-=cost;radioGame.start();} game.updateHUD(); },
                 repairDoor: function() { if(game.state.energy>=15){game.state.energy-=15;game.state.doorHealth=Math.min(100,game.state.doorHealth+20);game.log("Porta reparada.");audioSys.sfx.click();} game.updateHUD(); },
-                travel: function(dest) {
-                    let timeCost = 0.5;
-                    if(loreDB[3].unlocked) timeCost = 0.2; // Buff from Lore
-                    game.ui.toggleMap(); audioSys.sfx.travel(); game.log(`Viajando: ${dest.toUpperCase()}`);
-                    document.getElementById('main-hub').style.opacity = 0;
-                    setTimeout(() => { game.state.location = dest; game.state.energy -= 10; game.state.hour += timeCost; game.ui.renderScene(); document.getElementById('main-hub').style.opacity = 1; game.updateHUD(); }, 1000);
-                },
-                scavenge: function() {
-                    if(game.state.energy < 20) { game.log("Cansado demais.", "alert"); return; }
-                    game.state.energy -= 20; game.state.hour += 0.5;
-                    const risk = game.state.location === 'ruas' ? 0.6 : 0.3;
-                    if(Math.random() < risk) { game.log("EMBOSCADA!", "alert"); game.state.sanity -= 15; audioSys.sfx.error(); } 
-                    else {
-                        if(Math.random() > 0.6) game.unlockLore(game.state.location); 
-                        else if (Math.random() > 0.3) {
-                            if(game.state.location === 'mercado') { game.state.energy = Math.min(100, game.state.energy+40); game.log("Comida.", "safe"); }
-                            if(game.state.location === 'farmacia') { game.state.sanity = Math.min(100, game.state.sanity+40); game.log("Remédios.", "safe"); }
-                            if(game.state.location === 'ruas') { game.state.doorHealth = Math.min(100, game.state.doorHealth+20); game.log("Peças.", "safe"); }
-                        } else game.log("Vazio.", "dim");
-                    }
-                    game.updateHUD();
-                },
+                travel: function(dest) { let timeCost = 0.5; if(loreDB[3].decrypted) timeCost = 0.2; game.ui.toggleMap(); audioSys.sfx.travel(); game.log(`Viajando: ${dest.toUpperCase()}`); document.getElementById('main-hub').style.opacity = 0; setTimeout(() => { game.state.location = dest; game.state.energy -= 10; game.state.hour += timeCost; game.ui.renderScene(); document.getElementById('main-hub').style.opacity = 1; game.updateHUD(); }, 1000); },
+                scavenge: function() { if(game.state.energy < 20) { game.log("Cansado demais.", "alert"); return; } game.state.energy -= 20; game.state.hour += 0.5; const risk = game.state.location === 'ruas' ? 0.6 : 0.3; if(Math.random() < risk) { game.log("EMBOSCADA!", "alert"); game.state.sanity -= 15; audioSys.sfx.error(); } else { if(Math.random() > 0.6) game.unlockLore(game.state.location); else if (Math.random() > 0.3) { if(game.state.location === 'mercado') { game.state.energy = Math.min(100, game.state.energy+40); game.log("Comida.", "safe"); } if(game.state.location === 'farmacia') { game.state.sanity = Math.min(100, game.state.sanity+40); game.log("Remédios.", "safe"); } if(game.state.location === 'ruas') { game.state.doorHealth = Math.min(100, game.state.doorHealth+20); game.log("Peças.", "safe"); } } else game.log("Vazio.", "dim"); } game.updateHUD(); },
                 stealth: function() { if(game.state.energy < 10) return; game.state.energy -= 10; game.state.hour += 1.0; game.log("Furtivo.", "dim"); if(Math.random() > 0.7) game.unlockLore(game.state.location); game.updateHUD(); },
                 returnHome: function() { game.actions.travel('bunker'); },
-                interactCrew: function(idx, type) {
-                    const crew = game.crew[idx]; if(!crew) return;
-                    if(type === 'feed') { if(game.state.energy >= 10 && crew.hp < 100) { game.state.energy -= 10; crew.hp = Math.min(100, crew.hp + 20); game.log(`Você alimentou ${crew.name}.`, "safe"); audioSys.sfx.click(); } }
-                    if(type === 'talk') { game.state.hour += 0.1; game.state.sanity = Math.min(100, game.state.sanity + 5); game.log(`${crew.name} conversou.`, "lore"); }
-                    if(type === 'heal') { 
-                        let cost = 20;
-                        if(loreDB[0].unlocked) cost = 15; // Buff from Lore
-                        if(game.state.energy >= cost) { game.state.energy -= cost; crew.hp = 100; game.log(`${crew.name} curado.`, "safe"); } 
-                    }
-                    game.updateHUD(); game.ui.renderCrew();
-                },
-                deepScan: function() {
-                    if(game.state.energy < 40) { game.log("Energia insuficiente.", "alert"); return; }
-                    game.state.energy -= 40;
-                    let loc = game.state.location;
-                    if(loc === 'bunker') loc = 'any';
-                    game.unlockLore(loc);
-                    game.updateHUD();
-                }
+                interactCrew: function(idx, type) { const crew = game.crew[idx]; if(!crew) return; if(type === 'feed') { if(game.state.energy >= 10 && crew.hp < 100) { game.state.energy -= 10; crew.hp = Math.min(100, crew.hp + 20); game.log(`Você alimentou ${crew.name}.`, "safe"); audioSys.sfx.click(); } } if(type === 'talk') { game.state.hour += 0.1; game.state.sanity = Math.min(100, game.state.sanity + 5); game.log(`${crew.name} conversou.`, "lore"); } if(type === 'heal') { let cost = 20; if(loreDB[0].decrypted) cost = 15; if(game.state.energy >= cost) { game.state.energy -= cost; crew.hp = 100; game.log(`${crew.name} curado.`, "safe"); } } game.updateHUD(); game.ui.renderCrew(); },
+                deepScan: function() { if(game.state.energy < 40) { game.log("Energia insuficiente.", "alert"); return; } game.state.energy -= 40; let loc = game.state.location; if(loc === 'bunker') loc = 'any'; game.unlockLore(loc); game.updateHUD(); }
             },
 
             encounter: {
@@ -948,12 +618,7 @@
                     document.getElementById('id-name').innerText = idCardData.name; document.getElementById('id-code').innerText = idCardData.id; document.getElementById('id-origin').innerText = idCardData.origin; document.getElementById('id-blood').innerText = idCardData.blood; document.getElementById('id-date').innerText = idCardData.expiry; document.getElementById('id-date').style.color = idCardData.expiry==='EXPIRADO' ? 'red' : 'lime';
                     document.getElementById('dialogue-box').innerText = "..."; document.getElementById('scan-result').innerText = "AGUARDANDO"; document.getElementById('scan-result').style.color = "#666"; document.getElementById('visor-circle').classList.remove('stress-high');
                     game.tensionVal = 30;
-                    game.tensionTimer = setInterval(() => {
-                        if(!game.state.paused) return; 
-                        game.tensionVal -= 0.1; document.getElementById('tension-display').innerText = game.tensionVal.toFixed(1) + 's'; document.getElementById('timer-bar').style.width = (game.tensionVal/30)*100 + "%";
-                        if(this.visitorData.stress > 50) this.glitchEffect();
-                        if(game.tensionVal <= 0) this.decide(false);
-                    }, 100);
+                    game.tensionTimer = setInterval(() => { if(!game.state.paused) return; game.tensionVal -= 0.1; document.getElementById('tension-display').innerText = game.tensionVal.toFixed(1) + 's'; document.getElementById('timer-bar').style.width = (game.tensionVal/30)*100 + "%"; if(this.visitorData.stress > 50) this.glitchEffect(); if(game.tensionVal <= 0) this.decide(false); }, 100);
                 },
                 getFace: function(d) { const e = d ? ['@ @','X X'] : ['o o','- -']; const h = d ? 'MORTAL' : 'VIVO'; return `\n      ///////\n     /       \\\n    |  ${e[0]}  |\n    |    |    |\n    |  _____  |\n     \\_______/\n     <span class="uv-hidden-text">${h}</span>`; },
                 glitchEffect: function() { if(this.visitorData.isDistorted) { if(Math.random() > 0.8) { document.getElementById('visitor-face').innerText = this.getFace(true).replace(/./g, c => Math.random()>0.8?'#':c); audioSys.sfx.glitch(); } } document.getElementById('visor-circle').classList.add('stress-high'); },
@@ -968,11 +633,7 @@
                 updateStressUI: function() { document.getElementById('stress-meter-fill').style.width = this.visitorData.stress + '%'; if(this.visitorData.stress > 50) document.getElementById('stress-meter-fill').style.background = 'red'; else document.getElementById('stress-meter-fill').style.background = 'lime'; },
                 scan: function() { if(game.state.energy < 5) return; game.state.energy -= 5; audioSys.sfx.scan(); game.updateHUD(); const d = this.visitorData; let res = `SANGUE: ${d.trueData.blood} | DNA: ${d.isDistorted ? 'CORROMPIDO' : 'NORMAL'}`; if(d.trueData.blood !== d.idCardData.blood) res += " [ERRO DE TIPO]"; const el = document.getElementById('scan-result'); el.innerText = res; el.style.color = d.isDistorted || d.trueData.blood !== d.idCardData.blood ? "red" : "lime"; },
                 toggleUV: function() { if(game.unlocks.uv) document.getElementById('visor-circle').classList.toggle('uv-active'); },
-                shotgun: function() { 
-                    let loss = 15;
-                    if(loreDB[5].unlocked) loss = 5; // Buff from Lore
-                    audioSys.sfx.error(); game.state.sanity-=loss; achievementSys.unlock('first_kill'); this.close(); 
-                },
+                shotgun: function() { let loss = 15; if(loreDB[5].decrypted) loss = 5; audioSys.sfx.error(); game.state.sanity-=loss; achievementSys.unlock('first_kill'); this.close(); },
                 decide: function(accept) {
                     const d = this.visitorData;
                     if(accept) { if(d.isDistorted) game.gameOver("VOCÊ DEIXOU UM MONSTRO ENTRAR."); else { game.state.sanity += 10; game.crew.push({name: d.idCardData.name, hp: 100, role: 'CIVIL'}); game.log("Sobrevivente salvo.", "safe"); achievementSys.unlock('first_human'); } } 
@@ -985,19 +646,22 @@
             ui: {
                 switchTab: function(t) { document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); event.target.classList.add('active'); },
                 toggleMap: function() { document.getElementById('map-modal').classList.toggle('active'); },
-                renderLoreList: function() { const l = document.getElementById('lore-list'); l.innerHTML=""; loreDB.filter(i=>!i.isItem).forEach(i => { l.innerHTML += `<div class="lore-file ${i.unlocked?'':'locked'}" onclick="if(${i.unlocked}){document.getElementById('lore-display').innerHTML='${i.text}';document.getElementById('lore-display').style.display='block';}"><span class="lore-title">${i.unlocked?i.title:'BLOQUEADO'}</span></div>`; }); },
-                renderInventory: function() { const l = document.getElementById('inventory-list'); l.innerHTML=""; const items = loreDB.filter(i=>i.isItem && i.unlocked); if(items.length===0) l.innerHTML="Vazio."; else items.forEach(i => { l.innerHTML += `<div style="color:gold; border:1px solid gold; padding:5px; margin:5px;">★ ${i.title}</div>`; }); },
-                renderCrew: function() {
-                    const c = document.getElementById('crew-container'); c.innerHTML = "";
-                    if(game.crew.length === 0) { c.innerHTML = `<div style="color:#666; padding:10px;">Sozinho.</div>`; return; }
-                    game.crew.forEach((m, idx) => { c.innerHTML += `<div class="crew-card"><div class="crew-header"><strong>${m.name}</strong> <span class="crew-role">[${m.role}]</span></div><div class="crew-hp-bar"><div class="crew-hp-fill" style="width:${m.hp}%"></div></div><div class="crew-actions"><button onclick="game.actions.interactCrew(${idx}, 'feed')">ALIMENTAR (-10)</button><button onclick="game.actions.interactCrew(${idx}, 'talk')">CONVERSAR</button><button onclick="game.actions.interactCrew(${idx}, 'heal')" style="border-color:var(--text-safe); color:var(--text-safe)">CURAR (-20)</button></div></div>`; });
+                renderLoreList: function() { 
+                    const l = document.getElementById('lore-list'); l.innerHTML=""; 
+                    loreDB.filter(i=>!i.isItem).forEach(i => {
+                        if(i.unlocked) {
+                            let statusClass = i.decrypted ? 'decrypted' : 'encrypted';
+                            let statusText = i.decrypted ? '[LER]' : `[DECODIFICAR -${i.cost}E]`;
+                            l.innerHTML += `<div class="lore-file ${statusClass}" onclick="if(${i.decrypted}){document.getElementById('lore-display').innerHTML='${i.text}';document.getElementById('lore-display').style.display='block';} else {game.actions.decryptLore(${i.id});}"><span class="lore-title">${i.decrypted ? i.title : 'DADOS CRIPTOGRAFADOS'}</span><span>${statusText}</span></div>`;
+                        } else {
+                            l.innerHTML += `<div class="lore-file locked"><span class="lore-title">ARQUIVO BLOQUEADO</span><span>---</span></div>`;
+                        }
+                    });
+                    document.getElementById('insight-val').innerText = game.state.insight;
                 },
-                renderScene: function() {
-                    const loc = game.state.location; document.getElementById('ascii-art').innerText = scenes[loc]; document.getElementById('location-name').innerText = loc.toUpperCase() + " // " + (loc==='bunker'?"ZONA SEGURA":"ZONA DE RISCO");
-                    const btns = document.getElementById('dynamic-actions'); btns.innerHTML = "";
-                    if(loc === 'bunker') { document.getElementById('actions-title').innerText = "SISTEMAS VITAIS"; btns.innerHTML = `<button onclick="game.actions.watchTV()"><span>TV</span><span>-10E</span></button><button onclick="game.actions.radio()"><span>Rádio</span><span>-5E</span></button><button onclick="game.actions.repairDoor()"><span>Reparar</span><span>-15E</span></button><button onclick="game.ui.toggleMap()"><span>MAPA TÁTICO</span><span>VIAJAR</span></button>`; } 
-                    else { document.getElementById('actions-title').innerText = "AÇÕES DE CAMPO"; btns.innerHTML = `<button onclick="game.actions.scavenge()"><span>VASCULHAR</span><span>-20E / ALTO RISCO</span></button><button onclick="game.actions.stealth()"><span>ESGUEIRAR</span><span>-10E / BAIXO RISCO</span></button><button onclick="game.actions.returnHome()" style="border-color:var(--text-safe); color:var(--text-safe)"><span>VOLTAR AO BUNKER</span><span>SEGURO</span></button>`; }
-                }
+                renderInventory: function() { const l = document.getElementById('inventory-list'); l.innerHTML=""; const items = loreDB.filter(i=>i.isItem && i.unlocked); if(items.length===0) l.innerHTML="Vazio."; else items.forEach(i => { l.innerHTML += `<div style="color:gold; border:1px solid gold; padding:5px; margin:5px;">★ ${i.title}</div>`; }); },
+                renderCrew: function() { const c = document.getElementById('crew-container'); c.innerHTML = ""; if(game.crew.length === 0) { c.innerHTML = `<div style="color:#666; padding:10px;">Sozinho.</div>`; return; } game.crew.forEach((m, idx) => { c.innerHTML += `<div class="crew-card"><div class="crew-header"><strong>${m.name}</strong> <span class="crew-role">[${m.role}]</span></div><div class="crew-hp-bar"><div class="crew-hp-fill" style="width:${m.hp}%"></div></div><div class="crew-actions"><button onclick="game.actions.interactCrew(${idx}, 'feed')">ALIMENTAR (-10)</button><button onclick="game.actions.interactCrew(${idx}, 'talk')">CONVERSAR</button><button onclick="game.actions.interactCrew(${idx}, 'heal')" style="border-color:var(--text-safe); color:var(--text-safe)">CURAR</button></div></div>`; }); },
+                renderScene: function() { const loc = game.state.location; document.getElementById('ascii-art').innerText = scenes[loc]; document.getElementById('location-name').innerText = loc.toUpperCase() + " // " + (loc==='bunker'?"ZONA SEGURA":"ZONA DE RISCO"); const btns = document.getElementById('dynamic-actions'); btns.innerHTML = ""; if(loc === 'bunker') { document.getElementById('actions-title').innerText = "SISTEMAS VITAIS"; btns.innerHTML = `<button onclick="game.actions.watchTV()"><span>TV</span><span>-10E</span></button><button onclick="game.actions.radio()"><span>Rádio</span><span>-5E</span></button><button onclick="game.actions.repairDoor()"><span>Reparar</span><span>-15E</span></button><button onclick="game.ui.toggleMap()"><span>MAPA TÁTICO</span><span>VIAJAR</span></button>`; } else { document.getElementById('actions-title').innerText = "AÇÕES DE CAMPO"; btns.innerHTML = `<button onclick="game.actions.scavenge()"><span>VASCULHAR</span><span>-20E / ALTO RISCO</span></button><button onclick="game.actions.stealth()"><span>ESGUEIRAR</span><span>-10E / BAIXO RISCO</span></button><button onclick="game.actions.returnHome()" style="border-color:var(--text-safe); color:var(--text-safe)"><span>VOLTAR AO BUNKER</span><span>SEGURO</span></button>`; } }
             },
 
             log: function(msg, type="") { const c = document.getElementById('log-container'); c.innerHTML = `<div class="log-entry ${type}">> ${msg}</div>` + c.innerHTML; },
