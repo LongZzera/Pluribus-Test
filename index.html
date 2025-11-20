@@ -3,580 +3,975 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLURIBUS: A JUNÇÃO - FINAL V3</title>
+    <title>PLURIBUS: A JUNÇÃO - Edição Arcade + Controles</title>
     <style>
-/* === ESTILOS GERAIS === */
-body, html {
-    margin: 0; padding: 0; width: 100%; height: 100%;
-    font-family: 'Courier New', Courier, monospace;
-    background-color: #000; color: #FFF;
-    overflow: hidden; text-shadow: 0 0 2px #FF0;
-    user-select: none;
-}
-/* Scanlines */
-body::after {
-    content: " "; display: block; position: absolute; top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px);
-    pointer-events: none; z-index: 9999;
-}
+        :root {
+            --bg-color: #050505;
+            --text-primary: #e0e0e0;
+            --text-dim: #666666;
+            --text-alert: #ffcc00;
+            --text-danger: #ff3333;
+            --text-safe: #33ff33;
+            --text-lore: #00ccff;
+            --border-style: 1px solid var(--text-dim);
+            --scan-color: rgba(255, 204, 0, 0.03);
+        }
 
-/* Telas */
-.screen {
-    width: 100vw; height: 100vh; display: none; position: absolute;
-    top: 0; left: 0; align-items: center; justify-content: center;
-    flex-direction: column; overflow-y: auto; padding: 20px; box-sizing: border-box;
-    background: #000; z-index: 10;
-}
-.screen.active { display: flex; }
-.hidden { display: none !important; }
+        * { box-sizing: border-box; user-select: none; }
 
-/* Container */
-.menu-container {
-    text-align: center; background: #050505;
-    padding: 30px; border: 2px solid #FF0;
-    box-shadow: 0 0 20px rgba(255, 255, 0, 0.2);
-    max-width: 900px; width: 95%;
-}
+        body {
+            margin: 0; background-color: var(--bg-color); color: var(--text-primary);
+            font-family: 'Courier New', Courier, monospace; overflow: hidden;
+            height: 100vh; display: flex; flex-direction: column; font-size: 14px;
+        }
 
-h1, h2, h3 { color: #FF0; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; }
-p { font-size: 1.1em; line-height: 1.4; color: #DDD; margin-bottom: 10px; }
+        /* --- FX --- */
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, var(--scan-color) 50%, rgba(0,0,0,0) 50%);
+            background-size: 100% 3px; pointer-events: none; z-index: 999;
+        }
+        .vignette {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            box-shadow: inset 0 0 150px rgba(0,0,0,0.9); pointer-events: none; z-index: 998;
+        }
+        
+        /* --- LAYOUT --- */
+        #game-container {
+            display: flex; flex-direction: column; height: 100%; padding: 20px;
+            z-index: 1; max-width: 1200px; margin: 0 auto; width: 100%; filter: blur(0.3px);
+        }
 
-/* Botões */
-button {
-    padding: 10px 20px; margin: 5px;
-    font-family: 'Courier New', Courier, monospace; font-size: 1em; font-weight: bold;
-    background-color: #000; color: #FF0; border: 2px solid #FF0;
-    cursor: pointer; transition: all 0.1s; text-transform: uppercase;
-}
-button:hover:not(:disabled) { background-color: #FF0; color: #000; box-shadow: 0 0 15px #FF0; }
-button:disabled { border-color: #444; color: #444; cursor: not-allowed; box-shadow: none; }
+        /* --- START MENU & ARCADE MENU --- */
+        .full-screen-menu {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color); z-index: 2000; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center; border: 2px solid var(--text-dim);
+        }
+        
+        .menu-btn {
+            margin-top: 15px; font-size: 1.2em; padding: 15px 40px; width: 300px;
+            border: 2px solid var(--text-alert); color: var(--bg-color);
+            background: var(--text-alert); font-weight: bold; cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .menu-btn:hover { transform: scale(1.05); }
+        .menu-btn.secondary { background: transparent; color: var(--text-alert); border: 1px solid var(--text-alert); }
 
-/* HUD */
-#game-hud {
-    width: 100%; padding: 10px; background: #000; border-bottom: 1px solid #FF0;
-    display: flex; justify-content: space-between; position: absolute; top: 0; z-index: 20;
-}
-.hud-column { width: 48%; display: flex; flex-direction: column; gap: 2px; font-size: 0.9em; }
-.bar-container { width: 100%; height: 8px; background: #222; border: 1px solid #555; margin-bottom: 5px; }
-.bar-fill { height: 100%; transition: width 0.3s; }
+        #arcade-menu { display: none; }
+        #arcade-stats { border: 1px solid var(--text-lore); padding: 20px; margin-bottom: 20px; width: 400px; background: #080808; }
+        .rank-title { font-size: 1.5em; color: var(--text-lore); font-weight: bold; margin-bottom: 5px; }
+        .xp-bar-container { width: 100%; height: 10px; background: #222; border: 1px solid #555; margin-top: 5px; }
+        .xp-bar-fill { height: 100%; background: var(--text-lore); width: 0%; transition: width 0.5s; }
 
-#sanity-bar { background: #FFF; }
-#intimacy-bar { background: #FF0; }
-#door-bar { background: #FFF; }
-#battery-bar { background: #FF0; }
+        /* --- HUD --- */
+        #hud {
+            border: 2px solid var(--text-dim); padding: 10px; margin-bottom: 15px;
+            display: grid; grid-template-columns: 1fr 1fr 0.8fr 1fr 1fr; gap: 20px;
+            background: rgba(20, 20, 20, 0.8); align-items: center;
+        }
+        .stat-box { display: flex; flex-direction: column; justify-content: center; }
+        .stat-header { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.9em; font-weight: bold; color: var(--text-alert); }
+        .bar-container { width: 100%; background: #111; height: 12px; border: 1px solid #444; position: relative; overflow: hidden; }
+        .bar-fill { height: 100%; background: var(--text-primary); transition: width 0.3s ease-out; }
+        .bar-fill.danger { background: var(--text-danger); box-shadow: 0 0 10px var(--text-danger); }
+        .bar-fill.safe { background: var(--text-safe); }
+        #clock-box { border-left: 1px solid var(--text-dim); border-right: 1px solid var(--text-dim); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #clock-display { font-size: 1.6em; color: var(--text-alert); font-weight: bold; letter-spacing: 2px; }
 
-/* Hub */
-#apartment-hub-view { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding-top: 80px; }
-#apartment-art {
-    font-size: 11px; line-height: 11px; color: #FF0; border: 1px solid #FF0;
-    padding: 15px; background: rgba(20, 20, 20, 0.9); margin-bottom: 10px;
-}
-#hub-display-log {
-    height: 50px; border: 1px solid #FF0; color: #FFF;
-    padding: 5px; overflow: hidden; font-style: italic; text-align: center; display: flex; align-items: center; justify-content: center;
-}
-#glitch-timer { color: #F00; font-weight: bold; margin-top: 5px; text-shadow: 0 0 5px #F00; }
+        /* --- HUB & LOCATIONS --- */
+        #main-hub { display: flex; flex: 1; gap: 20px; overflow: hidden; transition: opacity 0.5s; }
+        
+        #room-view {
+            flex: 1.5; border: var(--border-style); padding: 20px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, #111 0%, #000 100%);
+            position: relative;
+        }
+        #ascii-art { white-space: pre; font-size: 11px; line-height: 12px; color: var(--text-primary); font-weight: bold; opacity: 0.8; text-align: center; }
+        #location-name { position: absolute; top: 10px; left: 10px; color: var(--text-dim); letter-spacing: 2px; font-weight: bold; }
+        
+        #controls-panel { flex: 1; display: flex; flex-direction: column; gap: 10px; }
 
-/* Visor */
-#peephole-overlay { background: #000; z-index: 50; }
-#visitor-ascii-art {
-    font-size: 12px; line-height: 10px; white-space: pre; 
-    color: #CCC; border: 2px solid #FF0; padding: 20px; 
-    width: 500px; height: 250px; margin-bottom: 10px;
-    display: flex; align-items: center; justify-content: center; text-align: center;
-}
-.dark-vision { color: #222 !important; border-color: #444 !important; }
-#peephole-timer-display { font-size: 3em; color: #FF0; font-weight: bold; animation: pulse 0.5s infinite; }
+        /* TABS SYSTEM */
+        .tabs { display: flex; border-bottom: 1px solid var(--text-dim); margin-bottom: 10px; }
+        .tab-btn { flex: 1; background: transparent; border: none; color: var(--text-dim); padding: 8px; cursor: pointer; border-bottom: 2px solid transparent; font-family: inherit; }
+        .tab-btn.active { color: var(--text-alert); border-bottom-color: var(--text-alert); font-weight: bold; background: rgba(255, 204, 0, 0.05); }
+        .tab-content { display: none; flex-direction: column; gap: 10px; height: 100%; }
+        .tab-content.active { display: flex; }
 
-/* Câmera */
-#camera-screen { background: #050505; }
-#cam-ui {
-    width: 100%; max-width: 700px; margin: 0 auto;
-    border: 2px solid #FF0; padding: 10px; background: #001100;
-}
-#cam-feed { 
-    width: 100%; height: 300px; 
-    display: flex; align-items: center; justify-content: center; flex-direction: column;
-    color: #0F0; font-size: 1em; white-space: pre;
-    background: repeating-linear-gradient(0deg, rgba(0, 255, 0, 0.1), rgba(0, 255, 0, 0.1) 1px, transparent 1px, transparent 2px);
-    text-shadow: 0 0 5px #0f0; border: 1px solid #050; overflow: hidden;
-}
+        .panel-section { border: var(--border-style); padding: 10px; background: rgba(20, 20, 20, 0.5); }
+        .panel-title { color: var(--text-alert); font-weight: bold; margin-bottom: 8px; font-size: 0.9em; text-transform: uppercase; }
 
-/* MINI GAME PAC MAN */
-#minigame-screen { background: rgba(0,0,0,0.95); z-index: 200; }
-canvas { border: 4px solid #FF0; background: #000; box-shadow: 0 0 30px #FF0; display: block; margin: 0 auto; }
-#minigame-msg { color: #FF0; font-size: 2em; margin-bottom: 20px; animation: pulse 0.2s infinite; }
+        button {
+            background: #0a0a0a; color: var(--text-primary); border: 1px solid var(--text-dim);
+            padding: 10px; font-family: 'Courier New'; cursor: pointer; margin-bottom: 5px;
+            width: 100%; text-align: left; font-size: 0.85rem; display: flex; justify-content: space-between;
+            transition: all 0.1s;
+        }
+        button:hover:not(:disabled) { background: #222; border-color: var(--text-primary); padding-left: 15px; }
+        button:disabled { color: #444; border-color: #222; cursor: not-allowed; opacity: 0.6; }
+        button.danger-action { border-color: var(--text-danger); color: var(--text-danger); }
+        button.danger-action:hover { background: #300; }
 
-@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        /* Crew Card Styles */
+        .crew-card { border: 1px solid #333; background: #080808; margin-bottom: 10px; padding: 10px; }
+        .crew-header { display: flex; justify-content: space-between; border-bottom: 1px dashed #444; padding-bottom: 5px; margin-bottom: 5px; }
+        .crew-role { color: var(--text-alert); font-size: 0.8em; }
+        .crew-hp-bar { width: 100%; height: 6px; background: #222; margin-bottom: 8px; }
+        .crew-hp-fill { height: 100%; background: var(--text-safe); }
+        .crew-actions { display: flex; gap: 5px; }
+        .crew-actions button { font-size: 0.7em; padding: 5px; margin: 0; justify-content: center; text-align: center; }
+
+        .lore-file { border: 1px solid #333; padding: 8px; margin-bottom: 5px; cursor: pointer; background: #080808; display: flex; justify-content: space-between; }
+        .lore-file:hover { border-color: var(--text-lore); }
+        .lore-file.locked { opacity: 0.5; cursor: default; border-style: dashed; }
+
+        #log-container { height: 150px; overflow-y: auto; font-size: 12px; background: #000; border: 1px solid #333; padding: 8px; }
+        .log-entry { margin-bottom: 4px; padding-left: 5px; border-left: 2px solid transparent; }
+        .log-entry.alert { color: var(--text-danger); border-left-color: var(--text-danger); }
+        .log-entry.safe { color: var(--text-safe); border-left-color: var(--text-safe); }
+        .log-entry.lore { color: var(--text-lore); border-left-color: var(--text-lore); font-style: italic; }
+
+        /* --- MODALS --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.98); z-index: 100;
+            display: flex; align-items: center; justify-content: center;
+            visibility: hidden; opacity: 0; transition: opacity 0.2s;
+        }
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+
+        /* --- MAP MODAL --- */
+        #map-modal-content {
+            background: #0a0a0a; border: 2px solid var(--text-alert); padding: 20px; width: 80%; max-width: 600px;
+            display: flex; flex-direction: column; gap: 10px; pointer-events: auto;
+        }
+        .map-btn { padding: 15px; font-size: 1.1em; text-align: left; border: 1px solid #444; transition: 0.2s; cursor: pointer; color: #fff; background: #000; }
+        .map-btn:hover { border-color: var(--text-safe); background: #111; color: var(--text-safe); }
+        .map-btn small { display: block; font-size: 0.7em; color: #888; margin-top: 3px; }
+
+        /* --- PEEPHOLE REDESIGNED --- */
+        #peephole-layout { display: flex; gap: 20px; width: 95%; max-width: 1100px; height: 700px; }
+        #visor-section { flex: 1; display: flex; flex-direction: column; align-items: center; border: 1px solid var(--text-dim); padding: 20px; background: #080808; position: relative; }
+        #visor-circle { width: 280px; height: 280px; border-radius: 50%; border: 4px solid #333; background: #000; overflow: hidden; position: relative; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        #visor-circle.stress-high { border-color: var(--text-danger); box-shadow: 0 0 15px var(--text-danger); animation: shake 0.5s infinite; }
+        #visitor-face { white-space: pre; font-size: 14px; text-align: center; z-index: 2; color: var(--text-primary); transition: opacity 0.1s; }
+        #visor-circle.uv-active #visitor-face { opacity: 0.3; }
+        .uv-hidden-text { position: absolute; color: transparent; font-weight: bold; z-index: 3; font-size: 1.2em; pointer-events: none;}
+        #visor-circle.uv-active .uv-hidden-text { color: var(--text-safe); text-shadow: 0 0 8px var(--text-safe); }
+        #data-section { flex: 1.4; display: flex; flex-direction: column; gap: 8px; }
+        .investigation-card { background: #111; border: 1px solid var(--text-dim); padding: 12px; display: flex; flex-direction: column; gap: 5px; }
+        .inv-header { color: var(--text-dim); font-size: 0.75em; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 3px; display: flex; justify-content: space-between; }
+        #id-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9em; font-family: monospace; color: #aaa; }
+        .id-field strong { color: #fff; }
+        .highlight-diff { color: var(--text-danger); animation: blink 1s infinite; }
+        #stress-meter-container { width: 100%; height: 6px; background: #222; margin-top: 5px; }
+        #stress-meter-fill { height: 100%; width: 0%; background: var(--text-safe); transition: width 0.3s, background 0.3s; }
+        #dialogue-box { font-style: italic; color: #fff; height: 70px; overflow-y: auto; border-left: 2px solid var(--text-primary); padding-left: 10px; font-size: 0.95em; }
+        .dialogue-options { display: flex; gap: 5px; }
+        .dialogue-btn { flex: 1; font-size: 0.8em; padding: 8px; text-align: center; justify-content: center; background: #1a1a1a; border-color: #444; }
+        .dialogue-btn:hover { background: #333; border-color: #888; }
+        .scan-result-box { min-height: 25px; font-weight: bold; text-align: center; font-size: 1.1em; }
+        .decision-area { margin-top: auto; border-top: 1px solid #333; padding-top: 10px; }
+        .timer-bar-container { width: 100%; height: 15px; background: #000; border: 1px solid var(--text-danger); margin: 5px 0; }
+        #timer-bar { width: 100%; height: 100%; background: var(--text-danger); }
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        /* --- RADIO & DREAM MODALS --- */
+        #radio-minigame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; height: 200px; background: #000; border: 2px solid var(--text-alert); z-index: 300; display: none; flex-direction: column; padding: 20px; box-shadow: 0 0 30px #000; }
+        #radio-minigame.active { display: flex; }
+        #tuner-bar-bg { width: 100%; height: 30px; background: #222; position: relative; margin: 20px 0; border: 1px solid #555; }
+        #tuner-target { position: absolute; top: 0; height: 100%; width: 40px; background: rgba(0, 255, 0, 0.3); border-left: 1px solid #0f0; border-right: 1px solid #0f0; }
+        #tuner-cursor { position: absolute; top: -5px; bottom: -5px; width: 4px; background: #fff; box-shadow: 0 0 5px #fff; left: 0; }
+        #dream-modal { z-index: 3001; }
+        .dream-content { width: 600px; background: #0a0a0a; border: 1px solid var(--text-primary); padding: 30px; text-align: center; }
+        .dream-text { font-size: 1.1em; color: #bbb; margin-bottom: 30px; font-style: italic; line-height: 1.6; }
+        .dream-choices { display: flex; gap: 20px; }
+        .dream-choices button { text-align: center; justify-content: center; border-color: var(--text-dim); color: var(--text-dim); }
+        .dream-choices button:hover { border-color: var(--text-primary); color: var(--text-primary); }
+
+        /* --- MINIGAME CONTROLS --- */
+        .d-pad { display: grid; grid-template-columns: 60px 60px 60px; grid-template-rows: 60px 60px; gap: 5px; margin-top: 20px; justify-content: center; }
+        .d-pad-btn { width: 60px; height: 60px; background: #111; border: 2px solid var(--text-alert); color: var(--text-alert); font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: all 0.1s; }
+        .d-pad-btn:active { background: var(--text-alert); color: #000; transform: scale(0.95); }
+        .d-pad-up { grid-column: 2; grid-row: 1; }
+        .d-pad-left { grid-column: 1; grid-row: 2; }
+        .d-pad-down { grid-column: 2; grid-row: 2; }
+        .d-pad-right { grid-column: 3; grid-row: 2; }
+
     </style>
 </head>
 <body>
 
-    <div id="main-menu-screen" class="screen active">
-        <div class="menu-container">
-            <h1 style="font-size: 3em;">PLURIBUS</h1>
-            <p style="color: #FF0;">A JUNÇÃO</p>
-            <br>
-            <button onclick="startGame()" style="font-size: 1.5em;">INICIAR JOGO</button>
-            <div style="margin-top: 10px;">
-                <button onclick="showScreen('how-to-play-screen')">COMO JOGAR</button>
-                <button onclick="showScreen('credits-screen')">CRÉDITOS</button>
-                <button onclick="initAudio()">ATIVAR SOM 🔊</button>
-            </div>
-        </div>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+
+    <!-- MAIN START MENU -->
+    <div id="start-menu" class="full-screen-menu">
+        <h1>PLURIBUS</h1>
+        <h2 style="color: #888; letter-spacing: 3px;">SELEÇÃO DE MODO</h2>
+        
+        <button class="menu-btn" onclick="game.startStory()">MODO HISTÓRIA (CAMPANHA)</button>
+        <button class="menu-btn secondary" onclick="arcadeMode.openMenu()">MODO ARCADE (MINIGAMES)</button>
+        
+        <div style="margin-top: 20px; font-size: 0.8em; color: #666;">V1.6.0 - SISTEMA XP AJUSTADO</div>
     </div>
 
-    <div id="how-to-play-screen" class="screen">
-        <div class="menu-container">
-            <h2>MANUAL DE SOBREVIVÊNCIA</h2>
-            <div style="text-align: left; max-height: 60vh; overflow-y: auto;">
-                <p>1. <strong>GLITCH (PAC-MAN):</strong> A cada 30s, o jogo trava. Use as SETAS para comer tudo.</p>
-                <p>2. <strong>CÂMERA:</strong> Gasta 20% de bateria. Só 2 usos por dia.</p>
-                <p>3. <strong>PORTA:</strong> Só pode ser reparada 3 vezes por dia.</p>
-                <p>4. <strong>GERADOR:</strong> Só pode ser usado 1 vez por dia.</p>
+    <!-- ARCADE MENU -->
+    <div id="arcade-menu" class="full-screen-menu">
+        <h1>SALA ARCADE</h1>
+        <div id="arcade-stats">
+            <div class="rank-title" id="rank-display">RANK: CIVIL</div>
+            <div style="display:flex; justify-content:space-between;">
+                <span>PONTUAÇÃO TOTAL:</span>
+                <span id="total-score-display" style="color:white; font-weight:bold;">0</span>
             </div>
-            <button onclick="showScreen('main-menu-screen')">VOLTAR</button>
+            <div class="xp-bar-container"><div id="xp-bar" class="xp-bar-fill"></div></div>
+            <small id="next-rank-msg" style="color:#666;">PRÓXIMO NÍVEL: 100 PTS</small>
         </div>
+        
+        <h3 style="color:var(--text-dim); border-bottom:1px solid #333; width:300px; margin-bottom:15px;">PROTOCOLO DE TREINO</h3>
+        
+        <button class="menu-btn" onclick="minigameManager.startSpecific('snake', 'arcade')">JOGAR: SNAKE-LINK</button>
+        <button class="menu-btn" onclick="minigameManager.startSpecific('pac', 'arcade')">JOGAR: PAC-DATA</button>
+        <button class="menu-btn" onclick="minigameManager.startSpecific('echo', 'arcade')">JOGAR: ECHO-MIND</button>
+        
+        <button class="menu-btn secondary" onclick="arcadeMode.closeMenu()" style="margin-top: 30px;">VOLTAR AO MENU</button>
     </div>
 
-    <div id="credits-screen" class="screen">
-        <div class="menu-container">
-            <h2>CRÉDITOS</h2>
-            <br>
-            <p>CRIADOR</p>
-            <p style="font-size: 2em; color: #FF0; text-shadow: 0 0 10px #FF0;">HALDO</p>
-            <br>
-            <button onclick="showScreen('main-menu-screen')">VOLTAR</button>
-        </div>
-    </div>
-
-    <div id="game-screen" class="screen">
-        <div id="game-hud">
-            <div class="hud-column">
-                <span>🧠 SANIDADE: <span id="val-sanity">100%</span></span>
-                <div class="bar-container"><div id="sanity-bar" class="bar-fill"></div></div>
-                <span>❤️ INTIMIDADE: <span id="val-intimacy">100%</span></span>
-                <div class="bar-container"><div id="intimacy-bar" class="bar-fill"></div></div>
+    <!-- GAME CONTAINER (HIDDEN IN ARCADE) -->
+    <div id="game-container" style="display:none;">
+        <!-- HUD -->
+        <div id="hud">
+            <div class="stat-box">
+                <div class="stat-header"><span>SANIDADE</span><span id="val-san">100%</span></div>
+                <div class="bar-container"><div id="bar-san" class="bar-fill"></div></div>
             </div>
-            <div class="hud-column">
-                <span>🛡️ PORTA: <span id="val-door">100%</span></span>
-                <div class="bar-container"><div id="door-bar" class="bar-fill"></div></div>
-                <div style="display:flex; justify-content:space-between;">
-                    <span>🔋 BAT: <span id="val-battery">100%</span></span>
-                    <span>🏠 HAB: <span id="val-pop" style="color:#FF0;">1/4</span></span>
+            <div class="stat-box">
+                <div class="stat-header"><span>ENERGIA</span><span id="val-nrg">100%</span></div>
+                <div class="bar-container"><div id="bar-nrg" class="bar-fill"></div></div>
+            </div>
+            <div id="clock-box">
+                <div id="clock-display">08:00</div>
+                <div style="font-size: 0.7em; color: #888;">DIA <span id="val-day">1</span></div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-header"><span>INTIMIDADE</span><span id="val-int">100%</span></div>
+                <div class="bar-container"><div id="bar-int" class="bar-fill"></div></div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-header"><span>PORTA</span><span id="val-door">100%</span></div>
+                <div class="bar-container"><div id="bar-door" class="bar-fill safe"></div></div>
+            </div>
+        </div>
+
+        <!-- MAIN AREA -->
+        <div id="main-hub">
+            <div id="room-view">
+                <div id="location-name">BUNKER // ZONA SEGURA</div>
+                <div id="ascii-art"></div>
+                <div id="crew-display" style="margin-top:20px; font-size:0.8em; color:#444;"></div>
+            </div>
+
+            <div id="controls-panel">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="game.ui.switchTab('maint')">AÇÕES</button>
+                    <button class="tab-btn" onclick="game.ui.switchTab('crew')">TRIPULAÇÃO</button>
+                    <button class="tab-btn" onclick="game.ui.switchTab('archive')">ARQUIVO</button>
+                    <button class="tab-btn" onclick="game.ui.switchTab('inventory')">ITENS</button>
                 </div>
-                <div class="bar-container"><div id="battery-bar" class="bar-fill"></div></div>
-            </div>
-        </div>
-
-        <div id="apartment-hub-view">
-            <div class="hub-container">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div style="text-align:left;">
-                        <h2 style="margin:0; font-size:1.5em;">DIA <span id="val-day">1</span></h2>
+                <div id="tab-maint" class="tab-content active">
+                    <div class="panel-section">
+                        <div class="panel-title" id="actions-title">COMANDOS</div>
+                        <div id="dynamic-actions"></div>
                     </div>
-                    <h1 id="clock-display" style="font-size:3em; margin:0; color:#FF0;">00:00</h1>
+                    <div class="panel-section" style="flex:1;">
+                        <div class="panel-title">REGISTRO</div>
+                        <div id="log-container"></div>
+                    </div>
                 </div>
-
-                <pre id="apartment-art">
-    [ TV ]      [ RÁDIO ]      [ MESA ]
-      |             |             |
-    (OFF)        (CHIADO)      (PLANO)
-
-          \     |     /
-           \    |    /
-            \   |   /
-             \  |  /
-              \ | /
-          [  PORTA  ]
-                </pre>
-                
-                <div id="hub-display-log"><p>SOBREVIVA.</p></div>
-                <div id="glitch-timer">GLITCH EM: 30s</div>
-                
-                <div class="hub-actions" style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
-                    <button id="btn-repair" onclick="actionRepair()">🔨 REPARAR (3)</button>
-                    <button id="btn-manage" onclick="openManageScreen()">👥 GERENCIAR</button>
-                    <button id="btn-tv" onclick="openTVScreen()">📺 TV (1x)</button>
-                    <button id="btn-focus" onclick="actionFocus()">🧘 FOCAR (4)</button>
-                    <button id="btn-cam" onclick="openCameraScreen()">📹 CÂMERA (2)</button>
-                    <button id="btn-gen" onclick="actionGenerator()">⚡ GERADOR (1)</button>
+                <div id="tab-crew" class="tab-content">
+                    <div class="panel-section" style="flex:1; overflow-y:auto;">
+                        <div class="panel-title">GESTÃO DE PESSOAL</div>
+                        <div id="crew-container"></div>
+                    </div>
+                </div>
+                <div id="tab-archive" class="tab-content">
+                    <div class="panel-section" style="flex:1; overflow-y:auto;">
+                        <div class="panel-title">FRAGMENTOS DE DADOS</div>
+                        <div id="lore-list"></div>
+                        <div id="lore-display" style="margin-top:10px; padding:10px; border:1px dashed var(--text-lore); color: var(--text-lore); font-size:0.9em; min-height:100px; display:none;"></div>
+                    </div>
+                </div>
+                <div id="tab-inventory" class="tab-content">
+                    <div class="panel-section" style="flex:1; overflow-y:auto;">
+                        <div class="panel-title">ITENS CHAVE</div>
+                        <div id="inventory-list" style="color: #888;">Vazio.</div>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div id="peephole-overlay" class="screen hidden">
-            <h2 style="color:#FF0; margin:0;">ALGUÉM BATEU!</h2>
-            <div id="peephole-timer-display">10</div>
-            <div id="visitor-ascii-art" class="dark-vision">?????????????\n? VULT ?\n?????????????</div>
-            <div id="peephole-controls" style="text-align: center;">
-                <div style="margin-bottom: 15px;">
-                    <button id="btn-light" onclick="useLight()">🔦 LUZ (-15%)</button>
-                    <button id="btn-scan" onclick="useScanner()">🧬 SCANNER</button>
-                    <button id="btn-listen" onclick="useListen()">👂 OUVIR</button>
+    <!-- MODALS -->
+    <div id="radio-minigame">
+        <div class="panel-title">SINTONIA DE FREQUÊNCIA</div>
+        <div id="tuner-bar-bg"><div id="tuner-target"></div><div id="tuner-cursor"></div></div>
+        <p style="color: #888; font-size: 0.8em; text-align: center;">Clique para travar o sinal na área verde.</p>
+        <button onclick="radioGame.stop()" style="text-align: center; justify-content: center; margin-top: auto;">TRAVAR SINAL</button>
+    </div>
+
+    <div id="peephole-modal" class="modal-overlay">
+        <div id="peephole-layout">
+            <div id="visor-section">
+                <div class="panel-title" style="width:100%; text-align:center;">CÂMERA DA PORTA</div>
+                <div id="visor-circle"><div id="visitor-face"></div></div>
+                <div style="width:100%; display:flex; flex-direction:column; gap:5px;">
+                    <button id="btn-uv" onclick="game.encounter.toggleUV()">LUZ UV [OFF]</button>
+                    <button id="btn-shotgun" onclick="game.encounter.shotgun()" class="danger-action">ESCOPETA (ELIMINAR)</button>
                 </div>
-                <div id="dialogue-area"></div>
-                <div id="decision-area" class="hidden" style="margin-top:10px;">
-                    <button id="btn-open" onclick="resolveVisitor('open')" style="color:#FFF; border-color:#FFF;">ABRIR</button>
-                    <button onclick="resolveVisitor('deny')" style="color:#FF0; border-color:#FF0;">NÃO ABRIR</button>
+            </div>
+            <div id="data-section">
+                <div class="investigation-card">
+                    <div class="inv-header">CARTÃO DE ACESSO <span id="doc-status" style="float:right">VÁLIDO</span></div>
+                    <div id="id-card-grid">
+                        <div class="id-field">NOME: <strong id="id-name">---</strong></div>
+                        <div class="id-field">ID: <strong id="id-code">---</strong></div>
+                        <div class="id-field">ORIGEM: <strong id="id-origin">---</strong></div>
+                        <div class="id-field">TIPO SANG.: <strong id="id-blood">---</strong></div>
+                        <div class="id-field">VALIDADE: <strong id="id-date">---</strong></div>
+                    </div>
                 </div>
-                <div id="pop-warning" style="color:#F00; font-size:0.8em; height:20px;"></div>
+
+                <div class="investigation-card">
+                    <div class="inv-header">INTERROGATÓRIO <span style="float:right">ESTRESSE</span></div>
+                    <div id="stress-meter-container"><div id="stress-meter-fill"></div></div>
+                    <div id="dialogue-box">"..."</div>
+                    <div class="dialogue-options">
+                        <button class="dialogue-btn" onclick="game.encounter.ask('origin')">ORIGEM?</button>
+                        <button class="dialogue-btn" onclick="game.encounter.ask('symptoms')">SINTOMAS?</button>
+                        <button class="dialogue-btn" onclick="game.encounter.ask('blood')">SANGUE?</button>
+                        <button class="dialogue-btn" onclick="game.encounter.ask('calm')">ACALMAR</button>
+                    </div>
+                </div>
+
+                <div class="investigation-card">
+                    <div class="inv-header">SCANNER BIOLÓGICO (-5 ENERGIA)</div>
+                    <button onclick="game.encounter.scan()" style="margin-bottom:5px;">INICIAR LEITURA</button>
+                    <div id="scan-result" class="scan-result-box">DADOS OCULTOS</div>
+                </div>
+
+                <div class="decision-area">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span style="color:var(--text-danger)">TEMPO RESTANTE</span><span id="tension-display">30.0s</span>
+                    </div>
+                    <div class="timer-bar-container"><div id="timer-bar"></div></div>
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+                        <button onclick="game.encounter.decide(true)" style="background:#003300; border-color:var(--text-safe);">ABRIR PORTA</button>
+                        <button onclick="game.encounter.decide(false)" style="background:#330000; border-color:var(--text-danger);">RECUSAR</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="minigame-screen" class="screen">
-        <div class="menu-container" style="border: none; background: transparent; box-shadow: none;">
-            <h2 id="minigame-msg">ERRO NO SISTEMA!</h2>
-            <p style="color: #FFF;">COMA TUDO. FUJA DOS FANTASMAS.</p>
-            <canvas id="pacman-canvas"></canvas>
-            <p style="font-size: 1em; color: #FF0; margin-top: 10px;">USE AS SETAS DO TECLADO</p>
+    <div id="dream-modal" class="modal-overlay">
+        <div class="dream-content">
+            <h2 style="color: #fff; border-bottom: 1px solid #555; padding-bottom: 10px;">SONHO LÚCIDO</h2>
+            <div id="dream-text" class="dream-text">...</div>
+            <div id="dream-options" class="dream-choices"></div>
         </div>
     </div>
 
-    <div id="camera-screen" class="screen">
-        <div class="menu-container">
-            <h2>VIGILÂNCIA V2.0</h2>
-            <div id="cam-ui"><div id="cam-feed"><div id="cam-loading">CONECTANDO...</div><div id="cam-result" class="hidden"></div></div></div>
-            <div style="margin-top:20px;"><p id="cam-status">Bateria: -20%</p><button onclick="closeCameraScreen()">DESLIGAR</button></div>
+    <div id="map-modal" class="modal-overlay">
+        <div id="map-modal-content">
+            <div class="panel-title" style="font-size: 1.4em; border-bottom: 1px solid #444; padding-bottom: 10px;">MAPA TÁTICO</div>
+            <p style="color:#888; font-size:0.9em;">SELECIONE UM DESTINO. O TEMPO AVANÇARÁ.</p>
+            <button class="map-btn" onclick="game.actions.travel('mercado')"><strong>MERCADO CENTRAL</strong><small>ALIMENTOS • ENERGIA • RISCO MÉDIO</small></button>
+            <button class="map-btn" onclick="game.actions.travel('farmacia')"><strong>FARMÁCIA ANTIGA</strong><small>REMÉDIOS • LORE • RISCO ALTO</small></button>
+            <button class="map-btn" onclick="game.actions.travel('ruas')"><strong>ZONA URBANA (RUAS)</strong><small>ITENS RAROS • SUCATA • RISCO EXTREMO</small></button>
+            <button onclick="game.ui.toggleMap()" style="margin-top:10px; border-color: var(--text-dim); color: var(--text-dim);">CANCELAR</button>
         </div>
     </div>
 
-    <div id="manage-screen" class="screen">
-        <div class="menu-container"><h2>GERENCIAR</h2><div id="occupants-list"></div><button onclick="closeManageScreen()">VOLTAR</button></div>
+    <div id="lore-modal" class="modal-overlay" style="z-index: 3000;">
+        <div style="max-width:500px; background:#111; padding:30px; border:2px solid var(--text-primary); text-align:justify;">
+            <h2 id="lore-title" style="color:var(--text-alert); text-align:center;">FIM DO DIA</h2>
+            <p id="lore-text">...</p>
+            <button id="next-day-btn" onclick="game.nextDay()" style="margin-top:20px; justify-content: center;">CONTINUAR</button>
+        </div>
     </div>
 
-    <div id="tv-screen" class="screen">
-        <div class="menu-container"><h2>CANAL DA JUNÇÃO</h2><div id="tv-content"></div><div id="tv-controls"><button id="tv-ask-btn" onclick="askTV()">PERGUNTAR</button><button onclick="closeTVScreen()">DESLIGAR</button></div></div>
-    </div>
-
-    <div id="report-screen" class="screen">
-        <div class="menu-container"><h2>RELATÓRIO</h2><div id="rank-grade" class="rank-grade"></div><div class="score-detail"><p>PONTOS: <span id="score-total"></span></p></div><button onclick="goToMeeting()">REUNIÃO</button></div>
-    </div>
-
-    <div id="meeting-screen" class="screen">
-        <div class="menu-container"><h2>REUNIÃO</h2><div id="meeting-grid" class="meeting-grid"></div></div>
-    </div>
-
-    <div id="victory-screen" class="screen">
-        <div class="menu-container"><h1>VITÓRIA</h1><button onclick="startEndlessMode()">MODO INFINITO</button><button onclick="location.reload()">MENU</button></div>
-    </div>
-
-    <div id="game-over-screen" class="screen">
-        <div class="menu-container"><h1 style="color:#F00;">FIM DE JOGO</h1><p id="go-msg"></p><button onclick="location.reload()">TENTAR NOVAMENTE</button></div>
+    <!-- MINIGAME CONTAINER (GENERIC) -->
+    <div id="minigame-container" class="modal-overlay" style="z-index: 2999;">
+        <div style="text-align:center;">
+            <h2 id="minigame-title" style="color:var(--text-alert)">CALIBRAGEM NEURAL</h2>
+            <p id="minigame-info" style="color: #888;">DADOS: <span id="pac-dots">0</span></p>
+            <canvas id="minigame-canvas" width="400" height="400" style="border:2px solid var(--text-alert); background:#000;"></canvas>
+            
+            <!-- D-PAD CONTROLS -->
+            <div class="d-pad">
+                <div class="d-pad-btn d-pad-up" onclick="minigameManager.handleInput('ArrowUp')">▲</div>
+                <div class="d-pad-btn d-pad-left" onclick="minigameManager.handleInput('ArrowLeft')">◄</div>
+                <div class="d-pad-btn d-pad-down" onclick="minigameManager.handleInput('ArrowDown')">▼</div>
+                <div class="d-pad-btn d-pad-right" onclick="minigameManager.handleInput('ArrowRight')">►</div>
+            </div>
+            <p style="font-size: 0.8em; color: #444; margin-top: 10px;">Use as setas ou o teclado.</p>
+            <button id="arcade-back-btn" style="display:none; margin-top:10px; border-color:red; color:red;" onclick="minigameManager.exitArcade()">SAIR DO JOGO</button>
+        </div>
     </div>
 
     <script>
-/* === SISTEMA === */
-let audioCtx = null;
-let gameLoop = null, peepTimer = null, glitchInterval = null, minigameLoop = null;
-let glitchCountdown = 30;
-const TICK_SPEED = 300;
-
-let game = {
-    state: 'menu', day: 1, mode: 'normal', time: { h: 0, m: 0 },
-    stats: { sanity: 100, intimacy: 100, door: 100, battery: 100 },
-    occupants: [], flags: { tvUsed: false, generatorUsed: false },
-    uses: { focus: 4, scan: 4, cam: 2, repair: 3 },
-    visitor: null, nextVisitor: null, peepTime: 10
-};
-
-// MAPA DO PACMAN (GLOBAL) - 2 = VAZIO, 0 = PONTO, 1 = PAREDE
-const PACMAN_MAP = [
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,0,2,2,2,2,2,1,2,2,2,2,2,0,1], 
-    [1,2,1,1,1,1,2,1,2,1,1,1,1,2,1],
-    [1,2,1,0,2,2,2,2,2,2,2,0,1,2,1],
-    [1,2,1,2,1,1,0,2,0,1,1,2,1,2,1], 
-    [1,2,0,2,0,2,2,2,2,2,0,2,0,2,1],
-    [1,2,1,2,1,1,0,2,0,1,1,2,1,2,1],
-    [1,2,1,0,2,2,2,2,2,2,2,0,1,2,1],
-    [1,2,1,1,1,1,2,1,2,1,1,1,1,2,1],
-    [1,0,2,2,2,2,2,1,2,2,2,2,2,0,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-];
-
-// LORE & DATA
-const tvScript = [{q:"O que é isso?", a:"A JUNÇÃO É O FUTURO."}, {q:"Por que?", a:"A DOR PRECISA PARAR."}, {q:"Quem sou eu?", a:"VOCÊ É PARTE DE NÓS."}, {q:"Fim?", a:"APENAS O COMEÇO."}];
-const visitorsPool = [
-    { type: 'Humano', name: 'Vizinho', art: ' (o o)\n  \\_/', sound: 'human', dialogues: [{q:"Quem?", a:"Sou vizinho!", sanity:5}]},
-    { type: 'Humano', name: 'Médico', art: '  (+)\n (o o)', sound: 'human', dialogues: [{q:"Ajuda?", a:"Estou ferido.", sanity:0}]},
-    { type: 'Infectado', name: 'Mímico', art: ' (O O)\n  \\_/', sound: 'alien', dialogues: [{q:"Quem?", a:"Sou eu...", sanity:-15}]},
-    { type: 'Infectado', name: 'Vazio', art: '  ( )\n  ---', sound: 'static', dialogues: [{q:"...", a:"...", sanity:-20}]}
-];
-const meetingTasks = [{name:"REZAR", san:20, int:5}, {name:"JOGAR", san:10, int:15}, {name:"CONVERSAR", san:5, int:10}];
-
-/* === AUDIO === */
-function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-function playSound(type) {
-    if(!audioCtx) return;
-    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    const now = audioCtx.currentTime;
-    if(type==='knock'){osc.frequency.value=80; gain.gain.value=0.5; osc.start(now); osc.stop(now+0.1);}
-    if(type==='win'){osc.type='sine'; osc.frequency.setValueAtTime(400,now); osc.frequency.linearRampToValueAtTime(800,now+0.2); gain.gain.value=0.3; osc.start(now); osc.stop(now+0.2);}
-    if(type==='lose'){osc.type='sawtooth'; osc.frequency.setValueAtTime(200,now); gain.gain.value=0.5; osc.start(now); osc.stop(now+0.3);}
-}
-
-/* === ENGINE === */
-function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-
-function startGame() {
-    game.stats = { sanity: 100, intimacy: 100, door: 100, battery: 100 };
-    game.day = 1; game.mode = 'normal'; game.occupants = [{name:"Ana", loyalty:80}];
-    resetDay(); showScreen('game-screen');
-    if(gameLoop) clearInterval(gameLoop); gameLoop = setInterval(tick, TICK_SPEED);
-    
-    glitchCountdown = 30;
-    if(glitchInterval) clearInterval(glitchInterval);
-    glitchInterval = setInterval(glitchTick, 1000);
-}
-
-function resetDay() {
-    game.time = {h:0, m:0}; game.flags = {tvUsed:false, generatorUsed:false};
-    game.uses = {focus:4, scan:4, cam:2, repair:3};
-    updateHUD();
-}
-
-function glitchTick() {
-    if(game.state !== 'minigame' && document.getElementById('game-screen').classList.contains('active')) {
-        glitchCountdown--;
-        document.getElementById('glitch-timer').innerText = `GLITCH EM: ${glitchCountdown}s`;
-        if(glitchCountdown <= 0) startMinigame();
-    }
-}
-
-function tick() {
-    if(game.state === 'minigame') return;
-    if(!document.getElementById('game-screen').classList.contains('active')) return;
-    if(document.getElementById('peephole-overlay').classList.contains('active')) return;
-
-    game.time.m++;
-    if(game.time.m >= 60) { game.time.m=0; game.time.h++; }
-    if(game.time.m === 0) game.occupants.forEach(o => { o.loyalty-=3; if(o.loyalty<=0) gameOver("TRAÍDO."); });
-    if(game.time.m === 30 && game.time.h < 5) triggerVisitor();
-    if(game.time.h >= 5) endDay();
-    updateHUD();
-}
-
-/* === MINI GAME === */
-let canvas, ctx, player, ghosts, pellets, mapSize = 25;
-
-function startMinigame() {
-    game.state = 'minigame';
-    showScreen('minigame-screen');
-    setTimeout(initMinigame, 100); // Pequeno delay para garantir render
-}
-
-function initMinigame() {
-    canvas = document.getElementById('pacman-canvas');
-    ctx = canvas.getContext('2d');
-    
-    // Define tamanho do canvas baseado no mapa
-    canvas.width = PACMAN_MAP[0].length * mapSize;
-    canvas.height = PACMAN_MAP.length * mapSize;
-    
-    pellets = [];
-    let emptySpots = [];
-    
-    for(let y=0; y<PACMAN_MAP.length; y++) {
-        for(let x=0; x<PACMAN_MAP[0].length; x++) {
-            // 0 = Pastilha, 2 = Caminho Vazio
-            if(PACMAN_MAP[y][x] === 0) {
-                pellets.push({x:x, y:y});
+        // --- AUDIO & UTILS ---
+        const audioSys = {
+            ctx: null,
+            init: function() { if(!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)(); if(this.ctx.state==='suspended') this.ctx.resume(); },
+            playTone: function(f,t,d,v=0.1) {
+                if(!this.ctx) return; const o=this.ctx.createOscillator(); const g=this.ctx.createGain();
+                o.type=t; o.frequency.setValueAtTime(f,this.ctx.currentTime);
+                g.gain.setValueAtTime(v,this.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+d);
+                o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+d);
+            },
+            sfx: {
+                click: ()=>audioSys.playTone(1200,'square',0.05), error: ()=>audioSys.playTone(150,'sawtooth',0.3),
+                success: ()=>{ audioSys.playTone(600,'sine',0.1); setTimeout(()=>audioSys.playTone(900,'sine',0.2),100); },
+                scan: ()=>audioSys.playTone(2000,'sine',0.2), lore: ()=> { audioSys.playTone(400,'sine',0.1); setTimeout(()=>audioSys.playTone(600,'sine',0.3), 150); },
+                travel: ()=>audioSys.playTone(100,'square',1.0,0.2), knock: ()=>audioSys.playTone(80, 'square', 0.1, 0.3),
+                glitch: ()=>audioSys.playTone(Math.random()*500, 'sawtooth', 0.05, 0.1)
             }
-            if(PACMAN_MAP[y][x] !== 1) {
-                emptySpots.push({x:x, y:y});
-            }
-        }
-    }
-
-    player = { x: 1, y: 1, dir: {x:0, y:0}, nextDir: {x:0, y:0}, color: '#FF0' };
-    ghosts = [];
-    for(let i=0; i<4; i++) {
-        let s = emptySpots[Math.floor(Math.random()*emptySpots.length)];
-        ghosts.push({x:s.x, y:s.y, color:'#F00'});
-    }
-
-    window.addEventListener('keydown', handleMiniInput);
-    if(minigameLoop) clearInterval(minigameLoop);
-    minigameLoop = setInterval(updateMinigame, 150);
-}
-
-function handleMiniInput(e) {
-    if(game.state !== 'minigame') return;
-    if(e.key === 'ArrowUp') player.nextDir = {x:0, y:-1};
-    if(e.key === 'ArrowDown') player.nextDir = {x:0, y:1};
-    if(e.key === 'ArrowLeft') player.nextDir = {x:-1, y:0};
-    if(e.key === 'ArrowRight') player.nextDir = {x:1, y:0};
-}
-
-function updateMinigame() {
-    const isWall = (x, y) => PACMAN_MAP[y] && PACMAN_MAP[y][x] === 1;
-
-    if(!isWall(player.x + player.nextDir.x, player.y + player.nextDir.y)) player.dir = player.nextDir;
-    if(!isWall(player.x + player.dir.x, player.y + player.dir.y)) { player.x += player.dir.x; player.y += player.dir.y; }
-
-    for(let i=0; i<pellets.length; i++) {
-        if(pellets[i].x === player.x && pellets[i].y === player.y) { pellets.splice(i, 1); break; }
-    }
-
-    ghosts.forEach(g => {
-        let moves = [{x:0,y:1}, {x:0,y:-1}, {x:1,y:0}, {x:-1,y:0}].filter(m => !isWall(g.x+m.x, g.y+m.y));
-        let move = moves[Math.floor(Math.random()*moves.length)];
-        if(move) { g.x+=move.x; g.y+=move.y; }
-        if(g.x === player.x && g.y === player.y) finishMinigame(false);
-    });
-
-    drawMinigame();
-    if(pellets.length === 0) finishMinigame(true);
-}
-
-function drawMinigame() {
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Desenhar Paredes
-    ctx.fillStyle = '#445';
-    for(let y=0; y<PACMAN_MAP.length; y++) {
-        for(let x=0; x<PACMAN_MAP[0].length; x++) {
-            if(PACMAN_MAP[y][x] === 1) ctx.fillRect(x*mapSize, y*mapSize, mapSize, mapSize);
-        }
-    }
-
-    // Pellets
-    ctx.fillStyle = '#AAA';
-    pellets.forEach(p => ctx.fillRect(p.x*mapSize+10, p.y*mapSize+10, 5, 5));
-
-    // Player
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x*mapSize+2, player.y*mapSize+2, mapSize-4, mapSize-4);
-
-    // Fantasmas
-    ctx.fillStyle = '#F00';
-    ghosts.forEach(g => ctx.fillRect(g.x*mapSize+2, g.y*mapSize+2, mapSize-4, mapSize-4));
-}
-
-function finishMinigame(win) {
-    clearInterval(minigameLoop);
-    window.removeEventListener('keydown', handleMiniInput);
-    game.state = 'game';
-    
-    if(win) { playSound('win'); updateStats(20); alert("GLITCH CORRIGIDO: +20% BÔNUS"); }
-    else { playSound('lose'); updateStats(-20); alert("ERRO FATAL: -20% PENALIDADE"); }
-    
-    showScreen('game-screen');
-    updateHUD();
-    glitchCountdown = 30;
-}
-
-function updateStats(amount) {
-    for(let k in game.stats) game.stats[k] = Math.min(100, Math.max(0, game.stats[k] + amount));
-}
-
-/* === HUD & UTILS === */
-function updateHUD() {
-    for(let k in game.stats) game.stats[k] = Math.min(100, Math.max(0, game.stats[k]));
-    ['sanity','intimacy','door','battery'].forEach(k => {
-        document.getElementById('val-'+k).innerText = Math.round(game.stats[k]) + '%';
-        document.getElementById(k+'-bar').style.width = game.stats[k] + '%';
-    });
-    
-    let totalPop = game.occupants.length + 1;
-    document.getElementById('val-pop').innerText = `${totalPop}/4`;
-    document.getElementById('val-pop').style.color = totalPop >= 4 ? '#F00' : '#FF0';
-    document.getElementById('val-day').innerText = game.day;
-    document.getElementById('clock-display').innerText = `${String(game.time.h).padStart(2,'0')}:${String(game.time.m).padStart(2,'0')}`;
-
-    document.getElementById('btn-repair').disabled = game.stats.door >= 100 || game.uses.repair <= 0;
-    document.getElementById('btn-repair').innerText = `🔨 REPARAR (${game.uses.repair})`;
-    document.getElementById('btn-tv').disabled = game.flags.tvUsed;
-    document.getElementById('btn-focus').disabled = game.uses.focus <= 0;
-    document.getElementById('btn-focus').innerText = `🧘 FOCAR (${game.uses.focus})`;
-    document.getElementById('btn-light').disabled = game.stats.battery <= 0;
-    document.getElementById('btn-cam').disabled = game.stats.battery < 20 || game.uses.cam <= 0;
-    document.getElementById('btn-cam').innerText = `📹 CÂMERA (${game.uses.cam})`;
-    document.getElementById('btn-gen').disabled = game.flags.generatorUsed; 
-    document.getElementById('btn-gen').innerText = game.flags.generatorUsed ? "⚡ GERADOR (USADO)" : "⚡ GERADOR (1x)";
-
-    if(game.stats.sanity <= 0) gameOver("SUA MENTE QUEBROU.");
-    if(game.stats.intimacy <= 0) gameOver("VOCÊ FOI EXPULSO.");
-    if(game.stats.door <= 0) gameOver("ELES ENTRARAM.");
-}
-
-/* === AÇÕES === */
-function getNextVisitor() { if (!game.nextVisitor) game.nextVisitor = visitorsPool[Math.floor(Math.random()*visitorsPool.length)]; return game.nextVisitor; }
-
-function triggerVisitor() {
-    playSound('knock');
-    game.visitor = getNextVisitor(); game.nextVisitor = null;
-    document.getElementById('peephole-overlay').classList.remove('hidden');
-    document.getElementById('peephole-overlay').classList.add('active');
-    document.getElementById('visitor-ascii-art').classList.add('dark-vision');
-    document.getElementById('visitor-ascii-art').innerText = "??????\n? VULT ?\n??????";
-    document.getElementById('dialogue-area').innerHTML = '';
-    document.getElementById('decision-area').classList.add('hidden');
-    document.getElementById('btn-scan').innerText = `🧬 SCANNER (${game.uses.scan})`;
-    document.getElementById('btn-scan').disabled = game.uses.scan <= 0;
-    document.getElementById('btn-open').disabled = (game.occupants.length+1 >= 4);
-
-    game.visitor.dialogues.forEach(d => {
-        let btn = document.createElement('button');
-        btn.innerText = d.q;
-        btn.onclick = () => {
-            document.getElementById('dialogue-area').innerText = `"${d.a}"`;
-            game.stats.sanity += d.sanity;
-            document.getElementById('decision-area').classList.remove('hidden');
         };
-        document.getElementById('dialogue-area').appendChild(btn);
-    });
 
-    game.peepTime = 10;
-    document.getElementById('peephole-timer-display').innerText = 10;
-    if(peepTimer) clearInterval(peepTimer);
-    peepTimer = setInterval(() => {
-        game.peepTime--;
-        document.getElementById('peephole-timer-display').innerText = game.peepTime;
-        if(game.peepTime <= 0) { clearInterval(peepTimer); game.stats.sanity-=20; game.stats.door-=20; closePeephole(); }
-    }, 1000);
-}
+        // --- ASSETS (ASCII) ---
+        const scenes = {
+            bunker: `
+      _______________________
+     /                       \\
+    /    [RÁDIO]   [TV]       \\
+   |                          |
+   |    +------+              |
+   |    | CAMA |   [PORTA]    |
+   |    |      |      ||      |
+   |    +------+      ||      |
+   |                          |
+    \\                        /
+     \\______________________/`,
+            mercado: `
+       _____________________
+      /   MERCADO CENTRAL   \\
+     /  [PRATELEIRAS VAZIAS] \\
+    |    __   __   __   __    |
+    |   |  | |  | |XX| |  |   |
+    |   |__| |__| |XX| |__|   |
+    |           /    \\        |
+    |          ( LIXO )       |
+     \\_______________________/`,
+            farmacia: `
+       _____________________
+      /      FARMÁCIA       \\
+     /    [BALCÃO REVIRADO]  \\
+    |       +-------+         |
+    |       | MEDIC |         |
+    |       +-------+         |
+    |    ___                  |
+    |   |XXX|  [ARQUIVOS]     |
+     \\_______________________/`,
+            ruas: `
+         _    _      _    _
+       _| |__| |____| |__| |_
+      /  RUÍNAS DA CIDADE    \\
+     |   _   _        _   _   |
+     |  | | | |      | | | |  |
+     |  |_| |_|      |_| |_|  |
+     |      [CARRO DESTR.]    |
+      \\______________________/`
+        };
 
-function useLight() { if(game.stats.battery>0){game.stats.battery-=15; document.getElementById('visitor-ascii-art').classList.remove('dark-vision'); document.getElementById('visitor-ascii-art').innerText=game.visitor.art; updateHUD();} }
-function useScanner() { if(game.uses.scan>0){game.uses.scan--; playSound('alarm'); let isHuman=game.visitor.type==='Humano'; document.getElementById('dialogue-area').innerHTML=isHuman?"HUMANO":"INFECTADO"; document.getElementById('btn-scan').innerText=`SCAN (${game.uses.scan})`; document.getElementById('btn-scan').disabled=true;} }
-function useListen() { game.stats.sanity-=2; playSound(game.visitor.sound); updateHUD(); }
-function resolveVisitor(choice) {
-    clearInterval(peepTimer);
-    if(choice==='open'){
-        if(game.visitor.type==='Humano'){game.stats.intimacy+=10; game.occupants.push({name:"Sobrevivente",loyalty:50});}
-        else{game.stats.sanity-=40; game.stats.intimacy-=30;}
-    } else { game.stats.door-=20; if(game.visitor.type==='Humano') game.stats.sanity-=15; }
-    closePeephole();
-}
-function closePeephole() { document.getElementById('peephole-overlay').classList.remove('active'); document.getElementById('peephole-overlay').classList.add('hidden'); updateHUD(); }
+        // --- DATABASE ---
+        const loreDB = [
+            { id: 0, title: "Relatório Médico #01", text: "Paciente Zero exibe calcificação. Vírus digital.", unlocked: false, loc: 'bunker' },
+            { id: 1, title: "Frequência Theta", text: "Eles sentem medo via rádio. Desligue tudo.", unlocked: false, loc: 'bunker' },
+            { id: 2, title: "Chave do Esgoto", text: "ITEM CHAVE. Permite acesso aos túneis sob a cidade.", unlocked: false, loc: 'ruas', isItem: true },
+            { id: 3, title: "Mapa dos Túneis", text: "Mostra a saída secreta para o Setor 7.", unlocked: false, loc: 'mercado', isItem: true },
+            { id: 4, title: "Amostra Zero", text: "Vial de sangue original. A cura potencial.", unlocked: false, loc: 'farmacia', isItem: true },
+            { id: 5, title: "Diário do Soldado", text: "Não há resgate. É uma armadilha.", unlocked: false, loc: 'ruas' }
+        ];
 
-function openCameraScreen() { if(game.stats.battery<20 || game.uses.cam<=0)return; showScreen('camera-screen'); game.stats.battery-=20; game.uses.cam--; const target=getNextVisitor(); setTimeout(()=>{ document.getElementById('cam-result').classList.remove('hidden'); document.getElementById('cam-result').innerText = (target.type==='Humano' ? "HUMANO" : "INFECTADO"); document.getElementById('cam-loading').classList.add('hidden'); }, 1000); }
-function closeCameraScreen() { showScreen('game-screen'); updateHUD(); document.getElementById('cam-result').classList.add('hidden'); document.getElementById('cam-loading').classList.remove('hidden'); }
+        const dreamsDB = [
+            { text: "Sonho: O dia do surto no metrô.", choices: [ {l:"Ajudar", e:"san", v:-10, r:"Mordida."}, {l:"Correr", e:"nrg", v:10, r:"Sobreviveu."} ] },
+            { text: "Sonho: A voz da colmeia chama.", choices: [ {l:"Resistir", e:"san", v:15, r:"Mente forte."}, {l:"Ouvir", e:"san", v:-15, r:"Paz falsa."} ] }
+        ];
 
-function openManageScreen() { showScreen('manage-screen'); const l=document.getElementById('occupants-list'); l.innerHTML=''; game.occupants.forEach((o,i)=>{ l.innerHTML+=`<div>${o.name} (Lealdade: ${o.loyalty}%) <button onclick="care(${i})">CUIDAR</button><button onclick="kick(${i})">EXPULSAR</button></div>`; }); if(game.occupants.length===0) l.innerHTML="SOZINHO."; }
-function care(i) { game.occupants[i].loyalty=Math.min(100,game.occupants[i].loyalty+20); game.time.m+=30; openManageScreen(); }
-function kick(i) { game.occupants.splice(i,1); game.stats.sanity-=15; openManageScreen(); }
-function closeManageScreen() { showScreen('game-screen'); }
+        // --- ARCADE MODE SYSTEM ---
+        const arcadeMode = {
+            totalScore: 0,
+            ranks: [
+                { name: "CIVIL", threshold: 0 },
+                { name: "RECRUTA", threshold: 100 },
+                { name: "SOBREVIVENTE", threshold: 300 },
+                { name: "EXPLORADOR", threshold: 600 },
+                { name: "OPERADOR", threshold: 1000 },
+                { name: "VETERANO", threshold: 1500 },
+                { name: "ELITE", threshold: 2200 },
+                { name: "HACKER NEURAL", threshold: 3000 },
+                { name: "MESTRE DO SISTEMA", threshold: 4000 },
+                { name: "A SINGULARIDADE", threshold: 5500 },
+                { name: "DEUS DA MÁQUINA", threshold: 7500 }
+            ],
+            openMenu: function() {
+                document.getElementById('start-menu').style.display = 'none';
+                document.getElementById('arcade-menu').style.display = 'flex';
+                this.updateUI();
+            },
+            closeMenu: function() {
+                document.getElementById('arcade-menu').style.display = 'none';
+                document.getElementById('start-menu').style.display = 'flex';
+            },
+            addScore: function(amount) {
+                this.totalScore += amount;
+                this.updateUI();
+            },
+            updateUI: function() {
+                document.getElementById('total-score-display').innerText = this.totalScore;
+                
+                // Calculate Rank
+                let currentRank = this.ranks[0];
+                let nextRank = this.ranks[1];
+                
+                for (let i = 0; i < this.ranks.length; i++) {
+                    if (this.totalScore >= this.ranks[i].threshold) {
+                        currentRank = this.ranks[i];
+                        nextRank = this.ranks[i+1] || null;
+                    }
+                }
+                
+                document.getElementById('rank-display').innerText = "RANK: " + currentRank.name;
+                
+                if (nextRank) {
+                    document.getElementById('next-rank-msg').innerText = `PRÓXIMO NÍVEL: ${nextRank.threshold} PTS`;
+                    const progress = ((this.totalScore - currentRank.threshold) / (nextRank.threshold - currentRank.threshold)) * 100;
+                    document.getElementById('xp-bar').style.width = `${progress}%`;
+                } else {
+                    document.getElementById('next-rank-msg').innerText = "NÍVEL MÁXIMO ALCANÇADO";
+                    document.getElementById('xp-bar').style.width = "100%";
+                }
+            }
+        };
 
-function openTVScreen() { if(game.flags.tvUsed)return; showScreen('tv-screen'); document.getElementById('tv-content').innerHTML=''; document.getElementById('tv-ask-btn').disabled=false; }
-function askTV() { const qa=tvScript[game.day-1]||{q:"...",a:"..."}; document.getElementById('tv-content').innerHTML=`<div class='tv-msg player'>${qa.q}</div>`; setTimeout(()=>{ document.getElementById('tv-content').innerHTML+=`<div class='tv-msg hive'>${qa.a}</div>`; game.flags.tvUsed=true; game.stats.sanity-=5; document.getElementById('tv-ask-btn').disabled=true; },1000); }
-function closeTVScreen() { showScreen('game-screen'); updateHUD(); }
+        // --- MINIGAME MANAGER ---
+        const minigameManager = {
+            activeGame: null, canvas: null, ctx: null,
+            mode: 'story', // 'story' or 'arcade'
+            
+            startRandom: function() {
+                this.mode = 'story';
+                const games = ['pac', 'snake', 'echo'];
+                const choice = games[Math.floor(Math.random() * games.length)];
+                this.launch(choice);
+            },
+            
+            startSpecific: function(gameName, mode) {
+                this.mode = mode;
+                this.launch(gameName);
+                document.getElementById('arcade-menu').style.display = 'none';
+                if (mode === 'arcade') {
+                    document.getElementById('arcade-back-btn').style.display = 'inline-block';
+                } else {
+                    document.getElementById('arcade-back-btn').style.display = 'none';
+                }
+            },
+            
+            launch: function(choice) {
+                document.getElementById('minigame-container').classList.add('active');
+                this.canvas = document.getElementById('minigame-canvas'); this.ctx = this.canvas.getContext('2d');
+                this.startCountdown(() => {
+                    if(choice==='pac'){ pacGame.init(this.canvas); pacGame.start(); this.activeGame=pacGame; }
+                    else if(choice==='snake'){ snakeGame.init(this.canvas); snakeGame.start(); this.activeGame=snakeGame; }
+                    else if(choice==='echo'){ echoGame.init(this.canvas); echoGame.start(); this.activeGame=echoGame; }
+                });
+            },
+            
+            startCountdown: function(cb) {
+                let c=3; const i=setInterval(()=>{
+                    this.ctx.fillStyle='#000'; this.ctx.fillRect(0,0,400,400); this.ctx.font="100px Courier New"; this.ctx.textAlign="center"; this.ctx.textBaseline="middle";
+                    if(c>0){this.ctx.fillStyle="var(--text-alert)";this.ctx.fillText(c,200,200);audioSys.sfx.click();}
+                    else{this.ctx.fillStyle="var(--text-safe)";this.ctx.fillText("VAI!",200,200);audioSys.sfx.success();}
+                    c--; if(c<-1){clearInterval(i);cb();}
+                },1000);
+            },
+            
+            handleInput: function(k) { if(this.activeGame) this.activeGame.handleInput(k); },
+            
+            endGame: function(won, score = 0) {
+                if(this.activeGame) this.activeGame.active=false;
+                document.getElementById('minigame-container').classList.remove('active');
+                
+                if (this.mode === 'story') {
+                    game.resolveDay(won);
+                } else {
+                    // Arcade Mode Logic
+                    if (won) {
+                        alert(`VITÓRIA! +${score} PONTOS`);
+                        arcadeMode.addScore(score);
+                    } else {
+                        alert("GAME OVER");
+                    }
+                    document.getElementById('arcade-menu').style.display = 'flex';
+                }
+            },
+            
+            exitArcade: function() {
+                if(this.activeGame) this.activeGame.active=false;
+                document.getElementById('minigame-container').classList.remove('active');
+                document.getElementById('arcade-menu').style.display = 'flex';
+            }
+        };
+        window.addEventListener('keydown', (e)=>{if(document.getElementById('minigame-container').classList.contains('active'))minigameManager.handleInput(e.key);});
 
-function actionRepair() { if(game.uses.repair>0){game.uses.repair--; game.time.h++; game.stats.door+=20; updateHUD();} }
-function actionGenerator() { if(!game.flags.generatorUsed){game.time.h++; game.stats.battery=100; game.flags.generatorUsed=true; updateHUD();} }
-function actionFocus() { if(game.uses.focus>0){game.uses.focus--; game.stats.sanity+=15; game.time.m+=30; updateHUD();} }
+        // --- SNAKE GAME ---
+        const snakeGame = {
+            active:false, canvas:null, ctx:null, grid:20, snake:[], food:{}, velocity:{x:1,y:0}, inputQueue:[], score:0, target:20,
+            init: function(c){this.canvas=c;this.ctx=c.getContext('2d');},
+            start: function(){this.active=true; this.snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}]; this.score=0; this.velocity={x:1,y:0}; this.inputQueue=[]; this.spawnFood(); 
+                this.target = minigameManager.mode === 'arcade' ? 20 : 5;
+                document.getElementById('minigame-title').innerText="SNAKE-LINK"; document.getElementById('minigame-info').innerText=`ALVOS: ${this.target}`; this.loop();},
+            spawnFood: function(){let v=false; while(!v){this.food={x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*20)}; v=!this.snake.some(s=>s.x===this.food.x&&s.y===this.food.y);}},
+            handleInput: function(k){if(this.inputQueue.length>2)return; const last=this.inputQueue.length>0?this.inputQueue[this.inputQueue.length-1]:this.velocity; if(k==='ArrowUp'&&last.y===0)this.inputQueue.push({x:0,y:-1}); if(k==='ArrowDown'&&last.y===0)this.inputQueue.push({x:0,y:1}); if(k==='ArrowLeft'&&last.x===0)this.inputQueue.push({x:-1,y:0}); if(k==='ArrowRight'&&last.x===0)this.inputQueue.push({x:1,y:0});},
+            loop: function(){if(!this.active)return; if(this.inputQueue.length>0)this.velocity=this.inputQueue.shift(); const h={x:this.snake[0].x+this.velocity.x, y:this.snake[0].y+this.velocity.y}; if(h.x<0||h.x>=20||h.y<0||h.y>=20||this.snake.some(s=>s.x===h.x&&s.y===h.y)){minigameManager.endGame(false, 0);return;} this.snake.unshift(h); if(h.x===this.food.x&&h.y===this.food.y){this.score++;audioSys.sfx.click();if(minigameManager.mode==='story' && this.score>=this.target){minigameManager.endGame(true);return;} if(minigameManager.mode==='arcade' && this.score>=this.target){minigameManager.endGame(true, this.score*10);return;} this.spawnFood();}else{this.snake.pop();} 
+            this.ctx.fillStyle='#000';this.ctx.fillRect(0,0,400,400); this.ctx.fillStyle='#fc0';this.ctx.fillRect(this.food.x*20+2,this.food.y*20+2,16,16); this.ctx.fillStyle='#3f3';this.snake.forEach(s=>this.ctx.fillRect(s.x*20,s.y*20,18,18)); setTimeout(()=>requestAnimationFrame(()=>this.loop()),120);}
+        };
 
-function endDay() { showScreen('report-screen'); document.getElementById('rank-grade').innerText=game.day; let s=game.stats.sanity+game.stats.intimacy+game.stats.door+(game.occupants.length*100); document.getElementById('score-total').innerText=s; document.getElementById('rank-grade').innerText=(s>500?'S':'D'); }
-function goToMeeting() { showScreen('meeting-screen'); const g=document.getElementById('meeting-grid'); g.innerHTML=''; meetingTasks.forEach(t=>{ g.innerHTML+=`<button onclick="doMeeting('${t.name}',${t.san},${t.int})">${t.name}</button>`; }); if(game.occupants.length===0) g.innerHTML="<button onclick='nextDay()'>DORMIR SOZINHO</button>"; }
-function doMeeting(n,s,i) { game.stats.sanity+=s; game.stats.intimacy+=i; game.occupants.forEach(o=>o.loyalty+=10); nextDay(); }
+        // --- ECHO MIND ---
+        const echoGame = {
+            active:false, canvas:null, ctx:null, seq:[], userSeq:[], level:1, showing:false,
+            init: function(c){this.canvas=c;this.ctx=c.getContext('2d');},
+            start: function(){this.active=true; this.level=1; document.getElementById('minigame-title').innerText="ECHO-MIND"; document.getElementById('minigame-info').innerText="MEMORIZE"; this.startLevel();},
+            startLevel: function(){this.seq=[]; this.userSeq=[]; for(let i=0;i<this.level+2;i++)this.seq.push(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'][Math.floor(Math.random()*4)]); this.showing=true; this.showSequence(0);},
+            showSequence: function(i){if(i>=this.seq.length){this.showing=false;this.draw(null);return;} this.draw(this.seq[i]); audioSys.sfx.click(); setTimeout(()=>{this.draw(null);setTimeout(()=>this.showSequence(i+1),200)},600);},
+            draw: function(d){this.ctx.fillStyle='#000';this.ctx.fillRect(0,0,400,400); if(!d)return; this.ctx.font="100px monospace"; this.ctx.fillStyle="#3f3"; this.ctx.textAlign="center"; this.ctx.fillText({'ArrowUp':'↑','ArrowDown':'↓','ArrowLeft':'←','ArrowRight':'→'}[d],200,240);},
+            handleInput: function(k){if(this.showing)return; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(k)){this.userSeq.push(k); this.draw(k); audioSys.sfx.click(); setTimeout(()=>this.draw(null),200); 
+            if(this.userSeq[this.userSeq.length-1]!==this.seq[this.userSeq.length-1]){minigameManager.endGame(false, 0);return;} 
+            if(this.userSeq.length===this.seq.length){this.level++; 
+            if(minigameManager.mode==='story' && this.level>3) minigameManager.endGame(true); 
+            else if (minigameManager.mode==='arcade' && this.level>5) minigameManager.endGame(true, this.level*30);
+            else setTimeout(()=>this.startLevel(),1000);}}}
+        };
 
-function nextDay() { if(game.mode==='normal'&&game.day>=8){clearInterval(gameLoop);clearInterval(glitchInterval);showScreen('victory-screen');} else { game.day++; resetDay(); showScreen('game-screen'); } }
-function startEndlessMode() { game.mode='endless'; game.day++; resetDay(); showScreen('game-screen'); glitchCountdown=30; if(glitchInterval)clearInterval(glitchInterval); glitchInterval=setInterval(glitchTick,1000); if(gameLoop)clearInterval(gameLoop); gameLoop=setInterval(tick, TICK_SPEED); }
-function gameOver(m) { clearInterval(gameLoop); clearInterval(glitchInterval); showScreen('game-over-screen'); document.getElementById('go-msg').innerText=m; }
+        // --- PACMAN ---
+        const pacGame = {
+            active:false, canvas:null, ctx:null, map:[], p:{x:1,y:1}, dots:0, maxDots:0,
+            init: function(c){this.canvas=c;this.ctx=c.getContext('2d');},
+            start: function(){this.active=true;this.dots=0;this.map=[];document.getElementById('minigame-title').innerText="PAC-DATA";document.getElementById('minigame-info').innerText="COLETE"; for(let y=0;y<20;y++){let r=[];for(let x=0;x<20;x++){if(x==0||x==19||y==0||y==19||(x%2==0&&y%2==0))r.push(0);else{r.push(1);this.dots++;}}this.map.push(r);} this.maxDots=this.dots; this.map[1][1]=2;this.dots--;this.p={x:1,y:1,nextDir:null};this.loop();},
+            handleInput: function(k){if(k.includes('Arrow'))this.p.nextDir=k;},
+            loop: function(){if(!this.active)return; if(this.p.nextDir){let nx=this.p.x,ny=this.p.y; if(this.p.nextDir=='ArrowUp')ny--;if(this.p.nextDir=='ArrowDown')ny++;if(this.p.nextDir=='ArrowLeft')nx--;if(this.p.nextDir=='ArrowRight')nx++; if(this.map[ny][nx]!==0){this.p.x=nx;this.p.y=ny;}} if(this.map[this.p.y][this.p.x]==1){this.map[this.p.y][this.p.x]=2;this.dots--;audioSys.sfx.click();} this.ctx.fillStyle='#000';this.ctx.fillRect(0,0,400,400); for(let y=0;y<20;y++)for(let x=0;x<20;x++){if(this.map[y][x]==0)this.ctx.fillStyle='#333';else if(this.map[y][x]==1)this.ctx.fillStyle='gold';this.ctx.fillRect(x*20,y*20,19,19);} this.ctx.fillStyle='yellow';this.ctx.beginPath();this.ctx.arc(this.p.x*20+10,this.p.y*20+10,8,0,6.28);this.ctx.fill(); 
+            if(this.dots<=0) minigameManager.endGame(true, this.maxDots * 2); 
+            else setTimeout(()=>requestAnimationFrame(()=>this.loop()),80);}
+        };
+
+        // --- RADIO MINIGAME ---
+        const radioGame = {
+            active:false, pos:0, dir:1, target:0, anim:null,
+            start: function() { this.active=true; document.getElementById('radio-minigame').classList.add('active'); this.target=20+Math.random()*60; document.getElementById('tuner-target').style.left=this.target+'%'; this.loop(); },
+            loop: function() { if(!this.active)return; this.pos+=2*this.dir; if(this.pos>100||this.pos<0)this.dir*=-1; document.getElementById('tuner-cursor').style.left=this.pos+'%'; this.anim=requestAnimationFrame(()=>this.loop()); },
+            stop: function() { cancelAnimationFrame(this.anim); this.active=false; document.getElementById('radio-minigame').classList.remove('active'); if(this.pos>=this.target&&this.pos<=this.target+15){audioSys.sfx.success();game.state.sanity=Math.min(100,game.state.sanity+15);if(Math.random()>0.7)game.unlockLore('bunker');else game.log("Sinal limpo.", "safe");}else{audioSys.sfx.error();game.state.sanity-=5;game.log("Ruído.", "alert");} game.updateHUD(); }
+        };
+
+        // --- GAME ENGINE ---
+        const game = {
+            running: false, tickCount: 0,
+            state: { day: 1, hour: 8.0, sanity: 100, energy: 100, intimacy: 100, doorHealth: 100, location: 'bunker', paused: false },
+            crew: [], unlocks: { map: true, uv: false, shotgun: false },
+            currentVisitor: null, tensionTimer: null, tensionVal: 30,
+
+            startStory: function() {
+                document.getElementById('start-menu').style.display = 'none'; audioSys.init();
+                this.running = true; this.tickCount = 0; this.crew = [];
+                this.state = { day: 1, hour: 8.0, sanity: 100, energy: 100, intimacy: 100, doorHealth: 100, location: 'bunker', paused: false };
+                this.unlocks = { map: true, uv: false, shotgun: false };
+                document.getElementById('game-container').style.display = 'flex';
+                this.updateHUD(); this.ui.renderScene(); this.ui.renderLoreList(); this.ui.renderCrew();
+                this.log("SISTEMA ONLINE. ZONA SEGURA.", "safe");
+                setInterval(() => { if(this.running && !this.state.paused && this.state.doorHealth > 0) this.tick(); }, 1000);
+            },
+
+            tick: function() {
+                this.tickCount++;
+                const timeMod = this.state.location === 'bunker' ? 0.05 : 0.15; 
+                this.state.hour += timeMod;
+                if(this.state.location === 'bunker' && this.tickCount % 40 === 0 && this.state.hour < 13.9) this.encounter.trigger();
+                if(this.state.location !== 'bunker' && Math.random() > 0.95) { this.state.sanity -= 2; this.log("Sons de passos...", "alert"); }
+                if(this.state.hour >= 14) this.triggerEndSequence();
+                if(this.state.doorHealth <= 0) this.gameOver("A PORTA CAIU.");
+                if(this.state.sanity <= 0) this.gameOver("COLAPSO MENTAL.");
+                this.updateHUD();
+            },
+
+            triggerEndSequence: function() {
+                if(this.state.location !== 'bunker') {
+                    this.log("DESMAIO FORA DE CASA.", "alert"); this.state.sanity -= 30; this.state.energy -= 30; this.state.location = 'bunker'; this.ui.renderScene();
+                }
+                this.state.paused = true; this.triggerDream();
+            },
+
+            triggerDream: function() {
+                const modal = document.getElementById('dream-modal');
+                const dream = dreamsDB[Math.floor(Math.random()*dreamsDB.length)];
+                document.getElementById('dream-text').innerText = dream.text;
+                const opts = document.getElementById('dream-options'); opts.innerHTML = "";
+                dream.choices.forEach(c => {
+                    const btn = document.createElement('button'); btn.innerText = c.l;
+                    btn.onclick = () => { game.state[c.e] = Math.min(100, game.state[c.e] + c.v); modal.classList.remove('active'); setTimeout(() => minigameManager.startRandom(), 500); };
+                    opts.appendChild(btn);
+                });
+                modal.classList.add('active');
+            },
+
+            resolveDay: function(won) {
+                this.state.day++; this.state.hour = 8; this.state.energy = 100; this.tickCount = 0;
+                if(this.state.day == 3) this.unlocks.uv = true; if(this.state.day == 5) this.unlocks.shotgun = true;
+                document.getElementById('lore-modal').classList.add('active');
+                document.getElementById('lore-text').innerText = won ? "Teste concluído." : "Falha no teste.";
+                if(won) this.state.sanity = Math.min(100, this.state.sanity + 20);
+                if(this.state.day > 8) this.checkEndings();
+            },
+
+            checkEndings: function() {
+                const hasKey = loreDB.find(l => l.id===2).unlocked;
+                const hasMap = loreDB.find(l => l.id===3).unlocked;
+                const hasCure = loreDB.find(l => l.id===4).unlocked;
+                const knowsTruth = loreDB.find(l => l.id===5).unlocked;
+                let title = "RESGATE"; let text = "Sobreviveu. Destino incerto.";
+                if(hasKey && hasMap) { title = "FUGA"; text = "Escapou pelos túneis."; } 
+                else if (hasCure) { title = "SACRIFÍCIO"; text = "A cura foi entregue. Você morreu."; } 
+                else if (knowsTruth) { title = "VERDADE"; text = "Resgate falso. Você se escondeu."; }
+                document.getElementById('lore-title').innerText = title;
+                document.getElementById('lore-text').innerText = text;
+                document.getElementById('next-day-btn').innerText = "REINICIAR";
+                document.getElementById('next-day-btn').onclick = () => location.reload();
+            },
+
+            nextDay: function() { document.getElementById('lore-modal').classList.remove('active'); this.state.paused = false; this.log(`DIA ${this.state.day}.`, "safe"); },
+
+            unlockLore: function(locationFilter) {
+                const candidates = loreDB.filter(l => !l.unlocked && (l.loc === locationFilter || locationFilter === 'any'));
+                if(candidates.length > 0) {
+                    const item = candidates[0]; item.unlocked = true;
+                    game.log(`DADOS: ${item.title}`, "lore"); audioSys.sfx.lore();
+                    this.ui.renderLoreList(); this.ui.renderInventory();
+                } else { game.log("Nada encontrado.", "dim"); }
+            },
+
+            gameOver: function(reason) {
+                this.running = false; document.body.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#000;color:red;font-family:Courier;flex-direction:column;text-align:center;"><h1>FALHA</h1><h2>${reason}</h2><button onclick="location.reload()" style="margin-top:20px;border:1px solid red;color:red;background:black;padding:10px;">REINICIAR</button></div>`;
+            },
+
+            actions: {
+                watchTV: function() { if(game.state.energy>=10){game.state.energy-=10;game.state.sanity+=5;game.log("TV assistida.");audioSys.sfx.click();} game.updateHUD(); },
+                radio: function() { if(game.state.energy>=5){game.state.energy-=5;radioGame.start();} game.updateHUD(); },
+                repairDoor: function() { if(game.state.energy>=15){game.state.energy-=15;game.state.doorHealth=Math.min(100,game.state.doorHealth+20);game.log("Porta reparada.");audioSys.sfx.click();} game.updateHUD(); },
+                travel: function(dest) {
+                    game.ui.toggleMap(); audioSys.sfx.travel(); game.log(`Viajando: ${dest.toUpperCase()}`);
+                    document.getElementById('main-hub').style.opacity = 0;
+                    setTimeout(() => { game.state.location = dest; game.state.energy -= 10; game.state.hour += 0.5; game.ui.renderScene(); document.getElementById('main-hub').style.opacity = 1; game.updateHUD(); }, 1000);
+                },
+                scavenge: function() {
+                    if(game.state.energy < 20) { game.log("Cansado demais.", "alert"); return; }
+                    game.state.energy -= 20; game.state.hour += 0.5;
+                    const risk = game.state.location === 'ruas' ? 0.6 : 0.3;
+                    if(Math.random() < risk) { game.log("EMBOSCADA!", "alert"); game.state.sanity -= 15; audioSys.sfx.error(); } 
+                    else {
+                        if(Math.random() > 0.6) game.unlockLore(game.state.location); 
+                        else if (Math.random() > 0.3) {
+                            if(game.state.location === 'mercado') { game.state.energy = Math.min(100, game.state.energy+40); game.log("Comida.", "safe"); }
+                            if(game.state.location === 'farmacia') { game.state.sanity = Math.min(100, game.state.sanity+40); game.log("Remédios.", "safe"); }
+                            if(game.state.location === 'ruas') { game.state.doorHealth = Math.min(100, game.state.doorHealth+20); game.log("Peças.", "safe"); }
+                        } else game.log("Vazio.", "dim");
+                    }
+                    game.updateHUD();
+                },
+                stealth: function() {
+                    if(game.state.energy < 10) return;
+                    game.state.energy -= 10; game.state.hour += 1.0; game.log("Furtivo.", "dim");
+                    if(Math.random() > 0.7) game.unlockLore(game.state.location); game.updateHUD();
+                },
+                returnHome: function() { game.actions.travel('bunker'); },
+                interactCrew: function(idx, type) {
+                    const crew = game.crew[idx]; if(!crew) return;
+                    if(type === 'feed') { if(game.state.energy >= 10 && crew.hp < 100) { game.state.energy -= 10; crew.hp = Math.min(100, crew.hp + 20); game.log(`Você alimentou ${crew.name}.`, "safe"); audioSys.sfx.click(); } }
+                    if(type === 'talk') { game.state.hour += 0.1; game.state.sanity = Math.min(100, game.state.sanity + 5); game.log(`${crew.name} conversou.`, "lore"); }
+                    if(type === 'heal') { if(game.state.energy >= 20) { game.state.energy -= 20; crew.hp = 100; game.log(`${crew.name} curado.`, "safe"); } }
+                    game.updateHUD(); game.ui.renderCrew();
+                }
+            },
+
+            // --- ENCOUNTER SYSTEM 2.0 ---
+            encounter: {
+                visitorData: null,
+                trigger: function() {
+                    game.state.paused = true; audioSys.sfx.knock(); game.log("BATIDA NA PORTA.", "alert");
+                    
+                    const isDistorted = Math.random() > 0.5;
+                    const stress = 0;
+                    const name = "Visitante " + Math.floor(Math.random() * 99);
+                    const id = Math.floor(1000 + Math.random() * 9000);
+                    
+                    const trueData = {
+                        blood: ['A+', 'O-', 'B+', 'AB+'][Math.floor(Math.random()*4)],
+                        origin: ['Setor 7', 'Norte', 'Sul', 'Bunker 4'][Math.floor(Math.random()*4)],
+                        expired: Math.random() > 0.8
+                    };
+                    
+                    const idCardData = {
+                        name: name,
+                        id: id,
+                        blood: isDistorted && Math.random()>0.5 ? 'AB-' : trueData.blood,
+                        origin: isDistorted && Math.random()>0.5 ? 'Desconhecido' : trueData.origin,
+                        expiry: trueData.expired ? 'EXPIRADO' : 'VÁLIDO'
+                    };
+                    
+                    this.visitorData = { isDistorted, stress, trueData, idCardData, scanned: false };
+                    
+                    document.getElementById('peephole-modal').classList.add('active');
+                    document.getElementById('visitor-face').innerText = this.getFace(isDistorted);
+                    
+                    document.getElementById('id-name').innerText = idCardData.name;
+                    document.getElementById('id-code').innerText = idCardData.id;
+                    document.getElementById('id-origin').innerText = idCardData.origin;
+                    document.getElementById('id-blood').innerText = idCardData.blood;
+                    document.getElementById('id-date').innerText = idCardData.expiry;
+                    document.getElementById('id-date').style.color = idCardData.expiry==='EXPIRADO' ? 'red' : 'lime';
+                    
+                    document.getElementById('dialogue-box').innerText = "...";
+                    document.getElementById('scan-result').innerText = "AGUARDANDO";
+                    document.getElementById('scan-result').style.color = "#666";
+                    document.getElementById('visor-circle').classList.remove('stress-high');
+                    
+                    game.tensionVal = 30;
+                    game.tensionTimer = setInterval(() => {
+                        if(!game.state.paused) return; 
+                        game.tensionVal -= 0.1;
+                        document.getElementById('tension-display').innerText = game.tensionVal.toFixed(1) + 's';
+                        document.getElementById('timer-bar').style.width = (game.tensionVal/30)*100 + "%";
+                        if(this.visitorData.stress > 50) this.glitchEffect();
+                        if(game.tensionVal <= 0) this.decide(false);
+                    }, 100);
+                },
+                
+                getFace: function(d) {
+                    const e = d ? ['@ @','X X'] : ['o o','- -'];
+                    const h = d ? 'MORTAL' : 'VIVO';
+                    return `\n      ///////\n     /       \\\n    |  ${e[0]}  |\n    |    |    |\n    |  _____  |\n     \\_______/\n     <span class="uv-hidden-text">${h}</span>`;
+                },
+                
+                glitchEffect: function() {
+                    if(this.visitorData.isDistorted) {
+                        if(Math.random() > 0.8) {
+                             document.getElementById('visitor-face').innerText = this.getFace(true).replace(/./g, c => Math.random()>0.8?'#':c);
+                             audioSys.sfx.glitch();
+                        }
+                    } 
+                    document.getElementById('visor-circle').classList.add('stress-high');
+                },
+
+                ask: function(type) {
+                    this.visitorData.stress += 15;
+                    this.updateStressUI();
+                    let resp = "...";
+                    const d = this.visitorData;
+                    
+                    if(type === 'origin') resp = d.isDistorted ? "De... longe..." : `Eu vim de ${d.trueData.origin}.`;
+                    if(type === 'symptoms') resp = d.isDistorted ? "Fome... muita fome..." : "Estou limpo.";
+                    if(type === 'blood') resp = d.isDistorted ? "Vermelho... eu acho." : `Sou ${d.trueData.blood}.`;
+                    if(type === 'calm') { 
+                        this.visitorData.stress = Math.max(0, this.visitorData.stress - 30); 
+                        game.tensionVal += 5; 
+                        resp = "Obrigado... estava nervoso.";
+                        this.updateStressUI();
+                    }
+                    
+                    const box = document.getElementById('dialogue-box');
+                    box.innerText = `"${resp}"`;
+                },
+                
+                updateStressUI: function() {
+                    document.getElementById('stress-meter-fill').style.width = this.visitorData.stress + '%';
+                    if(this.visitorData.stress > 50) document.getElementById('stress-meter-fill').style.background = 'red';
+                    else document.getElementById('stress-meter-fill').style.background = 'lime';
+                },
+
+                scan: function() {
+                    if(game.state.energy < 5) return;
+                    game.state.energy -= 5;
+                    audioSys.sfx.scan();
+                    game.updateHUD();
+                    
+                    const d = this.visitorData;
+                    let res = `SANGUE: ${d.trueData.blood} | DNA: ${d.isDistorted ? 'CORROMPIDO' : 'NORMAL'}`;
+                    if(d.trueData.blood !== d.idCardData.blood) res += " [ERRO DE TIPO]";
+                    
+                    const el = document.getElementById('scan-result');
+                    el.innerText = res;
+                    el.style.color = d.isDistorted || d.trueData.blood !== d.idCardData.blood ? "red" : "lime";
+                },
+
+                toggleUV: function() { if(game.unlocks.uv) document.getElementById('visor-circle').classList.toggle('uv-active'); },
+                shotgun: function() { audioSys.sfx.error(); game.state.sanity-=15; this.close(); },
+                
+                decide: function(accept) {
+                    const d = this.visitorData;
+                    if(accept) {
+                        if(d.isDistorted) game.gameOver("VOCÊ DEIXOU UM MONSTRO ENTRAR.");
+                        else {
+                            game.state.sanity += 10;
+                            game.crew.push({name: d.idCardData.name, hp: 100, role: 'CIVIL'});
+                            game.log("Sobrevivente salvo.", "safe");
+                        }
+                    } else {
+                        game.state.doorHealth -= 10;
+                        if(!d.isDistorted) { game.state.sanity -= 20; game.log("Inocente deixado para morrer.", "alert"); }
+                        else game.log("Ameaça barrada.", "safe");
+                        audioSys.sfx.error();
+                    }
+                    this.close();
+                },
+                
+                close: function() {
+                    clearInterval(game.tensionTimer);
+                    document.getElementById('peephole-modal').classList.remove('active');
+                    game.state.paused = false;
+                    game.ui.renderCrew();
+                    game.updateHUD();
+                }
+            },
+
+            ui: {
+                switchTab: function(t) { document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); event.target.classList.add('active'); },
+                toggleMap: function() { document.getElementById('map-modal').classList.toggle('active'); },
+                renderLoreList: function() { const l = document.getElementById('lore-list'); l.innerHTML=""; loreDB.filter(i=>!i.isItem).forEach(i => { l.innerHTML += `<div class="lore-file ${i.unlocked?'':'locked'}" onclick="if(${i.unlocked}){document.getElementById('lore-display').innerHTML='${i.text}';document.getElementById('lore-display').style.display='block';}"><span class="lore-title">${i.unlocked?i.title:'BLOQUEADO'}</span></div>`; }); },
+                renderInventory: function() { const l = document.getElementById('inventory-list'); l.innerHTML=""; const items = loreDB.filter(i=>i.isItem && i.unlocked); if(items.length===0) l.innerHTML="Vazio."; else items.forEach(i => { l.innerHTML += `<div style="color:gold; border:1px solid gold; padding:5px; margin:5px;">★ ${i.title}</div>`; }); },
+                renderCrew: function() {
+                    const c = document.getElementById('crew-container'); c.innerHTML = "";
+                    if(game.crew.length === 0) { c.innerHTML = `<div style="color:#666; padding:10px;">Sozinho.</div>`; return; }
+                    game.crew.forEach((m, idx) => { c.innerHTML += `<div class="crew-card"><div class="crew-header"><strong>${m.name}</strong> <span class="crew-role">[${m.role}]</span></div><div class="crew-hp-bar"><div class="crew-hp-fill" style="width:${m.hp}%"></div></div><div class="crew-actions"><button onclick="game.actions.interactCrew(${idx}, 'feed')">ALIMENTAR (-10)</button><button onclick="game.actions.interactCrew(${idx}, 'talk')">CONVERSAR</button><button onclick="game.actions.interactCrew(${idx}, 'heal')" style="border-color:var(--text-safe); color:var(--text-safe)">CURAR (-20)</button></div></div>`; });
+                },
+                renderScene: function() {
+                    const loc = game.state.location; document.getElementById('ascii-art').innerText = scenes[loc]; document.getElementById('location-name').innerText = loc.toUpperCase() + " // " + (loc==='bunker'?"ZONA SEGURA":"ZONA DE RISCO");
+                    const btns = document.getElementById('dynamic-actions'); btns.innerHTML = "";
+                    if(loc === 'bunker') { document.getElementById('actions-title').innerText = "SISTEMAS VITAIS"; btns.innerHTML = `<button onclick="game.actions.watchTV()"><span>TV</span><span>-10E</span></button><button onclick="game.actions.radio()"><span>Rádio</span><span>-5E</span></button><button onclick="game.actions.repairDoor()"><span>Reparar</span><span>-15E</span></button><button onclick="game.ui.toggleMap()"><span>MAPA TÁTICO</span><span>VIAJAR</span></button>`; } 
+                    else { document.getElementById('actions-title').innerText = "AÇÕES DE CAMPO"; btns.innerHTML = `<button onclick="game.actions.scavenge()"><span>VASCULHAR</span><span>-20E / ALTO RISCO</span></button><button onclick="game.actions.stealth()"><span>ESGUEIRAR</span><span>-10E / BAIXO RISCO</span></button><button onclick="game.actions.returnHome()" style="border-color:var(--text-safe); color:var(--text-safe)"><span>VOLTAR AO BUNKER</span><span>SEGURO</span></button>`; }
+                }
+            },
+
+            log: function(msg, type="") { const c = document.getElementById('log-container'); c.innerHTML = `<div class="log-entry ${type}">> ${msg}</div>` + c.innerHTML; },
+            updateHUD: function() {
+                const s = game.state; document.getElementById('val-san').innerText = Math.floor(s.sanity) + "%"; document.getElementById('bar-san').style.width = s.sanity + "%";
+                document.getElementById('val-nrg').innerText = Math.floor(s.energy) + "%"; document.getElementById('bar-nrg').style.width = s.energy + "%";
+                document.getElementById('val-door').innerText = Math.floor(s.doorHealth) + "%"; document.getElementById('bar-door').style.width = s.doorHealth + "%";
+                document.getElementById('val-int').innerText = Math.floor(s.intimacy) + "%"; document.getElementById('bar-int').style.width = s.intimacy + "%";
+                let h = Math.floor(s.hour); let m = Math.floor((s.hour-h)*60); document.getElementById('clock-display').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; document.getElementById('val-day').innerText = s.day;
+            }
+        };
     </script>
 </body>
 </html>
