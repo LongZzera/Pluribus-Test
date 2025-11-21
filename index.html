@@ -1,705 +1,919 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLURIBUS: A JUNÇÃO - Director's Cut</title>
+    <title>PLURIBUS: A JUNÇÃO | The Bunker Experience</title>
     <style>
-        :root {
-            --bg-color: #050505;
-            --text-primary: #e0e0e0;
-            --text-dim: #666666;
-            --text-alert: #ffcc00;
-            --text-danger: #ff3333;
-            --text-safe: #33ff33;
-            --text-lore: #00ccff;
-            --text-rare: #bd00ff;
-            --border-style: 1px solid var(--text-dim);
-            --scan-color: rgba(255, 204, 0, 0.03);
-            --cam-bg: #001100;
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Courier New', monospace; user-select: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; }
+        
+        /* --- UI GERAL (AGORA AMARELO) --- */
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; color: #ffcc00; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 1000;
+            cursor: pointer; text-align: center;
+        }
+        #overlay h1 { text-shadow: 0 0 10px #ffcc00; margin-bottom: 10px; }
+        #overlay p { opacity: 0.8; max-width: 600px; line-height: 1.5; }
+
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+            background: rgba(255, 255, 255, 0.5); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 50;
+            mix-blend-mode: difference;
         }
 
-        * { box-sizing: border-box; user-select: none; }
+        /* --- NOTIFICAÇÃO DE TROFÉU --- */
+        #trophy-popup {
+            position: absolute; top: -100px; left: 50px; 
+            width: 300px; height: 60px;
+            background: rgba(20, 20, 20, 0.95);
+            border-radius: 40px;
+            border-left: 5px solid #ffcc00;
+            display: flex; align-items: center; padding: 10px 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2000; pointer-events: none;
+        }
+        #trophy-icon {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: #ffcc00; color: #000;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 20px; margin-right: 15px;
+        }
+        #trophy-text h4 { margin: 0; color: #fff; font-size: 14px; font-family: sans-serif; }
+        #trophy-text p { margin: 0; color: #aaa; font-size: 12px; font-family: sans-serif; }
 
-        body {
-            margin: 0; background-color: var(--bg-color); color: var(--text-primary);
-            font-family: 'Courier New', Courier, monospace; overflow: hidden;
-            height: 100vh; display: flex; flex-direction: column; font-size: 14px;
+        /* --- HUD DE STATUS --- */
+        #hud-overlay {
+            position: absolute; top: 20px; right: 20px; width: 250px;
+            padding: 15px; background: rgba(20, 20, 0, 0.1);
+            border: 2px solid #ffcc00; color: #ffcc00;
+            font-family: 'Courier New', monospace; font-size: 14px;
+            z-index: 95; pointer-events: none;
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.2);
+        }
+        .hud-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .hud-label { font-weight: bold; }
+        .hud-bar-container { width: 100px; height: 10px; background: #111; border: 1px solid #554400; margin-top: 4px; }
+        .hud-bar-fill { height: 100%; background: #ffcc00; transition: width 0.3s; }
+        .danger { color: #ff3333; }
+        .danger .hud-bar-fill { background: #ff3333; }
+
+        /* --- EFEITOS VHS/CRT (TINTADO DE AMARELO) --- */
+        #vhs-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 90;
+            background: linear-gradient(rgba(18, 16, 0, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 200, 0, 0.06), rgba(255, 200, 0, 0.02), rgba(255, 200, 0, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
+        }
+        #scanline {
+            width: 100%; height: 10px; background: rgba(255,200,0,0.05); opacity: 0.1;
+            position: absolute; z-index: 91; pointer-events: none;
+            animation: scanline 6s linear infinite;
+        }
+        @keyframes scanline { 0% { top: -10%; } 100% { top: 110%; } }
+        
+        /* --- LOGS DE MENSAGENS --- */
+        #message-log {
+            position: absolute; bottom: 20px; left: 20px; color: #ffcc00;
+            font-size: 14px; opacity: 0.8; pointer-events: none; z-index: 80;
+            text-shadow: 1px 1px 2px black;
         }
 
-        /* --- FX --- */
-        .scanlines {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to bottom, var(--scan-color) 50%, rgba(0,0,0,0) 50%);
-            background-size: 100% 3px; pointer-events: none; z-index: 999;
+        /* --- UI DA PORTA / OLHO MÁGICO --- */
+        #peephole-ui {
+            display: none; 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 200;
+            background: radial-gradient(circle, transparent 10%, black 70%); 
+            pointer-events: auto;
         }
-        .vignette {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            box-shadow: inset 0 0 150px rgba(0,0,0,0.9); pointer-events: none; z-index: 998;
+
+        #visitor-visual {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-family: monospace; font-size: 14px; color: #ffcc00; white-space: pre;
+            text-align: center; opacity: 0.8; filter: blur(1px);
+            pointer-events: none;
+        }
+
+        #dialogue-box {
+            position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%);
+            width: 600px; background: rgba(20, 15, 0, 0.9); border: 2px solid #ffcc00;
+            padding: 15px; color: #ffcc00; font-family: 'Courier New'; display: none;
+            text-align: center;
         }
         
-        /* --- LAYOUT --- */
-        #game-container {
-            display: flex; flex-direction: column; height: 100%; padding: 20px;
-            z-index: 1; max-width: 1200px; margin: 0 auto; width: 100%; filter: blur(0.3px);
+        .typing-effect::after { content: '▌'; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        #door-controls {
+            position: absolute; bottom: 50px; width: 100%; display: flex; 
+            justify-content: center; gap: 20px; pointer-events: auto;
         }
 
-        /* --- MENUS --- */
-        .full-screen-menu {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color); z-index: 2000; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; text-align: center; border: 2px solid var(--text-dim);
-            overflow-y: auto;
+        .door-btn {
+            background: #111; border: 2px solid #555; color: #aaa; padding: 15px 30px;
+            font-family: 'Courier New'; font-weight: bold; cursor: pointer;
+            transition: 0.2s; text-transform: uppercase; letter-spacing: 2px;
         }
-        
-        .menu-btn {
-            margin-top: 12px; font-size: 1.1em; padding: 12px 30px; width: 450px;
-            border: 2px solid var(--text-alert); color: var(--bg-color);
-            background: var(--text-alert); font-weight: bold; cursor: pointer;
-            transition: transform 0.2s; text-transform: uppercase; position: relative;
-        }
-        .menu-btn:hover:not(:disabled) { transform: scale(1.02); }
-        .menu-btn.secondary { background: transparent; color: var(--text-alert); border: 1px solid var(--text-alert); }
-        .menu-btn.narrative { border-color: var(--text-lore); color: var(--text-lore); background: transparent; }
-        .menu-btn.narrative:hover { background: rgba(0, 204, 255, 0.1); }
-        .menu-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: #444; color: #444; background: #111; }
+        .door-btn:hover { color: #fff; border-color: #fff; }
+        .btn-interrogate { border-color: #ffcc00; color: #ffcc00; }
+        .btn-interrogate:hover { background: #332200; }
+        .btn-open { border-color: #aaaa00; color: #ffff00; }
+        .btn-open:hover { background: #333300; }
+        .btn-shock { border-color: #ff3333; color: #ff3333; }
+        .btn-shock:hover { background: #330000; }
 
-        /* --- ARCADE & RANKS (FIXED) --- */
-        #arcade-menu { display: none; }
-        #arcade-stats { border: 1px solid var(--text-lore); padding: 20px; margin-bottom: 20px; width: 500px; background: #080808; }
-        .rank-title { font-size: 1.8em; color: var(--text-lore); font-weight: bold; margin-bottom: 5px; text-shadow: 0 0 10px var(--text-lore); }
-        
-        /* FIXED XP BAR DESIGN */
-        .xp-bar-container { 
-            width: 100%; height: 24px; background: #111; border: 1px solid #444; 
-            margin-top: 10px; position: relative; display: flex; align-items: center; justify-content: center;
-            border-radius: 4px; overflow: hidden;
-        }
-        .xp-bar-fill { 
-            height: 100%; background: var(--text-lore); width: 0%; 
-            transition: width 0.5s; position: absolute; left: 0; top: 0; z-index: 1; opacity: 0.7;
-        }
-        .xp-text { 
-            font-size: 0.85em; color: #fff; position: relative; z-index: 2; 
-            text-shadow: 1px 1px 2px #000; font-weight: bold; letter-spacing: 1px;
-        }
-
-        /* --- HUD --- */
-        #hud {
-            border: 2px solid var(--text-dim); padding: 10px; margin-bottom: 15px;
-            display: grid; grid-template-columns: 1fr 1fr 0.8fr 1fr 1fr; gap: 20px;
-            background: rgba(20, 20, 20, 0.8); align-items: center;
-        }
-        .stat-box { display: flex; flex-direction: column; justify-content: center; }
-        .stat-header { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.9em; font-weight: bold; color: var(--text-alert); }
-        .bar-container { width: 100%; background: #111; height: 12px; border: 1px solid #444; position: relative; overflow: hidden; }
-        .bar-fill { height: 100%; background: var(--text-primary); transition: width 0.3s ease-out; }
-        .bar-fill.danger { background: var(--text-danger); box-shadow: 0 0 10px var(--text-danger); }
-        .bar-fill.safe { background: var(--text-safe); }
-        #clock-box { border-left: 1px solid var(--text-dim); border-right: 1px solid var(--text-dim); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #clock-display { font-size: 1.6em; color: var(--text-alert); font-weight: bold; letter-spacing: 2px; }
-
-        /* --- MAIN UI --- */
-        #main-hub { display: flex; flex: 1; gap: 20px; overflow: hidden; transition: opacity 0.5s; }
-        #room-view { flex: 1.5; border: var(--border-style); padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at center, #111 0%, #000 100%); position: relative; }
-        #ascii-art { white-space: pre; font-size: 11px; line-height: 12px; color: var(--text-primary); font-weight: bold; opacity: 0.8; text-align: center; }
-        #location-name { position: absolute; top: 10px; left: 10px; color: var(--text-dim); letter-spacing: 2px; font-weight: bold; }
-        #controls-panel { flex: 1; display: flex; flex-direction: column; gap: 10px; }
-
-        .tabs { display: flex; border-bottom: 1px solid var(--text-dim); margin-bottom: 10px; }
-        .tab-btn { flex: 1; background: transparent; border: none; color: var(--text-dim); padding: 8px; cursor: pointer; border-bottom: 2px solid transparent; font-family: inherit; }
-        .tab-btn.active { color: var(--text-alert); border-bottom-color: var(--text-alert); font-weight: bold; background: rgba(255, 204, 0, 0.05); }
-        .tab-content { display: none; flex-direction: column; gap: 10px; height: 100%; }
-        .tab-content.active { display: flex; }
-        .panel-section { border: var(--border-style); padding: 10px; background: rgba(20, 20, 20, 0.5); }
-        .panel-title { color: var(--text-alert); font-weight: bold; margin-bottom: 8px; font-size: 0.9em; text-transform: uppercase; }
-
-        button { background: #0a0a0a; color: var(--text-primary); border: 1px solid var(--text-dim); padding: 10px; font-family: 'Courier New'; cursor: pointer; margin-bottom: 5px; width: 100%; text-align: left; font-size: 0.85rem; display: flex; justify-content: space-between; transition: all 0.1s; }
-        button:hover:not(:disabled) { background: #222; border-color: var(--text-primary); padding-left: 15px; }
-        button:disabled { color: #444; border-color: #222; cursor: not-allowed; opacity: 0.6; }
-        button.danger-action { border-color: var(--text-danger); color: var(--text-danger); }
-        button.danger-action:hover { background: #300; }
-
-        /* --- TROPHIES --- */
-        #trophy-menu { display: none; }
-        #trophy-list { 
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; 
-            max-height: 60vh; overflow-y: auto; width: 80%; max-width: 900px;
-            padding: 10px; background: #111; border: 1px solid #333;
-        }
-        .trophy-item { 
-            background: #0a0a0a; border: 1px solid #333; padding: 10px; 
-            display: flex; align-items: center; gap: 15px; opacity: 0.4; transition: 0.3s; 
-        }
-        .trophy-item.unlocked { opacity: 1; border-color: var(--text-safe); background: #1a2a1a; }
-        .trophy-item.gold { border-color: var(--text-alert); }
-        .trophy-item.plat { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
-        .t-icon { font-size: 2em; width: 50px; text-align: center; }
-        .t-info h4 { margin: 0; color: #fff; font-size: 0.9em; }
-        .t-info p { margin: 3px 0 0 0; font-size: 0.75em; color: #888; }
-
-        /* --- NARRATIVE MODE UI (IMPROVED) --- */
-        #narrative-ui {
-            display: none; flex-direction: column; height: 100%; 
-            max-width: 900px; margin: 0 auto; padding: 40px;
-            background: #080808; border-left: 1px solid #333; border-right: 1px solid #333;
-        }
-        .narrative-chapter { color: var(--text-dim); font-size: 0.8em; letter-spacing: 2px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .narrative-text { font-size: 1.15em; line-height: 1.8; color: #ddd; flex: 1; overflow-y: auto; margin-bottom: 20px; white-space: pre-wrap; padding-right: 10px; }
-        .narrative-choice { 
-            background: #111; border: 1px solid var(--text-lore); padding: 15px; margin-bottom: 10px; 
-            cursor: pointer; transition: 0.2s; color: var(--text-lore); font-weight: bold; display: flex; justify-content: space-between;
-        }
-        .narrative-choice:hover { background: rgba(0, 204, 255, 0.1); padding-left: 25px; color: #fff; }
-        .narrative-choice span { font-size: 0.8em; opacity: 0.6; font-weight: normal; }
-        .narrative-notification { 
-            color: var(--text-alert); font-style: italic; font-size: 0.9em; margin-bottom: 10px; 
-            animation: fadeIn 1s; border-left: 2px solid var(--text-alert); padding-left: 10px;
-        }
-
-        /* --- GAMEPLAY MODALS --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 100; display: flex; align-items: center; justify-content: center; visibility: hidden; opacity: 0; transition: opacity 0.2s; }
-        .modal-overlay.active { visibility: visible; opacity: 1; }
-
-        #map-modal-content { background: #0a0a0a; border: 2px solid var(--text-alert); padding: 20px; width: 80%; max-width: 600px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
-        .map-btn { padding: 15px; font-size: 1.1em; text-align: left; border: 1px solid #444; transition: 0.2s; cursor: pointer; color: #fff; background: #000; }
-        .map-btn:hover { border-color: var(--text-safe); background: #111; color: var(--text-safe); }
-        .map-btn small { display: block; font-size: 0.7em; color: #888; margin-top: 3px; }
-
-        #peephole-layout { display: flex; gap: 20px; width: 95%; max-width: 1100px; height: 700px; }
-        #visor-section { flex: 1; display: flex; flex-direction: column; align-items: center; border: 1px solid var(--text-dim); padding: 20px; background: #080808; position: relative; }
-        #visor-circle { width: 280px; height: 280px; border-radius: 50%; border: 4px solid #333; background: #000; overflow: hidden; position: relative; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
-        #visor-circle.stress-high { border-color: var(--text-danger); box-shadow: 0 0 15px var(--text-danger); animation: shake 0.5s infinite; }
-        #visitor-face { white-space: pre; font-size: 14px; text-align: center; z-index: 2; color: var(--text-primary); transition: opacity 0.1s; }
-        #data-section { flex: 1.4; display: flex; flex-direction: column; gap: 8px; }
-        
-        .investigation-card { background: #111; border: 1px solid var(--text-dim); padding: 12px; display: flex; flex-direction: column; gap: 5px; }
-        .inv-header { color: var(--text-dim); font-size: 0.75em; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 3px; display: flex; justify-content: space-between; }
-        #id-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9em; font-family: monospace; color: #aaa; }
-        .id-field strong { color: #fff; }
-        .highlight-diff { color: var(--text-danger); animation: blink 1s infinite; }
-        #stress-meter-container { width: 100%; height: 6px; background: #222; margin-top: 5px; }
-        #stress-meter-fill { height: 100%; width: 0%; background: var(--text-safe); transition: width 0.3s, background 0.3s; }
-        #dialogue-box { font-style: italic; color: #fff; height: 70px; overflow-y: auto; border-left: 2px solid var(--text-primary); padding-left: 10px; font-size: 0.95em; }
-        .dialogue-options { display: flex; gap: 5px; }
-        .dialogue-btn { flex: 1; font-size: 0.8em; padding: 8px; text-align: center; justify-content: center; background: #1a1a1a; border-color: #444; }
-        .dialogue-btn:hover { background: #333; border-color: #888; }
-        .scan-result-box { min-height: 25px; font-weight: bold; text-align: center; font-size: 1.1em; }
-        .decision-area { margin-top: auto; border-top: 1px solid #333; padding-top: 10px; }
-        .timer-bar-container { width: 100%; height: 15px; background: #000; border: 1px solid var(--text-danger); margin: 5px 0; }
-        #timer-bar { width: 100%; height: 100%; background: var(--text-danger); }
-        
-        .crew-card { border: 1px solid #333; background: #080808; margin-bottom: 10px; padding: 10px; }
-        .crew-header { display: flex; justify-content: space-between; border-bottom: 1px dashed #444; padding-bottom: 5px; margin-bottom: 5px; }
-        .crew-role { color: var(--text-alert); font-size: 0.8em; }
-        .crew-hp-bar { width: 100%; height: 6px; background: #222; margin-bottom: 8px; }
-        .crew-hp-fill { height: 100%; background: var(--text-safe); }
-        .crew-actions { display: flex; gap: 5px; }
-        
-        .lore-file { border: 1px solid #333; padding: 8px; margin-bottom: 5px; cursor: pointer; background: #080808; display: flex; justify-content: space-between; align-items: center; }
-        .lore-file:hover { border-color: var(--text-lore); }
-        .lore-file.encrypted { border-style: dashed; border-color: var(--text-dim); color: var(--text-dim); }
-        .lore-file.decrypted { border-color: var(--text-lore); color: #fff; }
-        
-        #log-container { height: 150px; overflow-y: auto; font-size: 12px; background: #000; border: 1px solid #333; padding: 8px; }
-        .log-entry { margin-bottom: 4px; padding-left: 5px; border-left: 2px solid transparent; }
-        .log-entry.alert { color: var(--text-danger); border-left-color: var(--text-danger); }
-        .log-entry.safe { color: var(--text-safe); border-left-color: var(--text-safe); }
-        .log-entry.lore { color: var(--text-lore); border-left-color: var(--text-lore); font-style: italic; }
-
-        #radio-minigame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; height: 200px; background: #000; border: 2px solid var(--text-alert); z-index: 300; display: none; flex-direction: column; padding: 20px; box-shadow: 0 0 30px #000; }
-        #tuner-bar-bg { width: 100%; height: 30px; background: #222; position: relative; margin: 20px 0; border: 1px solid #555; }
-        #tuner-target { position: absolute; top: 0; height: 100%; width: 60px; background: rgba(0, 255, 0, 0.3); border-left: 1px solid #0f0; border-right: 1px solid #0f0; }
-        #tuner-cursor { position: absolute; top: -5px; bottom: -5px; width: 4px; background: #fff; box-shadow: 0 0 5px #fff; left: 0; }
-
-        #trophy-notification { position: fixed; top: 20px; right: 20px; background: rgba(20, 20, 20, 0.95); border: 1px solid #333; border-radius: 50px; padding: 10px 25px 10px 15px; display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); transform: translateX(150%); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 3000; color: #fff; pointer-events: none; min-width: 300px; }
-        #trophy-notification.active { transform: translateX(0); }
-        #trophy-icon { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; background: #000; border: 2px solid #fff; }
-        #trophy-details { display: flex; flex-direction: column; }
-        #trophy-label { font-size: 0.7em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-        #trophy-name { font-size: 1em; font-weight: bold; }
-
-        /* --- MINIGAMES --- */
-        #minigame-container { text-align: center; }
-        #minigame-title { color: var(--text-alert); }
-        #minigame-canvas { border: 2px solid var(--text-alert); background: #000; }
-        .d-pad { display: grid; grid-template-columns: 60px 60px 60px; grid-template-rows: 60px 60px; gap: 5px; margin-top: 20px; justify-content: center; }
-        .d-pad-btn { width: 60px; height: 60px; background: #111; border: 2px solid var(--text-alert); color: var(--text-alert); font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: all 0.1s; }
-        .d-pad-btn:active { background: var(--text-alert); color: #000; transform: scale(0.95); }
-        .d-pad-up { grid-column: 2; grid-row: 1; }
-        .d-pad-left { grid-column: 1; grid-row: 2; }
-        .d-pad-down { grid-column: 2; grid-row: 2; }
-        .d-pad-right { grid-column: 3; grid-row: 2; }
-
-        /* --- CAMERA & OTHERS --- */
-        #cctv-screen { width: 100%; height: 180px; background: var(--cam-bg); border: 2px solid #334433; margin-bottom: 10px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; font-family: monospace; color: #558855; white-space: pre; }
-        #cctv-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px); pointer-events: none; animation: scrollScan 10s linear infinite; }
-        
-        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 100% { transform: translate(-1px, -2px) rotate(-1deg); } }
-        @keyframes scrollScan { from { background-position: 0 0; } to { background-position: 0 100%; } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div class="scanlines"></div>
-    <div class="vignette"></div>
+<div id="overlay">
+    <h1>PLURIBUS: A JUNÇÃO</h1>
+    <p>MODO HISTÓRIA: SOBREVIVÊNCIA DE 8 DIAS + TROFÉUS</p>
+    <br>
+    <p style="font-size: 12px; color: #aa8800;">[CLIQUE PARA INICIAR]</p>
+    <br>
+    <p>
+        <b>OBJETIVO:</b> Sobreviva até o Dia 8. Cuide da Família.<br>
+        <b>NOVOS PERIGOS:</b> Mímicos, Cultistas, Brutos.<br>
+        <b>PLATINAS:</b> Desbloqueie conquistas no sistema.
+    </p>
+</div>
 
-    <div id="trophy-notification">
+<div id="game-container">
+    <div id="vhs-overlay"></div>
+    <div id="scanline"></div>
+    <div id="crosshair"></div>
+    
+    <!-- NOTIFICAÇÃO DE TROFÉU -->
+    <div id="trophy-popup">
         <div id="trophy-icon">🏆</div>
-        <div id="trophy-details">
-            <span id="trophy-label">CONQUISTA</span>
-            <span id="trophy-name">Nome</span>
+        <div id="trophy-text">
+            <h4>Conquista Desbloqueada</h4>
+            <p id="trophy-name">Nome do Troféu</p>
         </div>
     </div>
 
-    <div id="start-menu" class="full-screen-menu">
-        <h1>PLURIBUS</h1>
-        <h2 style="color: #888; letter-spacing: 3px;">DIRECTOR'S CUT</h2>
-        <button class="menu-btn" onclick="game.startSurvival()">MODO SOBREVIVÊNCIA</button>
-        <button class="menu-btn narrative" onclick="narrativeSys.start()">MODO NARRATIVO (ORIGENS)</button>
-        <button class="menu-btn secondary" onclick="arcadeMode.openMenu()">MODO ARCADE</button>
-        <button class="menu-btn secondary" style="border-color: var(--trophy-gold); color: var(--trophy-gold);" onclick="achievementSys.openMenu()">COLEÇÃO DE TROFÉUS [50]</button>
-        <div style="margin-top: 20px; font-size: 0.8em; color: #666;">V3.2.0 (STORY EXPANDED)</div>
-    </div>
-
-    <div id="arcade-menu" class="full-screen-menu">
-        <h1>SALA ARCADE</h1>
-        <div id="arcade-stats">
-            <div class="rank-title" id="rank-display">RANK: CIVIL</div>
-            <div style="display:flex; justify-content:space-between;"><span>TOTAL XP:</span><span id="total-score-display" style="color:white;">0</span></div>
-            <div class="xp-bar-container"><div id="xp-bar" class="xp-bar-fill"></div><span class="xp-text" id="next-rank-msg"></span></div>
+    <!-- HUD DE STATUS -->
+    <div id="hud-overlay">
+        <div class="hud-row">
+            <span class="hud-label">DIA:</span>
+            <span id="hud-day">1/8</span>
         </div>
-        <h3 style="color:var(--text-dim);">JOGOS</h3>
-        <div id="arcade-buttons" style="display:flex; flex-direction:column; gap:5px;"></div>
-        <button class="menu-btn secondary" onclick="arcadeMode.closeMenu()" style="margin-top: 30px;">VOLTAR</button>
-    </div>
-
-    <div id="trophy-menu" class="full-screen-menu">
-        <h1 style="color: var(--text-lore)">SALA DE TROFÉUS</h1>
-        <div style="display:flex; justify-content:space-between; width:80%; max-width:900px; color:#888; margin-bottom:10px;">
-            <span>TOTAL: <span id="trophy-count">0</span>/50</span><span>PLATINA: <span id="plat-status">BLOQUEADA</span></span>
+        <div class="hud-row" id="row-sanity">
+            <span class="hud-label">SANIDADE:</span>
+            <div class="hud-bar-container"><div id="bar-sanity" class="hud-bar-fill" style="width: 80%"></div></div>
         </div>
-        <div id="trophy-list"></div>
-        <button class="menu-btn secondary" onclick="achievementSys.closeMenu()" style="margin-top: 20px;">VOLTAR</button>
-    </div>
-
-    <div id="game-container" style="display:none;">
-        <div id="hud">
-            <div class="stat-box"><div class="stat-header"><span>SANIDADE</span><span id="val-san">100%</span></div><div class="bar-container"><div id="bar-san" class="bar-fill"></div></div></div>
-            <div class="stat-box"><div class="stat-header"><span>ENERGIA</span><span id="val-nrg">100%</span></div><div class="bar-container"><div id="bar-nrg" class="bar-fill"></div></div></div>
-            <div id="clock-box"><div id="clock-display">08:00</div><div style="font-size: 0.7em; color: #888;">DIA <span id="val-day">1</span></div></div>
-            <div class="stat-box"><div class="stat-header"><span>INTIMIDADE</span><span id="val-int">100%</span></div><div class="bar-container"><div id="bar-int" class="bar-fill"></div></div></div>
-            <div class="stat-box"><div class="stat-header"><span>PORTA</span><span id="val-door">100%</span></div><div class="bar-container"><div id="bar-door" class="bar-fill safe"></div></div></div>
+        <div class="hud-row" id="row-door">
+            <span class="hud-label">PORTA:</span>
+            <div class="hud-bar-container"><div id="bar-door" class="hud-bar-fill" style="width: 100%"></div></div>
         </div>
-        <div id="main-hub">
-            <div id="room-view">
-                <div id="location-name">BUNKER</div>
-                <div id="ascii-art"></div>
-                <div id="crew-display" style="margin-top:20px; font-size:0.8em; color:#444;"></div>
-            </div>
-            <div id="controls-panel">
-                <div class="tabs">
-                    <button class="tab-btn active" onclick="game.ui.switchTab('maint')">AÇÕES</button>
-                    <button class="tab-btn" onclick="game.ui.switchTab('cams')">CÂMERAS</button>
-                    <button class="tab-btn" onclick="game.ui.switchTab('crew')">TRIPULAÇÃO</button>
-                    <button class="tab-btn" onclick="game.ui.switchTab('archive')">ARQUIVO</button>
-                    <button class="tab-btn" onclick="game.ui.switchTab('inventory')">ITENS</button>
-                </div>
-                <div id="tab-maint" class="tab-content active">
-                    <div class="panel-section"><div class="panel-title" id="actions-title">COMANDOS</div><div id="dynamic-actions"></div></div>
-                    <div class="panel-section" style="flex:1;"><div class="panel-title">REGISTRO</div><div id="log-container"></div></div>
-                </div>
-                <div id="tab-cams" class="tab-content">
-                    <div class="panel-section" style="flex:1;">
-                        <div class="panel-title">CCTV <span style="float:right; color:red;">REC ●</span></div>
-                        <div id="cctv-screen"><div id="cctv-overlay"></div><div id="cctv-label">CAM 01</div><div id="cctv-feed">OFFLINE</div></div>
-                        <div class="cam-btn-group"><button onclick="cameraSys.switch(1)">CAM 1</button><button onclick="cameraSys.switch(2)">CAM 2</button><button onclick="cameraSys.switch(3)">CAM 3</button></div>
-                    </div>
-                </div>
-                <div id="tab-crew" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">EQUIPE</div><div id="crew-container"></div></div></div>
-                <div id="tab-archive" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">LORE</div><div style="margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:10px;"><button onclick="game.actions.deepScan()" style="border-color:var(--text-lore); color:var(--text-lore);">BUSCAR (-40E)</button><span style="color:var(--text-insight);">INSIGHT: <span id="insight-val">0</span></span></div><div id="lore-list"></div><div id="lore-display" style="margin-top:10px; padding:10px; border:1px dashed var(--text-lore); color: var(--text-lore); font-size:0.9em; display:none;"></div></div></div>
-                <div id="tab-inventory" class="tab-content"><div class="panel-section" style="flex:1; overflow-y:auto;"><div class="panel-title">ITENS</div><div id="inventory-list"></div></div></div>
-            </div>
+        <div class="hud-row" id="row-family">
+            <span class="hud-label">FAMÍLIA:</span>
+            <div class="hud-bar-container"><div id="bar-family" class="hud-bar-fill" style="width: 100%"></div></div>
+        </div>
+        <div class="hud-row">
+             <span class="hud-label" style="font-size:10px; color:#aa8800; margin-top:5px;">RECURSOS (ENERGIA): <span id="hud-energy">80</span>%</span>
         </div>
     </div>
 
-    <div id="narrative-ui" class="full-screen-menu" style="display:none; justify-content: flex-start; text-align: left;">
-        <h1 style="border-bottom: 1px solid #333; padding-bottom: 10px; width: 100%; text-align: center; color: var(--text-lore);">MODO NARRATIVO (ORIGENS)</h1>
-        <div id="narrative-chapter" class="narrative-chapter">CAPÍTULO 1</div>
-        <div id="narrative-text" class="narrative-text"></div>
-        <div id="narrative-choices" style="width: 100%;"></div>
-        <button class="menu-btn secondary" onclick="narrativeSys.exit()" style="margin-top: 20px; align-self: center;">SAIR PARA O MENU</button>
-    </div>
+    <div id="message-log"></div>
 
-    <div id="peephole-modal" class="modal-overlay">
-        <div id="peephole-layout">
-            <div id="visor-section">
-                <div class="panel-title" style="text-align:center;">VISOR</div>
-                <div id="visor-circle"><div id="visitor-face"></div></div>
-                <div style="display:flex; flex-direction:column; gap:5px; width:100%;">
-                    <button onclick="game.encounter.toggleUV()">LUZ UV</button>
-                    <button class="danger-action" onclick="game.encounter.shotgun()">ESCOPETA</button>
-                </div>
-            </div>
-            <div id="data-section">
-                <div class="investigation-card"><div class="inv-header">CARTÃO</div><div id="id-card-grid"></div></div>
-                <div class="investigation-card"><div class="inv-header">DIALOGO</div><div id="dialogue-box"></div><div class="dialogue-options"><button class="dialogue-btn" onclick="game.encounter.ask('origin')">ORIGEM</button><button class="dialogue-btn" onclick="game.encounter.ask('symptoms')">SINTOMAS</button><button class="dialogue-btn" onclick="game.encounter.ask('blood')">SANGUE</button><button class="dialogue-btn" onclick="game.encounter.ask('calm')">ACALMAR</button></div></div>
-                <div class="investigation-card"><button onclick="game.encounter.scan()">SCANNER (-5E)</button><div id="scan-result" class="scan-result-box">---</div></div>
-                <div class="decision-area"><div class="timer-bar-container"><div id="timer-bar"></div></div><div style="display:flex; gap:10px;"><button onclick="game.encounter.decide(true)" style="border-color:lime;">ABRIR</button><button onclick="game.encounter.decide(false)" style="border-color:red;">RECUSAR</button></div></div>
-            </div>
+    <!-- UI DO OLHO MÁGICO -->
+    <div id="peephole-ui">
+        <div id="visitor-visual"></div>
+        <div id="dialogue-box"><span id="dialogue-text">...</span></div>
+        <div id="door-controls">
+            <button class="door-btn btn-interrogate" onclick="window.gameActions.interrogate()">QUEM É?</button>
+            <button class="door-btn btn-open" onclick="window.gameActions.openDoor()">ABRIR</button>
+            <button class="door-btn btn-shock" onclick="window.gameActions.shockDoor()">ELETROCUTAR</button>
+            <button class="door-btn" onclick="window.gameActions.exitPeephole()">VOLTAR</button>
         </div>
     </div>
+</div>
 
-    <div id="minigame-container" class="modal-overlay" style="z-index: 2999;">
-        <div style="text-align:center;">
-            <h2 id="minigame-title" style="color:var(--text-alert)">ARCADE</h2>
-            <p id="minigame-info">SCORE: <span id="pac-dots">0</span></p>
-            <canvas id="minigame-canvas" width="400" height="400" style="border:2px solid var(--text-alert); background:#000;"></canvas>
-            <div class="d-pad">
-                <div class="d-pad-btn d-pad-up" onclick="minigameManager.handleInput('ArrowUp')">▲</div>
-                <div class="d-pad-btn d-pad-left" onclick="minigameManager.handleInput('ArrowLeft')">◄</div>
-                <div class="d-pad-btn d-pad-down" onclick="minigameManager.handleInput('ArrowDown')">▼</div>
-                <div class="d-pad-btn d-pad-right" onclick="minigameManager.handleInput('ArrowRight')">►</div>
-            </div>
-            <button id="arcade-back-btn" style="margin-top:10px; display:none; border-color:red; color:red;" onclick="minigameManager.exitArcade()">SAIR</button>
-        </div>
-    </div>
+<!-- Import Three.js -->
+<script type="module">
+    import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
 
-    <div id="map-modal" class="modal-overlay">
-        <div id="map-modal-content">
-            <div class="panel-title">MAPA TÁTICO</div>
-            <button class="map-btn" onclick="game.actions.travel('mercado')">MERCADO <small>COMIDA</small></button>
-            <button class="map-btn" onclick="game.actions.travel('farmacia')">FARMÁCIA <small>REMÉDIOS</small></button>
-            <button class="map-btn" onclick="game.actions.travel('ruas')">RUAS <small>SUCATA</small></button>
-            <button onclick="game.ui.toggleMap()" style="margin-top:10px;">CANCELAR</button>
-        </div>
-    </div>
+    // --- CONFIGURAÇÃO GLOBAL ---
+    const apiKey = ""; 
+    
+    // Lista de Troféus
+    const TROPHIES = {
+        FIRST_BLOOD: { id: 'first_blood', title: "Primeiro Sangue", desc: "Eletrocutou um visitante.", icon: "⚡" },
+        SAVIOR: { id: 'savior', title: "O Salvador", desc: "Salvou 3 humanos.", icon: "🤝" },
+        SLAYER: { id: 'slayer', title: "Exterminador", desc: "Matou 3 monstros.", icon: "💀" },
+        SURVIVOR: { id: 'survivor', title: "Meio Caminho", desc: "Chegou ao Dia 4.", icon: "📅" },
+        MECHANIC: { id: 'mechanic', title: "Engenheiro", desc: "Reparou a porta ao máximo.", icon: "🔧" },
+        FAMILY_FIRST: { id: 'family', title: "Pai de Família", desc: "Manteve o humor da família em 100%.", icon: "❤️" },
+        PLATINUM: { id: 'plat', title: "A JUNÇÃO PERFEITA", desc: "Coletou todos os troféus.", icon: "🏆" }
+    };
 
-    <div id="radio-minigame" class="modal-overlay" style="background:transparent; pointer-events:none;">
-        <div style="background:#000; border:2px solid #ffcc00; padding:20px; width:400px; pointer-events:auto;">
-            <div class="panel-title">SINTONIA</div>
-            <div id="tuner-bar-bg"><div id="tuner-target"></div><div id="tuner-cursor"></div></div>
-            <button onclick="radioGame.stop()" style="margin-top:10px;">TRAVAR</button>
-        </div>
-    </div>
+    // Definição de Visitantes
+    const VISITOR_TYPES = [
+        // BONS
+        { 
+            id: 'survivor', type: 'good', name: 'Sobrevivente', 
+            visual: `___\n(o o)\n| - |\n-----`, 
+            prompt: "Humano desesperado. Fale 10 palavras pedindo abrigo.",
+            reward: { energy: 10, sanity: 5 },
+            desc: "Apenas alguém tentando viver."
+        },
+        { 
+            id: 'medic', type: 'good', name: 'Médico de Campo', 
+            visual: `___\n(o o)\n| + |\n-----`, 
+            prompt: "Médico militar calmo. Ofereça ajuda médica em troca de abrigo.",
+            reward: { energy: 10, sanity: 30 }, // Cura muita sanidade
+            desc: "Traz remédios."
+        },
+        { 
+            id: 'mechanic', type: 'good', name: 'Mecânico', 
+            visual: `___\n[o o]\n| # |\n-----`, 
+            prompt: "Mecânico prático. Diga que pode consertar a porta se entrar.",
+            reward: { energy: 10, door: 40 }, // Repara a porta
+            desc: "Pode reparar a porta."
+        },
+        { 
+            id: 'trader', type: 'good', name: 'Mercador', 
+            visual: `___\n($ $)\n| - |\n-----`, 
+            prompt: "Vendedor ambulante. Ofereça baterias em troca de pouso.",
+            reward: { energy: 50, sanity: 0 }, // Muita energia
+            desc: "Carrega baterias pesadas."
+        },
 
-    <div id="dream-modal" class="modal-overlay">
-        <div class="dream-content"><h2 style="color: #fff;">SONHO LÚCIDO</h2><div id="dream-text" class="dream-text">...</div><div id="dream-options" class="dream-choices"></div></div>
-    </div>
+        // MAUS
+        { 
+            id: 'mimic', type: 'bad', name: 'Mímico', 
+            visual: `___\n(o o)\n| O |\n-----`, // Visualmente igual ao humano normal
+            prompt: "Monstro Mímico. Tente falar como humano, mas gagueje ou repita palavras de forma estranha.",
+            damage: { door: 30, sanity: 30 },
+            desc: "Finge ser gente. Falha na fala."
+        },
+        { 
+            id: 'brute', type: 'bad', name: 'Brutamontes', 
+            visual: `/ \\\n(X X)\n(###)\n\\___/`, 
+            prompt: "Monstro violento e burro. Grite e ameace derrubar a porta.",
+            damage: { door: 60, sanity: 10 }, // Destrói a porta rápido
+            desc: "Dano massivo na porta."
+        },
+        { 
+            id: 'cultist', type: 'bad', name: 'Cultista', 
+            visual: ` / \\\n(o o)\n |^| \n-----`, 
+            prompt: "Fanático religioso. Fale sobre 'A Junção' e a glória da morte.",
+            damage: { door: 10, sanity: 50 }, // Dano mental alto
+            desc: "Drena sua sanidade."
+        },
+        { 
+            id: 'weeper', type: 'bad', name: 'A Chorona', 
+            visual: `___\n(T T)\n| o |\n-----`, 
+            prompt: "Mulher chorando incontrolavelmente. Soluços entre palavras.",
+            damage: { door: 20, sanity: 40 },
+            desc: "Choro enlouquecedor."
+        }
+    ];
 
-    <div id="lore-modal" class="modal-overlay" style="z-index: 3000;">
-        <div style="max-width:500px; background:#111; padding:30px; border:2px solid var(--text-primary); text-align:justify;">
-            <h2 id="lore-title" style="color:var(--text-alert); text-align:center;">FIM DO DIA</h2><p id="lore-text">...</p><button id="next-day-btn" onclick="game.nextDay()" style="margin-top:20px; justify-content: center;">CONTINUAR</button>
-        </div>
-    </div>
-
-    <script>
-        const audioSys = {
-            ctx: null,
-            init: function() { if(!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)(); if(this.ctx.state==='suspended') this.ctx.resume(); },
-            playTone: function(f,t,d,v=0.1) { if(!this.ctx) return; const o=this.ctx.createOscillator(); const g=this.ctx.createGain(); o.type=t; o.frequency.setValueAtTime(f,this.ctx.currentTime); g.gain.setValueAtTime(v,this.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+d); o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+d); },
-            sfx: {
-                click: ()=>audioSys.playTone(1200,'square',0.05), error: ()=>audioSys.playTone(150,'sawtooth',0.3), success: ()=>{ audioSys.playTone(600,'sine',0.1); setTimeout(()=>audioSys.playTone(900,'sine',0.2),100); },
-                trophy: ()=> { audioSys.playTone(800,'sine',0.1); setTimeout(()=>audioSys.playTone(1200,'sine',0.3),100); setTimeout(()=>audioSys.playTone(1500,'square',0.4),200); },
-                scan: ()=>audioSys.playTone(2000,'sine',0.2), knock: ()=>audioSys.playTone(80, 'square', 0.1, 0.3), glitch: ()=>audioSys.playTone(Math.random()*500, 'sawtooth', 0.05, 0.1),
-                jump: ()=>audioSys.playTone(300, 'square', 0.1, 0.1), travel: ()=>audioSys.playTone(100,'square',1.0,0.2), lore: ()=> { audioSys.playTone(400,'sine',0.1); setTimeout(()=>audioSys.playTone(600,'sine',0.3), 150); }
-            }
-        };
-
-        const achievementSys = {
-            trophies: [
-                {id:'die1', n:'Fim da Linha', d:'Morrer pela primeira vez.', t:'bronze', earned:false}, {id:'door1', n:'Porteiro', d:'Deixe um humano entrar.', t:'bronze', earned:false}, 
-                {id:'kill1', n:'Gatilho Rápido', d:'Use a escopeta.', t:'bronze', earned:false}, {id:'scav1', n:'Lixeiro', d:'Vasculhe algo com sucesso.', t:'bronze', earned:false}, 
-                {id:'trav1', n:'Viajante', d:'Viaje para qualquer local.', t:'bronze', earned:false}, {id:'lore1', n:'Curioso', d:'Decodifique um arquivo de Lore.', t:'bronze', earned:false},
-                {id:'feed1', n:'Nutridor', d:'Alimente um membro da equipe.', t:'bronze', earned:false}, {id:'talk1', n:'Ouvinte', d:'Converse com um membro da equipe.', t:'bronze', earned:false}, 
-                {id:'heal1', n:'Médico', d:'Cure um membro da equipe.', t:'bronze', earned:false}, {id:'cam1', n:'Vigilante', d:'Use as câmeras.', t:'bronze', earned:false}, 
-                {id:'uv1', n:'Revelador', d:'Use a Luz UV em um visitante.', t:'bronze', earned:false}, {id:'repair1', n:'Soldador', d:'Repare a porta.', t:'bronze', earned:false},
-                {id:'snake1', n:'Cobrinha', d:'Jogue uma partida de Snake.', t:'bronze', earned:false}, {id:'pac1', n:'Comilão', d:'Jogue uma partida de Pac-Man.', t:'bronze', earned:false}, 
-                {id:'echo1', n:'Memória', d:'Jogue uma partida de Echo.', t:'bronze', earned:false}, {id:'day2', n:'Amanhecer', d:'Chegue ao Dia 2.', t:'silver', earned:false}, 
-                {id:'day4', n:'Meio Termo', d:'Chegue ao Dia 4.', t:'silver', earned:false}, {id:'day6', n:'Veterano', d:'Chegue ao Dia 6.', t:'silver', earned:false},
-                {id:'full_crew', n:'Líder', d:'Tenha 3 pessoas na equipe.', t:'silver', earned:false}, {id:'solo', n:'Lobo Solitário', d:'Chegue ao Dia 4 sozinho.', t:'silver', earned:false}, 
-                {id:'pac_score', n:'Hacker Pac', d:'500 pts no Pac-Man.', t:'silver', earned:false}, {id:'snake_score', n:'Hacker Snake', d:'20 pts no Snake.', t:'silver', earned:false}, 
-                {id:'lore5', n:'Arquivista', d:'Decodifique 5 arquivos.', t:'silver', earned:false}, {id:'map_all', n:'Explorador', d:'Visite todos os locais.', t:'silver', earned:false},
-                {id:'flappy_play', n:'Piloto', d:'Jogue Flappy.', t:'bronze', earned:false}, {id:'dino_play', n:'Corredor', d:'Jogue Dino.', t:'bronze', earned:false},
-                {id:'flappy_score', n:'Ás dos Céus', d:'50 pts no Flappy.', t:'silver', earned:false}, {id:'dino_score', n:'Maratonista', d:'1000 pts no Dino.', t:'silver', earned:false},
-                {id:'calm_down', n:'Negociador', d:'Acalme um visitante.', t:'bronze', earned:false}, {id:'uv_human', n:'Paranóico', d:'Use UV em um humano.', t:'bronze', earned:false},
-                {id:'reject_human', n:'Coração Frio', d:'Recuse um humano.', t:'bronze', earned:false}, {id:'low_san', n:'No Limite', d:'Sobreviva com < 10% Sanidade.', t:'bronze', earned:false},
-                {id:'low_nrg', n:'Apagão', d:'Sobreviva com < 10% Energia.', t:'bronze', earned:false}, {id:'door_full', n:'Fortaleza', d:'Porta 100% no Dia 3.', t:'bronze', earned:false},
-                {id:'radio_fail', n:'Sinal Perdido', d:'Falhe no Rádio.', t:'bronze', earned:false}, {id:'radio_streak', n:'DJ do Fim', d:'5 Acertos no Rádio.', t:'silver', earned:false},
-                {id:'stealth_master', n:'Sombra', d:'Use Esgueirar 10 vezes.', t:'silver', earned:false}, {id:'risk_taker', n:'Risco Calculado', d:'Vasculhe com < 20 Energia.', t:'silver', earned:false},
-                {id:'key_found', n:'Chaveiro', d:'Ache a Chave do Esgoto.', t:'silver', earned:false}, {id:'cure_found', n:'Cientista', d:'Ache a Amostra Zero.', t:'silver', earned:false},
-                {id:'map_found', n:'Cartógrafo', d:'Ache o Mapa dos Túneis.', t:'silver', earned:false}, {id:'shotgun_spree', n:'Sem Piedade', d:'Use Escopeta 3x num dia.', t:'silver', earned:false},
-                {id:'pacifist', n:'Pacifista', d:'Dia 3 sem usar armas.', t:'silver', earned:false}, {id:'insight_max', n:'Iluminado', d:'Insight 100%.', t:'gold', earned:false},
-                {id:'story_good', n:'Herói', d:'Final: Resgate.', t:'gold', earned:false}, {id:'story_bad', n:'Tragédia', d:'Final: Morte.', t:'gold', earned:false}, 
-                {id:'story_true', n:'A Verdade', d:'Final Secreto.', t:'gold', earned:false}, {id:'rank_max', n:'Deus da Máquina', d:'Rank 60 Arcade.', t:'gold', earned:false}, 
-                {id:'lore_all', n:'Onisciente', d:'Toda Lore desbloqueada.', t:'gold', earned:false}, {id:'platinum', n:'A CONSCIÊNCIA FINAL', d:'Todos os troféus.', t:'plat', earned:false}
-            ],
-            init: function() {
-                const saved = localStorage.getItem('pluribus_trophies_v7');
-                if (saved) { const ids = JSON.parse(saved); this.trophies.forEach(t => { if(ids.includes(t.id)) t.earned = true; }); }
-            },
-            unlock: function(id) {
-                const t = this.trophies.find(x=>x.id===id);
-                if(t && !t.earned) { t.earned = true; this.save(); this.notify(t); this.checkPlat(); }
-            },
-            checkPlat: function() { if(this.trophies.filter(t=>t.id!=='platinum').every(t=>t.earned)) this.unlock('platinum'); },
-            save: function() { localStorage.setItem('pluribus_trophies_v7', JSON.stringify(this.trophies.filter(t=>t.earned).map(t=>t.id))); },
-            notify: function(t) {
-                const n = document.getElementById('trophy-notification');
-                document.getElementById('trophy-label').innerText = t.t.toUpperCase();
-                document.getElementById('trophy-name').innerText = t.n;
-                let c = '#cd7f32'; if(t.t=='silver')c='#c0c0c0'; if(t.t=='gold')c='#ffd700'; if(t.t=='plat')c='#e5e4e2';
-                document.getElementById('trophy-icon').style.borderColor = c; document.getElementById('trophy-icon').style.color = c;
-                audioSys.sfx.trophy(); n.classList.add('active'); setTimeout(()=>n.classList.remove('active'),4000);
-            },
-            openMenu: function() {
-                document.getElementById('start-menu').style.display='none'; document.getElementById('trophy-menu').style.display='flex';
-                const l = document.getElementById('trophy-list'); l.innerHTML="";
-                let c=0;
-                this.trophies.forEach(t => {
-                    if(t.earned) c++;
-                    let col = '#333'; if(t.earned) { if(t.t=='bronze')col='#cd7f32'; if(t.t=='silver')col='#c0c0c0'; if(t.t=='gold')col='#ffd700'; if(t.t=='plat')col='#e5e4e2'; }
-                    l.innerHTML += `<div class="trophy-item ${t.earned?'unlocked':''} ${t.t}"><div class="t-icon" style="color:${col}">🏆</div><div class="t-info"><h4>${t.n}</h4><p>${t.d}</p></div></div>`;
-                });
-                document.getElementById('trophy-count').innerText = c;
-                document.getElementById('plat-status').innerText = this.trophies.find(x=>x.id==='platinum').earned ? "DESBLOQUEADA" : "BLOQUEADA";
-                document.getElementById('plat-status').style.color = this.trophies.find(x=>x.id==='platinum').earned ? "#e5e4e2" : "#666";
-            },
-            closeMenu: function() { document.getElementById('trophy-menu').style.display='none'; document.getElementById('start-menu').style.display='flex'; }
-        };
-        achievementSys.init();
-
-        const arcadeMode = {
-            xp: 0,
-            ranks: Array.from({length:61}, (_,i) => ({name: `NÍVEL ${i}`, req: i*100})),
-            init: function() {
-                this.ranks[0].name="VAGABUNDO DIGITAL"; this.ranks[10].name="SCRIPTER"; this.ranks[20].name="HACKER";
-                this.ranks[30].name="FANTASMA"; this.ranks[40].name="SISTEMA"; this.ranks[50].name="IA CONSCIENTE"; this.ranks[60].name="ARQUITETO DA MATRIX";
-                const saved = localStorage.getItem('pluribus_rank_v4'); if(saved) this.xp = parseInt(saved);
-            },
-            addXP: function(v) { this.xp += v; localStorage.setItem('pluribus_rank_v4', this.xp); if(this.xp>=6000) achievementSys.unlock('rank_max'); this.update(); },
-            update: function() {
-                document.getElementById('total-score-display').innerText = this.xp;
-                let c=this.ranks[0], n=this.ranks[1]; for(let i=0;i<this.ranks.length;i++){ if(this.xp>=this.ranks[i].req){c=this.ranks[i]; n=this.ranks[i+1]||null;} }
-                document.getElementById('rank-display').innerText = c.name;
-                if(n) { document.getElementById('next-rank-msg').innerText = `PRÓXIMO: ${n.req} XP`; document.getElementById('xp-bar').style.width = `${((this.xp-c.req)/(n.req-c.req))*100}%`; } else { document.getElementById('next-rank-msg').innerText = "MÁXIMO"; document.getElementById('xp-bar').style.width = "100%"; }
-                const btns = document.getElementById('arcade-buttons'); btns.innerHTML = "";
-                const games = [ {id:'snake',n:'SNAKE-LINK',r:0}, {id:'pac',n:'PAC-DATA',r:500}, {id:'flappy',n:'FLAP-LINK',r:1500}, {id:'dino',n:'RUN-DATA',r:3000}, {id:'echo',n:'ECHO-MIND',r:5500} ];
-                games.forEach(g => { const locked = this.xp < g.r; btns.innerHTML += `<button class="menu-btn" ${locked?'disabled':''} onclick="minigameManager.startSpecific('${g.id}', 'arcade')">${g.n} ${locked?`[LVL ${g.r/100}]`:''}</button>`; });
-            },
-            openMenu: function() { document.getElementById('start-menu').style.display='none'; document.getElementById('arcade-menu').style.display='flex'; this.update(); },
-            closeMenu: function() { document.getElementById('arcade-menu').style.display='none'; document.getElementById('start-menu').style.display='flex'; }
-        };
-        arcadeMode.init();
-
-        // --- EXPANDED NARRATIVE MODE ---
-        const narrativeSys = {
-            scene: 0,
-            scenes: [
-                { t: "CAPÍTULO 1: O SILÊNCIO", b: "Você acorda no bunker. O zumbido do gerador é o único som. Faz 84 dias desde a 'Grande Conexão'. A humanidade aceitou o chip. Você fugiu.\n\nAlguém bate na porta de aço. O som ecoa como um tiro.", c: [{t:"Olhar pela câmera (Lógica)", next: 1}, {t:"Perguntar quem é (Humanidade)", next: 1}, {t:"Ignorar (Isolamento)", next: 2}] },
-                { t: "CAPÍTULO 2: OLHOS AZUIS", b: "Pelo visor, você vê uma mulher. Ela está suja, ferida. Mas quando ela levanta o rosto, um leve brilho azul pulsa em sua íris.\n\n'Eles pararam de me perseguir', ela diz. 'Mas estou com fome.'", c: [{t:"Abrir a porta (Risco Alto)", notif:"Ela lembrará disso.", next: 3}, {t:"Dizer que não tem comida (Mentira)", notif:"Sua humanidade diminui.", next: 4}] },
-                { t: "CAPÍTULO 3: O HÓSPEDE", b: "Ela entra. O nome dela é Sarah. Ela come vorazmente. Enquanto come, ela conta sobre a superfície. 'Eles não falam mais. Eles só... transmitem. É um silêncio barulhento lá fora.'\n\nEla olha para o seu rádio.", c: [{t:"Ligar o rádio", next: 5}, {t:"Manter silêncio", next: 6}] },
-                { t: "CAPÍTULO 3: SOLIDÃO", b: "Você a ouve chorar e depois ir embora. O silêncio retorna, mais pesado. À noite, você sonha com uma colmeia de abelhas feitas de vidro e luz.", c: [{t:"Acordar", next: 6}] },
-                { t: "CAPÍTULO 4: A MENSAGEM", b: "O rádio estala. Uma voz sintética recita números. Sarah fica pálida. 'Essas são as coordenadas dos não-convertidos. Eles estão caçando.'\n\nO sinal fica mais forte.", c: [{t:"Destruir o rádio", next: 7}, {t:"Anotar coordenadas", next: 8}] },
-                { t: "CAPÍTULO 5: INVASÃO", b: "Dias se passam. De repente, o teto do bunker treme. Poeira cai. Eles não bateram dessa vez. Estão cavando. O som de metal rasgando metal preenche o ar.", c: [{t:"Pegar a Escopeta", next: 9}, {t:"Fugir pelos túneis", next: 10}] },
-                { t: "CAPÍTULO 6: O CERCO", b: "A porta explode. Silhuetas com olhos azuis entram em sincronia perfeita. Eles não correm, eles fluem. Você dispara. Um cai, dois tomam o lugar. Sarah (se estiver lá) luta com uma faca.", c: [{t:"Lutar até o fim", next: 'end_fight'}, {t:"Detonar o bunker", next: 'end_boom'}] },
-                { t: "CAPÍTULO 7: OS TÚNEIS", b: "Você rasteja pela ventilação. O ar é viciado. Você sai no esgoto antigo. O cheiro é horrível, mas é o cheiro da liberdade. Você vê luz no fim do túnel.", c: [{t:"Seguir para a luz", next: 11}] },
-                { t: "CAPÍTULO 8: SUPERFÍCIE", b: "A cidade está... limpa. Sem lixo, sem carros, sem barulho. Pessoas andam em linhas perfeitas, construindo torres de cristal. É lindo e aterrorizante.", c: [{t:"Observar", next: 12}] },
-                { t: "CAPÍTULO 9: A OFERTA", b: "Um drone pousa suavemente na sua frente. Ele projeta um holograma. É você mesmo, mas feliz, limpo, sem dor. 'Por que resistir?', sua cópia pergunta. 'A dor é opcional.'", c: [{t:"Aceitar a Junção", next: 'end_hive'}, {t:"Recusar a Perfeição", next: 'end_rebel'}] }
-            ],
-            start: function() { document.getElementById('start-menu').style.display='none'; document.getElementById('narrative-ui').style.display='flex'; this.scene = 0; this.render(); },
-            render: function() {
-                if(typeof this.scene === 'string') { this.end(this.scene); return; }
-                const s = this.scenes[this.scene]; if(!s) return;
-                document.getElementById('narrative-chapter').innerText = s.t;
-                document.getElementById('narrative-text').innerText = s.b;
-                const box = document.getElementById('narrative-choices'); box.innerHTML = "";
-                s.c.forEach(opt => {
-                    const d = document.createElement('div'); d.className='narrative-choice'; d.innerHTML = `<span>${opt.t}</span>`;
-                    d.onclick = () => { if(opt.notif) { const n = document.createElement('div'); n.className='narrative-notification'; n.innerText = opt.notif; document.getElementById('narrative-text').appendChild(n); } setTimeout(() => { this.scene = opt.next; this.render(); }, 1000); };
-                    box.appendChild(d);
-                });
-            },
-            end: function(type) {
-                let txt = ""; let title = "";
-                if(type === 'end_hive') { title="FINAL: HARMONIA"; txt = "Você aceitou. A agulha foi indolor. De repente, você não estava mais sozinho. Você era todos. A fome sumiu. O medo sumiu. Você é Pluribus."; achievementSys.unlock('story_bad'); }
-                else if(type === 'end_rebel') { title="FINAL: RESISTÊNCIA"; txt = "Você quebrou o drone. Correu para as ruínas antigas. Você vive na lama, com frio e medo. Mas seus pensamentos são apenas seus. Você é livre."; achievementSys.unlock('story_good'); }
-                else if(type === 'end_fight') { title="FINAL: MÁRTIR"; txt = "Eles eram muitos. Mas você levou muitos com você. Sua última visão foi o teto do bunker desabando sobre todos."; achievementSys.unlock('die1'); }
-                else if(type === 'end_boom') { title="FINAL: TERRA ARRASADA"; txt = "Você acionou os explosivos. O bunker virou uma cratera. Ninguém venceu hoje."; }
-                document.getElementById('narrative-chapter').innerText = title;
-                document.getElementById('narrative-text').innerText = txt; document.getElementById('narrative-choices').innerHTML = "";
-            },
-            exit: function() { document.getElementById('narrative-ui').style.display='none'; document.getElementById('start-menu').style.display='flex'; }
-        };
-
-        const scenes = {
-            bunker: `\n      _______________________\n     /                       \\\n    /    [RÁDIO]   [TV]       \\\n   |                          |\n   |    +------+              |\n   |    | CAMA |   [PORTA]    |\n   |    |      |      ||      |\n   |    +------+      ||      |\n   |                          |\n    \\                        /\n     \\______________________/`,
-            mercado: `\n       _____________________\n      /   MERCADO CENTRAL   \\\n     /  [PRATELEIRAS VAZIAS] \\\n    |    __   __   __   __    |\n    |   |  | |  | |XX| |  |   |\n    |   |__| |__| |XX| |__|   |\n    |           /    \\        |\n    |          ( LIXO )       |\n     \\_______________________/`,
-            farmacia: `\n       _____________________\n      /      FARMÁCIA       \\\n     /    [BALCÃO REVIRADO]  \\\n    |       +-------+         |\n    |       | MEDIC |         |\n    |       +-------+         |\n    |    ___                  |\n    |   |XXX|  [ARQUIVOS]     |\n     \\_______________________/`,
-            ruas: `\n         _    _      _    _\n       _| |__| |____| |__| |_\n      /  RUÍNAS DA CIDADE    \\\n     |   _   _        _   _   |\n     |  | | | |      | | | |  |\n     |  |_| |_|      |_| |_|  |\n     |      [CARRO DESTR.]    |\n      \\______________________/`
-        };
-
-        const loreDB = [
-            { id: 0, title: "Relatório Médico #01", text: "Paciente Zero exibe calcificação. Vírus digital. [BUFF: CUSTO DE CURA -5]", unlocked: false, decrypted: false, loc: 'bunker', buff: 'heal_cost', cost: 10, isItem:false },
-            { id: 1, title: "Frequência Theta", text: "Eles sentem medo via rádio. [BUFF: RÁDIO GASTA MENOS ENERGIA]", unlocked: false, decrypted: false, loc: 'bunker', buff: 'radio_cost', cost: 10, isItem:false },
-            { id: 2, title: "Chave do Esgoto", text: "ITEM CHAVE. Permite acesso aos túneis sob a cidade.", unlocked: false, decrypted: true, loc: 'ruas', isItem: true },
-            { id: 3, title: "Mapa dos Túneis", text: "Mostra a saída secreta para o Setor 7. [BUFF: VIAGEM RÁPIDA]", unlocked: false, decrypted: false, loc: 'mercado', isItem: true, buff: 'travel_time', cost: 15 },
-            { id: 4, title: "Amostra Zero", text: "Vial de sangue original. A cura potencial.", unlocked: false, decrypted: true, loc: 'farmacia', isItem: true },
-            { id: 5, title: "Diário do Soldado", text: "Não há resgate. É uma armadilha. [BUFF: DANO ESCOPETA]", unlocked: false, decrypted: false, loc: 'ruas', buff: 'shotgun_sanity', cost: 20, isItem:false }
-        ];
-        const dreamsDB = [ { text: "Sonho: O dia do surto no metrô.", choices: [ {l:"Ajudar", e:"san", v:-10, r:"Mordida."}, {l:"Correr", e:"nrg", v:10, r:"Sobreviveu."} ] }, { text: "Sonho: A voz da colmeia chama.", choices: [ {l:"Resistir", e:"san", v:15, r:"Mente forte."}, {l:"Ouvir", e:"san", v:-15, r:"Paz falsa."} ] } ];
-
-        const minigameManager = {
-            activeGame: null, canvas: null, ctx: null, mode: 'story',
-            startRandom: function() { this.mode = 'story'; this.launch(['pac', 'snake', 'echo', 'flappy', 'dino'][Math.floor(Math.random()*5)]); },
-            startSpecific: function(n, m) { this.mode = m; this.launch(n); document.getElementById('arcade-menu').style.display = 'none'; document.getElementById('arcade-back-btn').style.display = m === 'arcade' ? 'inline-block' : 'none'; },
-            launch: function(c) { document.getElementById('minigame-container').classList.add('active'); this.canvas = document.getElementById('minigame-canvas'); this.ctx = this.canvas.getContext('2d'); this.startCountdown(() => { if(c==='pac'){ pacGame.init(this.canvas); pacGame.start(); this.activeGame=pacGame; } else if(c==='snake'){ snakeGame.init(this.canvas); snakeGame.start(); this.activeGame=snakeGame; } else if(c==='echo'){ echoGame.init(this.canvas); echoGame.start(); this.activeGame=echoGame; } else if(c==='flappy'){ flappyGame.init(this.canvas); flappyGame.start(); this.activeGame=flappyGame; } else if(c==='dino'){ dinoGame.init(this.canvas); dinoGame.start(); this.activeGame=dinoGame; } }); },
-            startCountdown: function(cb) { let c=3; const i=setInterval(()=>{ this.ctx.fillStyle='#000'; this.ctx.fillRect(0,0,400,400); this.ctx.font="100px Courier New"; this.ctx.textAlign="center"; this.ctx.textBaseline="middle"; if(c>0){this.ctx.fillStyle="var(--text-alert)";this.ctx.fillText(c,200,200);audioSys.sfx.click();} else{this.ctx.fillStyle="var(--text-safe)";this.ctx.fillText("VAI!",200,200);audioSys.sfx.success();} c--; if(c<-1){clearInterval(i);cb();} },1000); },
-            handleInput: function(k) { if(this.activeGame) this.activeGame.handleInput(k); },
-            endGame: function(won, score = 0) { if(this.activeGame) this.activeGame.active=false; document.getElementById('minigame-container').classList.remove('active'); if(score > 0) { arcadeMode.addXP(score); if(this.mode === 'story') game.log(`XP GANHO: ${score}`, "safe"); } if (this.mode === 'story') game.resolveDay(won); else { if (won) { alert(`VITÓRIA! +${score} PONTOS`); } else alert("GAME OVER"); document.getElementById('arcade-menu').style.display = 'flex'; } },
-            exitArcade: function() { if(this.activeGame) this.activeGame.active=false; document.getElementById('minigame-container').classList.remove('active'); document.getElementById('arcade-menu').style.display = 'flex'; }
-        };
-        window.addEventListener('keydown', (e)=>{if(document.getElementById('minigame-container').classList.contains('active'))minigameManager.handleInput(e.key);});
-
-        const snakeGame = { active:false, canvas:null, ctx:null, grid:20, snake:[], food:{}, velocity:{x:1,y:0}, inputQueue:[], score:0, target:20, init: function(c){this.canvas=c;this.ctx=c.getContext('2d');}, start: function(){this.active=true; this.snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}]; this.score=0; this.velocity={x:1,y:0}; this.inputQueue=[]; this.spawnFood(); this.target = minigameManager.mode === 'arcade' ? 15 : 5; document.getElementById('minigame-title').innerText="SNAKE-LINK"; document.getElementById('minigame-info').innerText=`ALVOS: ${this.target}`; this.loop();}, spawnFood: function(){let v=false; while(!v){this.food={x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*20)}; v=!this.snake.some(s=>s.x===this.food.x&&s.y===this.food.y);}}, handleInput: function(k){if(this.inputQueue.length>2)return; const last=this.inputQueue.length>0?this.inputQueue[this.inputQueue.length-1]:this.velocity; if(k==='ArrowUp'&&last.y===0)this.inputQueue.push({x:0,y:-1}); if(k==='ArrowDown'&&last.y===0)this.inputQueue.push({x:0,y:1}); if(k==='ArrowLeft'&&last.x===0)this.inputQueue.push({x:-1,y:0}); if(k==='ArrowRight'&&last.x===0)this.inputQueue.push({x:1,y:0});}, loop: function(){if(!this.active)return; if(this.inputQueue.length>0)this.velocity=this.inputQueue.shift(); const h={x:this.snake[0].x+this.velocity.x, y:this.snake[0].y+this.velocity.y}; if(h.x<0||h.x>=20||h.y<0||h.y>=20||this.snake.some(s=>s.x===h.x&&s.y===h.y)){minigameManager.endGame(false, 0);return;} this.snake.unshift(h); if(h.x===this.food.x&&h.y===this.food.y){this.score++;audioSys.sfx.click();if(minigameManager.mode==='story' && this.score>=this.target){minigameManager.endGame(true, 50);return;} if(minigameManager.mode==='arcade' && this.score>=this.target){minigameManager.endGame(true, 100);return;} this.spawnFood();}else{this.snake.pop();} this.ctx.fillStyle='#000';this.ctx.fillRect(0,0,400,400); this.ctx.fillStyle='#fc0';this.ctx.fillRect(this.food.x*20+2,this.food.y*20+2,16,16); this.ctx.fillStyle='#3f3';this.snake.forEach(s=>this.ctx.fillRect(s.x*20,s.y*20,18,18)); setTimeout(()=>requestAnimationFrame(()=>this.loop()),120);} };
-        const echoGame = { active:false, canvas:null, ctx:null, seq:[], userSeq:[], level:1, showing:false, init: function(c){this.canvas=c;this.ctx=c.getContext('2d');}, start: function(){this.active=true; this.level=1; document.getElementById('minigame-title').innerText="ECHO-MIND"; document.getElementById('minigame-info').innerText="MEMORIZE"; this.startLevel();}, startLevel: function(){this.seq=[]; this.userSeq=[]; for(let i=0;i<this.level+2;i++)this.seq.push(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'][Math.floor(Math.random()*4)]); this.showing=true; this.showSequence(0);}, showSequence: function(i){if(i>=this.seq.length){this.showing=false;this.draw(null);return;} this.draw(this.seq[i]); audioSys.sfx.click(); setTimeout(()=>{this.draw(null);setTimeout(()=>this.showSequence(i+1),200)},600);}, draw: function(d){this.ctx.fillStyle='#000';this.ctx.fillRect(0,0,400,400); if(!d)return; this.ctx.font="100px monospace"; this.ctx.fillStyle="#3f3"; this.ctx.textAlign="center"; this.ctx.fillText({'ArrowUp':'↑','ArrowDown':'↓','ArrowLeft':'←','ArrowRight':'→'}[d],200,240);}, handleInput: function(k){if(this.showing)return; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(k)){this.userSeq.push(k); this.draw(k); audioSys.sfx.click(); setTimeout(()=>this.draw(null),200); if(this.userSeq[this.userSeq.length-1]!==this.seq[this.userSeq.length-1]){minigameManager.endGame(false, 0);return;} if(this.userSeq.length===this.seq.length){this.level++; if(minigameManager.mode==='story' && this.level>3) minigameManager.endGame(true, 50); else if (minigameManager.mode==='arcade' && this.level>5) minigameManager.endGame(true, 150); else setTimeout(()=>this.startLevel(),1000);}}} };
-        const pacGame = { active: false, canvas: null, ctx: null, grid: 20, map: [], player: {x:1, y:1, dir:{x:0,y:0}, nextDir:{x:0,y:0}, mouthOpen: 0, mouthSpeed: 0.2}, ghosts: [], dots: 0, maxDots: 0, level: 1, score: 0, frame: 0, init: function(c) { this.canvas = c; this.ctx = c.getContext('2d'); }, start: function() { this.active = true; this.score = 0; this.level = 1; this.initLevel(); this.loop(); }, initLevel: function() { this.dots = 0; this.map = []; let ghostCount = 1 + (this.level - 1); this.ghosts = []; for(let i=0; i<ghostCount; i++) this.ghosts.push({x:9, y:9, color: i===0?'#ff0000':(i===1?'#ffb8ae':'#00ffff'), dir:{x:0,y:0}}); document.getElementById('minigame-title').innerText = `PAC-DATA - LVL ${this.level}`; document.getElementById('minigame-info').innerHTML = 'DADOS: <span id="pac-dots">0</span>'; for(let y=0; y<20; y++) { let row = []; for(let x=0; x<20; x++) { if (x===0 || x===19 || y===0 || y===19 || (x%2===0 && y%2===0)) row.push(0); else { row.push(1); this.dots++; } } this.map.push(row); } this.map[1][1] = 2; this.dots--; this.map[1][2] = 2; this.dots--; this.map[2][1] = 2; this.dots--; this.map[9][9] = 2; this.dots--; this.maxDots = this.dots; this.player = { x: 1, y: 1, dir: {x:0,y:0}, nextDir: {x:1,y:0}, mouthOpen: 0, mouthSpeed: 0.2 }; }, handleInput: function(k) { if(k==='ArrowUp') this.player.nextDir = {x:0, y:-1}; if(k==='ArrowDown') this.player.nextDir = {x:0, y:1}; if(k==='ArrowLeft') this.player.nextDir = {x:-1, y:0}; if(k==='ArrowRight') this.player.nextDir = {x:1, y:0}; }, loop: function() { if(!this.active) return; this.frame++; let pd = this.player.nextDir; if (this.map[this.player.y + pd.y][this.player.x + pd.x] !== 0) this.player.dir = pd; let nx = this.player.x + this.player.dir.x; let ny = this.player.y + this.player.dir.y; if (this.map[ny][nx] !== 0) { this.player.x = nx; this.player.y = ny; } if (this.map[this.player.y][this.player.x] === 1) { this.map[this.player.y][this.player.x] = 2; this.dots--; this.score += 10; audioSys.sfx.click(); } if (this.frame % 2 === 0) { this.ghosts.forEach(g => { if (Math.random() > 0.5) { let dirs = []; if (this.player.x > g.x) dirs.push({x:1,y:0}); if (this.player.x < g.x) dirs.push({x:-1,y:0}); if (this.player.y > g.y) dirs.push({x:0,y:1}); if (this.player.y < g.y) dirs.push({x:0,y:-1}); dirs = dirs.filter(d => this.map[g.y+d.y][g.x+d.x] !== 0); if(dirs.length > 0) { let move = dirs[Math.floor(Math.random()*dirs.length)]; g.x += move.x; g.y += move.y; } } else { let moves = [{x:0,y:1}, {x:0,y:-1}, {x:1,y:0}, {x:-1,y:0}]; let valid = moves.filter(d => this.map[g.y+d.y][g.x+d.x] !== 0); if(valid.length > 0) { let move = valid[Math.floor(Math.random()*valid.length)]; g.x += move.x; g.y += move.y; } } }); } this.ghosts.forEach(g => { if(g.x === this.player.x && g.y === this.player.y) { minigameManager.endGame(false, this.score); return; } }); this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400); for(let y=0; y<20; y++) { for(let x=0; x<20; x++) { let cell = this.map[y][x]; if (cell === 0) { this.ctx.strokeStyle = '#1919A6'; this.ctx.lineWidth = 2; this.ctx.strokeRect(x*20+5, y*20+5, 10, 10); } else if (cell === 1) { this.ctx.fillStyle = '#ffb8ae'; this.ctx.beginPath(); this.ctx.arc(x*20+10, y*20+10, 3, 0, Math.PI*2); this.ctx.fill(); } } } this.player.mouthOpen += this.player.mouthSpeed; if (this.player.mouthOpen > 0.25 || this.player.mouthOpen < 0) this.player.mouthSpeed *= -1; let angle = 0; if (this.player.dir.x === -1) angle = Math.PI; if (this.player.dir.y === -1) angle = -Math.PI/2; if (this.player.dir.y === 1) angle = Math.PI/2; this.ctx.fillStyle = '#FFFF00'; this.ctx.beginPath(); this.ctx.arc(this.player.x*20+10, this.player.y*20+10, 8, angle + Math.PI*this.player.mouthOpen, angle + Math.PI*(2 - this.player.mouthOpen)); this.ctx.lineTo(this.player.x*20+10, this.player.y*20+10); this.ctx.fill(); this.ghosts.forEach(g => { this.ctx.fillStyle = g.color; this.ctx.beginPath(); this.ctx.arc(g.x*20+10, g.y*20+10, 8, Math.PI, 0); this.ctx.lineTo(g.x*20+18, g.y*20+18); this.ctx.lineTo(g.x*20+10, g.y*20+14); this.ctx.lineTo(g.x*20+2, g.y*20+18); this.ctx.fill(); this.ctx.fillStyle = '#fff'; this.ctx.beginPath(); this.ctx.arc(g.x*20+7, g.y*20+8, 2.5, 0, Math.PI*2); this.ctx.arc(g.x*20+13, g.y*20+8, 2.5, 0, Math.PI*2); this.ctx.fill(); this.ctx.fillStyle = '#000'; this.ctx.beginPath(); this.ctx.arc(g.x*20+7, g.y*20+8, 1, 0, Math.PI*2); this.ctx.arc(g.x*20+13, g.y*20+8, 1, 0, Math.PI*2); this.ctx.fill(); }); const scoreEl = document.getElementById('pac-dots'); if(scoreEl) scoreEl.innerText = this.dots; if(this.dots <= 0) { this.level++; if(this.level > 3) minigameManager.endGame(true, this.score + 500); else { alert(`NÍVEL ${this.level-1} COMPLETO!`); this.initLevel(); setTimeout(() => requestAnimationFrame(() => this.loop()), 120); } } else setTimeout(() => requestAnimationFrame(() => this.loop()), 120); } };
-        const flappyGame = { active: false, canvas: null, ctx: null, bird: { y: 200, vel: 0, size: 15 }, pipes: [], frame: 0, score: 0, target: 10, init: function(c) { this.canvas = c; this.ctx = c.getContext('2d'); }, start: function() { this.active = true; this.bird = { y: 200, vel: 0, size: 15 }; this.pipes = []; this.frame = 0; this.score = 0; this.target = minigameManager.mode === 'arcade' ? 30 : 10; document.getElementById('minigame-title').innerText = "FLAP-LINK"; document.getElementById('minigame-info').innerText = `ALVO: ${this.target}`; this.loop(); }, handleInput: function(k) { if(k==='ArrowUp' || k===' ') { this.bird.vel = -6; audioSys.sfx.jump(); } }, loop: function() { if(!this.active) return; this.frame++; this.bird.vel += 0.4; this.bird.y += this.bird.vel; if(this.frame % 90 === 0) { let gapY = Math.floor(Math.random() * 200) + 50; this.pipes.push({ x: 400, topH: gapY, bottomY: gapY + 120, passed: false }); } this.pipes.forEach(p => p.x -= 3); this.pipes = this.pipes.filter(p => p.x > -30); if(this.bird.y < 0 || this.bird.y > 400) { minigameManager.endGame(false, this.score); return; } this.pipes.forEach(p => { if(50 + this.bird.size > p.x && 50 < p.x + 30) { if(this.bird.y < p.topH || this.bird.y + this.bird.size > p.bottomY) { minigameManager.endGame(false, this.score); return; } } if(!p.passed && p.x < 50) { this.score++; p.passed = true; audioSys.sfx.click(); if(minigameManager.mode === 'story' && this.score >= this.target) minigameManager.endGame(true, 50); } }); this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400); this.ctx.fillStyle = '#ffcc00'; this.ctx.fillRect(50, this.bird.y, this.bird.size, this.bird.size); this.ctx.fillStyle = '#33ff33'; this.pipes.forEach(p => { this.ctx.fillRect(p.x, 0, 30, p.topH); this.ctx.fillRect(p.x, p.bottomY, 30, 400 - p.bottomY); }); document.getElementById('minigame-info').innerText = `PONTOS: ${this.score} / ${this.target}`; setTimeout(() => requestAnimationFrame(() => this.loop()), 20); } };
-        const dinoGame = { active: false, canvas: null, ctx: null, dino: { y: 350, vel: 0, grounded: true }, obst: [], frame: 0, score: 0, target: 500, init: function(c) { this.canvas = c; this.ctx = c.getContext('2d'); }, start: function() { this.active = true; this.dino = { y: 350, vel: 0, grounded: true }; this.obst = []; this.frame = 0; this.score = 0; this.target = minigameManager.mode === 'arcade' ? 1000 : 500; document.getElementById('minigame-title').innerText = "RUN-DATA"; document.getElementById('minigame-info').innerText = `DISTÂNCIA: 0`; this.loop(); }, handleInput: function(k) { if((k==='ArrowUp' || k===' ') && this.dino.grounded) { this.dino.vel = -12; this.dino.grounded = false; audioSys.sfx.jump(); } }, loop: function() { if(!this.active) return; this.score += 2; this.frame++; if(!this.dino.grounded) { this.dino.vel += 0.8; this.dino.y += this.dino.vel; if(this.dino.y >= 350) { this.dino.y = 350; this.dino.vel = 0; this.dino.grounded = true; } } if(this.frame % 100 === 0 || (this.frame % 60 === 0 && Math.random() > 0.7)) { this.obst.push({ x: 400, h: Math.random()>0.5?30:50 }); } this.obst.forEach(o => o.x -= 5); this.obst = this.obst.filter(o => o.x > -20); this.obst.forEach(o => { if(o.x < 70 && o.x > 30 && this.dino.y > (350 - o.h + 10)) { minigameManager.endGame(false, this.score); return; } }); this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, 400, 400); this.ctx.fillStyle = '#fff'; this.ctx.fillRect(0, 380, 400, 2); this.ctx.fillStyle = '#00ccff'; this.ctx.fillRect(50, this.dino.y, 20, 30); this.ctx.fillStyle = '#ff3333'; this.obst.forEach(o => this.ctx.fillRect(o.x, 380 - o.h, 15, o.h)); document.getElementById('minigame-info').innerText = `DISTÂNCIA: ${this.score} / ${this.target}`; if(minigameManager.mode === 'story' && this.score >= this.target) minigameManager.endGame(true, 50); else setTimeout(() => requestAnimationFrame(() => this.loop()), 20); } };
-        const radioGame = { active:false, pos:0, dir:1, target:0, anim:null, start: function() { this.active=true; document.getElementById('radio-minigame').classList.add('active'); this.target=20+Math.random()*60; document.getElementById('tuner-target').style.left=this.target+'%'; document.getElementById('tuner-target').style.width='20%'; this.loop(); }, loop: function() { if(!this.active)return; this.pos+=1.5*this.dir; if(this.pos>100||this.pos<0)this.dir*=-1; document.getElementById('tuner-cursor').style.left=this.pos+'%'; this.anim=requestAnimationFrame(()=>this.loop()); }, stop: function() { cancelAnimationFrame(this.anim); this.active=false; document.getElementById('radio-minigame').classList.remove('active'); if(this.pos>=this.target&&this.pos<=this.target+20){audioSys.sfx.success();game.state.sanity=Math.min(100,game.state.sanity+15);if(Math.random()>0.7)game.unlockLore('bunker');else game.log("Sinal limpo.", "safe"); achievementSys.unlock('radio_streak'); }else{audioSys.sfx.error();game.state.sanity-=5;game.log("Ruído.", "alert"); achievementSys.unlock('radio_fail'); } game.updateHUD(); } };
+    const STATE = {
+        playing: false,
+        day: 1,
+        maxDays: 8,
+        sanity: 80,
+        energy: 80,
+        doorHealth: 100,
+        familyMood: 100,
         
-        const cameraSys = { active: 1, switch: function(n) { this.active=n; document.getElementById('cctv-label').innerText = `CAM 0${n} [ONLINE]`; document.getElementById('cctv-feed').innerText = n===1 ? " CORREDOR " : (n===2 ? " VENTILAÇÃO " : " RUA "); achievementSys.unlock('cam1'); }, update: function() {}, render: function() { const screen = document.getElementById('cctv-feed'); if(screen) screen.innerText = this.active === 1 ? " CORREDOR " : (this.active === 2 ? " VENTILAÇÃO " : " RUA "); } };
+        doorKnocking: false,
+        visitor: null, // Objeto do visitante atual
+        lookingAtPeephole: false,
+        screenView: 'BOOT', 
+        currentLocation: 'BUNKER',
+        gameOver: false,
+        interrogated: false,
+        
+        // Estatísticas para Troféus
+        stats: {
+            humansSaved: 0,
+            monstersKilled: 0,
+            unlockedTrophies: []
+        },
 
-        const game = {
-            running: false, tickCount: 0,
-            state: { day: 1, hour: 8.0, sanity: 100, energy: 100, intimacy: 100, doorHealth: 100, location: 'bunker', paused: false, insight: 0 },
-            crew: [], unlocks: { map: true, uv: false, shotgun: false }, currentVisitor: null, tensionTimer: null, tensionVal: 30,
+        quiz: { question: "", options: [], answer: 0, rewardType: '', rewardAmount: 0 }
+    };
 
-            startSurvival: function() { document.getElementById('start-menu').style.display = 'none'; document.getElementById('game-container').style.display = 'flex'; audioSys.init(); this.running = true; this.tickCount = 0; this.crew = []; this.state = { day: 1, hour: 8.0, sanity: 100, energy: 100, intimacy: 100, doorHealth: 100, location: 'bunker', paused: false, insight: 0 }; this.unlocks = { map: true, uv: false, shotgun: false }; this.updateHUD(); this.ui.renderScene(); this.ui.renderLoreList(); this.ui.renderCrew(); cameraSys.render(); this.log("SISTEMA ONLINE. ZONA SEGURA.", "safe"); setInterval(() => { if(this.running && !this.state.paused && this.state.doorHealth > 0) this.tick(); }, 1000); },
-            tick: function() { this.tickCount++; const timeMod = this.state.location === 'bunker' ? 0.05 : 0.15; this.state.hour += timeMod; if(document.getElementById('tab-cams') && document.getElementById('tab-cams').classList.contains('active')) { game.state.energy -= 0.1; cameraSys.update(); } if(this.state.location === 'bunker' && this.tickCount % 40 === 0 && this.state.hour < 13.9) this.encounter.trigger(); if(this.state.location !== 'bunker' && Math.random() > 0.95) { this.state.sanity -= 2; this.log("Sons de passos...", "alert"); } if(this.state.hour >= 14) this.triggerEndSequence(); if(this.state.doorHealth <= 0) this.gameOver("A PORTA CAIU."); if(this.state.sanity <= 0) this.gameOver("COLAPSO MENTAL."); if(this.state.energy <= 0) { this.state.energy = 0; achievementSys.unlock('low_nrg'); } if(this.state.sanity < 10) achievementSys.unlock('low_san'); if(this.state.day === 3 && this.state.doorHealth === 100) achievementSys.unlock('door_full'); this.updateHUD(); },
-            triggerEndSequence: function() { if(this.state.location !== 'bunker') { this.log("DESMAIO FORA DE CASA.", "alert"); this.state.sanity -= 30; this.state.energy -= 30; this.state.location = 'bunker'; this.ui.renderScene(); } this.state.paused = true; this.triggerDream(); },
-            triggerDream: function() { const modal = document.getElementById('dream-modal'); const dream = dreamsDB[Math.floor(Math.random()*dreamsDB.length)]; document.getElementById('dream-text').innerText = dream.text; const opts = document.getElementById('dream-options'); opts.innerHTML = ""; dream.choices.forEach(c => { const btn = document.createElement('button'); btn.innerText = c.l; btn.onclick = () => { game.state[c.e] = Math.min(100, game.state[c.e] + c.v); modal.classList.remove('active'); setTimeout(() => minigameManager.startRandom(), 500); }; opts.appendChild(btn); }); modal.classList.add('active'); },
-            resolveDay: function(won) { this.state.day++; this.state.hour = 8; this.state.energy = 100; this.tickCount = 0; if(this.state.day == 3) this.unlocks.uv = true; if(this.state.day == 5) this.unlocks.shotgun = true; if(this.state.day == 5) achievementSys.unlock('survivor_5'); document.getElementById('lore-modal').classList.add('active'); document.getElementById('lore-text').innerText = won ? "Teste concluído." : "Falha no teste."; if(won) this.state.sanity = Math.min(100, this.state.sanity + 20); if(this.state.day > 8) this.checkEndings(); },
-            checkEndings: function() { achievementSys.unlock('story_complete'); const hasKey = loreDB.find(l => l.id===2).decrypted; const hasMap = loreDB.find(l => l.id===3).decrypted; const hasCure = loreDB.find(l => l.id===4).decrypted; const knowsTruth = loreDB.find(l => l.id===5).decrypted; if(knowsTruth) achievementSys.unlock('true_end'); let title = "RESGATE"; let text = "Sobreviveu. Destino incerto."; if(hasKey && hasMap) { title = "FUGA"; text = "Escapou pelos túneis, livre da Colmeia."; } else if (hasCure) { title = "SACRIFÍCIO"; text = "A cura foi entregue. Você morreu."; } else if (knowsTruth) { title = "VERDADE"; text = "Resgate falso. Você se escondeu."; } if(title === "RESGATE" || title === "FUGA") achievementSys.unlock('story_good'); else achievementSys.unlock('story_bad'); document.getElementById('lore-title').innerText = title; document.getElementById('lore-text').innerText = text; document.getElementById('next-day-btn').innerText = "REINICIAR"; document.getElementById('next-day-btn').onclick = () => location.reload(); },
-            nextDay: function() { document.getElementById('lore-modal').classList.remove('active'); this.state.paused = false; this.log(`DIA ${this.state.day}.`, "safe"); },
+    // CORES ATUALIZADAS PARA AMARELO/ÂMBAR
+    const LOCATIONS = {
+        BUNKER: { color: 0xffcc00, fog: 0x050505, fogDens: 0.15 }, // Âmbar principal
+        MARKET: { color: 0x00FFFF, fog: 0x001133, fogDens: 0.3 },
+        PHARMACY: { color: 0xFFFFFF, fog: 0xEEEEEE, fogDens: 0.4 },
+        STREETS: { color: 0xFF6600, fog: 0x331100, fogDens: 0.6 }
+    };
+
+    const QUIZ_DATA = {
+        MARKET: [
+            { q: "Lata sem rótulo encontrada.", opt: ["Comer", "Ignorar", "Guardar"], ans: 1, type: 'energy', val: 20, fail: -10 },
+            { q: "Robô de segurança bloqueia a passagem.", opt: ["Lutar", "Hackear ID", "Fugir"], ans: 1, type: 'energy', val: 30, fail: -20 },
+            { q: "Vendedor suspeito oferece troca.", opt: ["Aceitar", "Recusar", "Roubar"], ans: 0, type: 'energy', val: 25, fail: -10 }
+        ],
+        PHARMACY: [
+            { q: "Soro experimental encontrado.", opt: ["Usar", "Estocar", "Destruir"], ans: 1, type: 'sanity', val: 30, fail: -20 },
+            { q: "Receita médica antiga no chão.", opt: ["Ler", "Ignorar", "Comer"], ans: 0, type: 'sanity', val: 15, fail: -5 },
+            { q: "Alarme de gás dispara.", opt: ["Correr", "Máscara", "Esconder"], ans: 1, type: 'sanity', val: 20, fail: -30 }
+        ],
+        STREETS: [
+            { q: "Névoa ácida se aproxima.", opt: ["Correr", "Sinalizador", "Abrigo"], ans: 2, type: 'sanity', val: 20, fail: -40 },
+            { q: "Drone espião avistado.", opt: ["Acenar", "Imóvel", "Atirar"], ans: 1, type: 'energy', val: 10, fail: -30 },
+            { q: "Gritos em um beco.", opt: ["Investigar", "Armadilha", "Ignorar"], ans: 1, type: 'sanity', val: 40, fail: -10 }
+        ]
+    };
+
+    window.gameActions = {
+        interrogate: () => interrogateVisitor(),
+        openDoor: () => resolveDoor(true),
+        shockDoor: () => resolveDoor(false),
+        exitPeephole: () => exitPeepholeMode()
+    };
+
+    let camera, scene, renderer;
+    let monitorTexture, monitorContext, monitorMesh;
+    let pointLightPC, pointLightEmergency;
+    let raycaster = new THREE.Raycaster();
+    let clock = new THREE.Clock();
+    let audioCtx, masterGain;
+
+    // --- SISTEMA DE TROFÉUS ---
+    function unlockTrophy(key) {
+        const trophy = TROPHIES[key];
+        if (!trophy || STATE.stats.unlockedTrophies.includes(key)) return;
+
+        STATE.stats.unlockedTrophies.push(key);
+        showTrophyPopup(trophy);
+        playSound('trophy');
+
+        // Check Platinum
+        const totalTrophies = Object.keys(TROPHIES).length - 1; // -1 pela platina
+        if (STATE.stats.unlockedTrophies.length === totalTrophies && !STATE.stats.unlockedTrophies.includes('PLATINUM')) {
+            setTimeout(() => unlockTrophy('PLATINUM'), 2000);
+        }
+    }
+
+    function showTrophyPopup(trophy) {
+        const popup = document.getElementById('trophy-popup');
+        document.getElementById('trophy-icon').innerText = trophy.icon;
+        document.getElementById('trophy-name').innerText = trophy.title;
+        
+        popup.style.top = '20px';
+        setTimeout(() => { popup.style.top = '-100px'; }, 4000);
+    }
+
+    // --- FUNÇÕES DE STATUS E HUD ---
+    function updateHUD() {
+        if (!STATE.playing) return;
+        document.getElementById('hud-day').innerText = `${STATE.day}/${STATE.maxDays}`;
+        document.getElementById('hud-energy').innerText = Math.floor(STATE.energy);
+        updateBar('bar-sanity', STATE.sanity, 'row-sanity');
+        updateBar('bar-door', STATE.doorHealth, 'row-door');
+        updateBar('bar-family', STATE.familyMood, 'row-family');
+
+        // Checks de Troféu Passivos
+        if (STATE.day >= 4) unlockTrophy('SURVIVOR');
+        if (STATE.familyMood >= 100) unlockTrophy('FAMILY_FIRST');
+    }
+
+    function updateBar(id, value, rowId) {
+        const bar = document.getElementById(id);
+        const row = document.getElementById(rowId);
+        bar.style.width = `${Math.max(0, Math.min(100, value))}%`;
+        if (value <= 30) row.classList.add('danger');
+        else row.classList.remove('danger');
+    }
+
+    // --- GEMINI API ---
+    async function generateVisitorDialogue(visitor) {
+        const dialogueText = document.getElementById('dialogue-text');
+        document.getElementById('dialogue-box').style.display = 'block';
+        dialogueText.innerText = "Analisando voz...";
+        
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: visitor.prompt + " Max 12 palavras." }] }] })
+            });
+            const data = await response.json();
+            typeWriterEffect(data.candidates[0].content.parts[0].text, dialogueText);
+        } catch (e) {
+            typeWriterEffect("...ruído estático...", dialogueText);
+        }
+    }
+
+    function typeWriterEffect(text, element) {
+        element.innerText = "";
+        let i = 0;
+        function type() {
+            if (i < text.length) { element.innerText += text.charAt(i); i++; setTimeout(type, 50); }
+        }
+        type();
+    }
+
+    // --- ÁUDIO ---
+    function initAudio() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.4;
+        masterGain.connect(audioCtx.destination);
+    }
+
+    function playSound(type, pos = null) {
+        if (!audioCtx || STATE.gameOver) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        if (pos) {
+            const panner = audioCtx.createPanner();
+            panner.panningModel = 'HRTF';
+            panner.positionX.value = pos.x; panner.positionY.value = pos.y; panner.positionZ.value = pos.z;
+            osc.connect(gain).connect(panner).connect(masterGain);
+        } else {
+            osc.connect(gain).connect(masterGain);
+        }
+
+        const now = audioCtx.currentTime;
+        if (type === 'click') {
+            osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.1);
+            gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now+0.1);
+            osc.start(now); osc.stop(now+0.1);
+        } else if (type === 'trophy') { // Som PS5-ish
+            osc.type = 'sine'; 
+            osc.frequency.setValueAtTime(400, now); 
+            osc.frequency.linearRampToValueAtTime(800, now+0.2);
+            gain.gain.setValueAtTime(0.1, now); 
+            gain.gain.linearRampToValueAtTime(0, now+1.0);
+            osc.start(now); osc.stop(now+1.0);
+        } else if (type === 'travel') {
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+2);
+            gain.gain.value = 0.1; osc.start(now); osc.stop(now+2);
+        } else if (type === 'hum') {
+            osc.type = 'sine'; osc.frequency.value = 60; gain.gain.value = 0.05; osc.start(now);
+        } else if (type === 'knock') {
+            // Som mais pesado para Brutos
+            const freq = STATE.visitor && STATE.visitor.id === 'brute' ? 30 : 60;
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, now); osc.frequency.exponentialRampToValueAtTime(10, now+0.2);
+            gain.gain.setValueAtTime(1, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.3);
+            osc.start(now); osc.stop(now+0.3);
+        } else if (type === 'shock') {
+            osc.type = 'sawtooth'; osc.frequency.linearRampToValueAtTime(1000, now+0.5);
+            gain.gain.setValueAtTime(0.5, now); osc.start(now); osc.stop(now+0.5);
+        } else if (type === 'jumpscare') {
+            osc.type = 'sawtooth'; osc.frequency.value = 50; gain.gain.value = 1; osc.start(now); osc.stop(now+2);
+        }
+    }
+
+    // --- VISUAIS ---
+    function updateEnvironment3D() {
+        const target = LOCATIONS[STATE.currentLocation];
+        const curCol = pointLightPC.color;
+        curCol.lerp(new THREE.Color(target.color), 0.05);
+        scene.fog.color.lerp(new THREE.Color(target.fog), 0.05);
+        scene.fog.density = THREE.MathUtils.lerp(scene.fog.density, target.fogDens, 0.02);
+    }
+
+    // --- SISTEMA OPERACIONAL (OS) ---
+    const CANVAS_W = 512;
+    const CANVAS_H = 512;
+    const CRT_COLOR = '#ffcc00'; // AMARELO AGORA
+    let osButtons = [];
+
+    function initMonitorOS() {
+        const canvas = document.createElement('canvas');
+        canvas.width = CANVAS_W; canvas.height = CANVAS_H;
+        monitorContext = canvas.getContext('2d');
+        monitorTexture = new THREE.CanvasTexture(canvas);
+        monitorTexture.minFilter = THREE.LinearFilter; monitorTexture.magFilter = THREE.NearestFilter;
+        drawOS();
+    }
+
+    function drawButton(ctx, x, y, w, h, text) {
+        ctx.strokeStyle = CRT_COLOR; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
+        ctx.fillStyle = CRT_COLOR; ctx.font = '18px monospace'; ctx.fillText(text, x + 10, y + 25);
+        return { x, y, w, h };
+    }
+
+    function drawOS() {
+        const ctx = monitorContext;
+        if (!ctx) return;
+        ctx.fillStyle = '#110d00'; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H); // Fundo amarelado escuro
+        ctx.shadowBlur = 4; ctx.shadowColor = CRT_COLOR; ctx.fillStyle = CRT_COLOR;
+        osButtons = [];
+
+        if (STATE.screenView === 'DESKTOP') {
+            ctx.font = '28px monospace'; ctx.fillText(`PLURIBUS OS v9.0`, 40, 50);
             
-            unlockLore: function(locationFilter) {
-                const candidates = loreDB.filter(l => !l.unlocked && (l.loc === locationFilter || locationFilter === 'any'));
-                if(candidates.length > 0) {
-                    const item = candidates[0]; item.unlocked = true;
-                    game.log(`DADOS ENCRIPTADOS: ${item.title}`, "lore"); audioSys.sfx.lore();
-                    achievementSys.unlock('lore1');
-                    const unlockedCount = loreDB.filter(l => l.unlocked).length;
-                    if(unlockedCount >= 5) achievementSys.unlock('lore5');
-                    if(unlockedCount >= 6) achievementSys.unlock('lore_all');
-                    this.ui.renderLoreList(); this.ui.renderInventory();
-                } else { game.log("Nada encontrado.", "dim"); }
-            },
-            
-            decryptLore: function(id) {
-                const item = loreDB.find(l => l.id === id);
-                if(item && !item.decrypted) {
-                    if(game.state.energy >= item.cost) {
-                        game.state.energy -= item.cost;
-                        item.decrypted = true;
-                        item.encrypted = false;
-                        game.state.insight += 10;
-                        if(game.state.insight >= 100) achievementSys.unlock('insight_max');
-                        if(item.id === 2) achievementSys.unlock('key_found');
-                        if(item.id === 4) achievementSys.unlock('cure_found');
-                        if(item.id === 3) achievementSys.unlock('map_found');
-                        game.log(`ARQUIVO ABERTO: ${item.title}`, "safe");
-                        audioSys.sfx.success();
-                        this.ui.renderLoreList();
-                        this.updateHUD();
-                    } else {
-                        game.log("Energia insuficiente para decodificar.", "alert");
-                    }
-                }
-            },
-
-            gameOver: function(reason) { this.running = false; achievementSys.unlock('die1'); document.body.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#000;color:red;font-family:Courier;flex-direction:column;text-align:center;"><h1>FALHA</h1><h2>${reason}</h2><button onclick="location.reload()" style="margin-top:20px;border:1px solid red;color:red;background:black;padding:10px;">REINICIAR</button></div>`; },
-            actions: {
-                watchTV: function() { if(game.state.energy>=10){game.state.energy-=10;game.state.sanity+=5;game.log("TV assistida.");audioSys.sfx.click();} game.updateHUD(); },
-                radio: function() { let cost = 5; if(loreDB[1].decrypted) cost = 2; if(game.state.energy>=cost){game.state.energy-=cost;radioGame.start();} game.updateHUD(); },
-                repairDoor: function() { if(game.state.energy>=15){game.state.energy-=15;game.state.doorHealth=Math.min(100,game.state.doorHealth+20);game.log("Porta reparada.");audioSys.sfx.click(); achievementSys.unlock('repair1');} game.updateHUD(); },
-                travel: function(dest) { let timeCost = 0.5; if(loreDB[3].decrypted) timeCost = 0.2; game.ui.toggleMap(); audioSys.sfx.travel(); game.log(`Viajando: ${dest.toUpperCase()}`); achievementSys.unlock('trav1'); document.getElementById('main-hub').style.opacity = 0; setTimeout(() => { game.state.location = dest; game.state.energy -= 10; game.state.hour += timeCost; game.ui.renderScene(); document.getElementById('main-hub').style.opacity = 1; game.updateHUD(); }, 1000); },
-                scavenge: function() { if(game.state.energy < 20) { game.log("Cansado demais.", "alert"); return; } game.state.energy -= 20; game.state.hour += 0.5; achievementSys.unlock('scav1'); if(game.state.energy < 20) achievementSys.unlock('risk_taker'); const risk = game.state.location === 'ruas' ? 0.6 : 0.3; if(Math.random() < risk) { game.log("EMBOSCADA!", "alert"); game.state.sanity -= 15; audioSys.sfx.error(); } else { if(Math.random() > 0.6) game.unlockLore(game.state.location); else if (Math.random() > 0.3) { if(game.state.location === 'mercado') { game.state.energy = Math.min(100, game.state.energy+40); game.log("Comida.", "safe"); } if(game.state.location === 'farmacia') { game.state.sanity = Math.min(100, game.state.sanity+40); game.log("Remédios.", "safe"); } if(game.state.location === 'ruas') { game.state.doorHealth = Math.min(100, game.state.doorHealth+20); game.log("Peças.", "safe"); } } else game.log("Vazio.", "dim"); } game.updateHUD(); },
-                stealth: function() { if(game.state.energy < 10) return; game.state.energy -= 10; game.state.hour += 1.0; game.log("Furtivo.", "dim"); if(Math.random() > 0.7) game.unlockLore(game.state.location); achievementSys.unlock('stealth_master'); game.updateHUD(); },
-                returnHome: function() { game.actions.travel('bunker'); },
-                interactCrew: function(idx, type) { const crew = game.crew[idx]; if(!crew) return; if(type === 'feed') { if(game.state.energy >= 10 && crew.hp < 100) { game.state.energy -= 10; crew.hp = Math.min(100, crew.hp + 20); game.log(`Você alimentou ${crew.name}.`, "safe"); audioSys.sfx.click(); achievementSys.unlock('feed1'); } } if(type === 'talk') { game.state.hour += 0.1; game.state.sanity = Math.min(100, game.state.sanity + 5); game.log(`${crew.name} conversou.`, "lore"); achievementSys.unlock('talk1'); } if(type === 'heal') { let cost = 20; if(loreDB[0].decrypted) cost = 15; if(game.state.energy >= cost) { game.state.energy -= cost; crew.hp = 100; game.log(`${crew.name} curado.`, "safe"); achievementSys.unlock('heal1'); } } game.updateHUD(); game.ui.renderCrew(); },
-                deepScan: function() { if(game.state.energy < 40) { game.log("Energia insuficiente.", "alert"); return; } game.state.energy -= 40; let loc = game.state.location; if(loc === 'bunker') loc = 'any'; game.unlockLore(loc); game.updateHUD(); }
-            },
-
-            encounter: {
-                visitorData: null,
-                trigger: function() {
-                    game.state.paused = true; audioSys.sfx.knock(); game.log("BATIDA NA PORTA.", "alert");
-                    const isDistorted = Math.random() > 0.5; const stress = 0; const name = "Visitante " + Math.floor(Math.random() * 99); const id = Math.floor(1000 + Math.random() * 9000);
-                    const trueData = { blood: ['A+', 'O-', 'B+', 'AB+'][Math.floor(Math.random()*4)], origin: ['Setor 7', 'Norte', 'Sul', 'Bunker 4'][Math.floor(Math.random()*4)], expired: Math.random() > 0.8 };
-                    const idCardData = { name: name, id: id, blood: isDistorted && Math.random()>0.5 ? 'AB-' : trueData.blood, origin: isDistorted && Math.random()>0.5 ? 'Desconhecido' : trueData.origin, expiry: trueData.expired ? 'EXPIRADO' : 'VÁLIDO' };
-                    this.visitorData = { isDistorted, stress, trueData, idCardData, scanned: false };
-                    document.getElementById('peephole-modal').classList.add('active');
-                    document.getElementById('visitor-face').innerText = this.getFace(isDistorted);
-                    document.getElementById('id-name').innerText = idCardData.name; document.getElementById('id-code').innerText = idCardData.id; document.getElementById('id-origin').innerText = idCardData.origin; document.getElementById('id-blood').innerText = idCardData.blood; document.getElementById('id-date').innerText = idCardData.expiry; document.getElementById('id-date').style.color = idCardData.expiry==='EXPIRADO' ? 'red' : 'lime';
-                    document.getElementById('dialogue-box').innerText = "..."; document.getElementById('scan-result').innerText = "AGUARDANDO"; document.getElementById('scan-result').style.color = "#666"; document.getElementById('visor-circle').classList.remove('stress-high');
-                    game.tensionVal = 30;
-                    game.tensionTimer = setInterval(() => { if(!game.state.paused) return; game.tensionVal -= 0.1; document.getElementById('tension-display').innerText = game.tensionVal.toFixed(1) + 's'; document.getElementById('timer-bar').style.width = (game.tensionVal/30)*100 + "%"; if(this.visitorData.stress > 50) this.glitchEffect(); if(game.tensionVal <= 0) this.decide(false); }, 100);
-                },
-                getFace: function(d) { const e = d ? ['@ @','X X'] : ['o o','- -']; const h = d ? 'MORTAL' : 'VIVO'; return `\n      ///////\n     /       \\\n    |  ${e[0]}  |\n    |    |    |\n    |  _____  |\n     \\_______/\n     <span class="uv-hidden-text">${h}</span>`; },
-                glitchEffect: function() { if(this.visitorData.isDistorted) { if(Math.random() > 0.8) { document.getElementById('visitor-face').innerText = this.getFace(true).replace(/./g, c => Math.random()>0.8?'#':c); audioSys.sfx.glitch(); } } document.getElementById('visor-circle').classList.add('stress-high'); },
-                ask: function(type) {
-                    this.visitorData.stress += 15; this.updateStressUI(); let resp = "..."; const d = this.visitorData;
-                    if(type === 'origin') resp = d.isDistorted ? "De... longe..." : `Eu vim de ${d.trueData.origin}.`;
-                    if(type === 'symptoms') resp = d.isDistorted ? "Fome... muita fome..." : "Estou limpo.";
-                    if(type === 'blood') resp = d.isDistorted ? "Vermelho... eu acho." : `Sou ${d.trueData.blood}.`;
-                    if(type === 'calm') { this.visitorData.stress = Math.max(0, this.visitorData.stress - 30); game.tensionVal += 5; resp = "Obrigado... estava nervoso."; this.updateStressUI(); achievementSys.unlock('calm_down'); }
-                    document.getElementById('dialogue-box').innerText = `"${resp}"`;
-                },
-                updateStressUI: function() { document.getElementById('stress-meter-fill').style.width = this.visitorData.stress + '%'; if(this.visitorData.stress > 50) document.getElementById('stress-meter-fill').style.background = 'red'; else document.getElementById('stress-meter-fill').style.background = 'lime'; },
-                scan: function() { if(game.state.energy < 5) return; game.state.energy -= 5; audioSys.sfx.scan(); game.updateHUD(); const d = this.visitorData; let res = `SANGUE: ${d.trueData.blood} | DNA: ${d.isDistorted ? 'CORROMPIDO' : 'NORMAL'}`; if(d.trueData.blood !== d.idCardData.blood) res += " [ERRO DE TIPO]"; const el = document.getElementById('scan-result'); el.innerText = res; el.style.color = d.isDistorted || d.trueData.blood !== d.idCardData.blood ? "red" : "lime"; },
-                toggleUV: function() { if(game.unlocks.uv) { document.getElementById('visor-circle').classList.toggle('uv-active'); if(!game.encounter.visitorData.isDistorted) achievementSys.unlock('uv_human'); achievementSys.unlock('uv1'); } },
-                shotgun: function() { let loss = 15; if(loreDB[5].decrypted) loss = 5; audioSys.sfx.error(); game.state.sanity-=loss; achievementSys.unlock('first_kill'); achievementSys.unlock('shotgun_spree'); this.close(); },
-                decide: function(accept) {
-                    const d = this.visitorData;
-                    if(accept) { 
-                        if(d.isDistorted) game.gameOver("VOCÊ DEIXOU UM MONSTRO ENTRAR."); 
-                        else { 
-                            game.state.sanity += 10; game.crew.push({name: d.idCardData.name, hp: 100, role: 'CIVIL'}); game.log("Sobrevivente salvo.", "safe"); 
-                            achievementSys.unlock('first_human'); 
-                            achievementSys.unlock('door1');
-                            if(game.crew.length >= 3) achievementSys.unlock('full_crew');
-                        } 
-                    } 
-                    else { 
-                        game.state.doorHealth -= 10; 
-                        if(!d.isDistorted) { game.state.sanity -= 20; game.log("Inocente deixado para morrer.", "alert"); achievementSys.unlock('reject_human'); } 
-                        else game.log("Ameaça barrada.", "safe"); audioSys.sfx.error(); 
-                    }
-                    this.close();
-                },
-                close: function() { clearInterval(game.tensionTimer); document.getElementById('peephole-modal').classList.remove('active'); game.state.paused = false; game.ui.renderCrew(); game.updateHUD(); }
-            },
-
-            ui: {
-                switchTab: function(t) { document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); event.target.classList.add('active'); },
-                toggleMap: function() { document.getElementById('map-modal').classList.toggle('active'); },
-                renderLoreList: function() { const l = document.getElementById('lore-list'); l.innerHTML=""; loreDB.filter(i=>!i.isItem).forEach(i => { if(i.unlocked) { let statusClass = i.decrypted ? 'decrypted' : 'encrypted'; let statusText = i.decrypted ? '[LER]' : `[DECODIFICAR -${i.cost}E]`; l.innerHTML += `<div class="lore-file ${statusClass}" onclick="if(${i.decrypted}){document.getElementById('lore-display').innerHTML='${i.text}';document.getElementById('lore-display').style.display='block';} else {game.actions.decryptLore(${i.id});}"><span class="lore-title">${i.decrypted ? i.title : 'DADOS CRIPTOGRAFADOS'}</span><span>${statusText}</span></div>`; } else { l.innerHTML += `<div class="lore-file locked"><span class="lore-title">ARQUIVO BLOQUEADO</span><span>---</span></div>`; } }); document.getElementById('insight-val').innerText = game.state.insight; },
-                renderInventory: function() { const l = document.getElementById('inventory-list'); l.innerHTML=""; const items = loreDB.filter(i=>i.isItem && i.unlocked); if(items.length===0) l.innerHTML="Vazio."; else items.forEach(i => { l.innerHTML += `<div style="color:gold; border:1px solid gold; padding:5px; margin:5px;">★ ${i.title}</div>`; }); },
-                renderCrew: function() { const c = document.getElementById('crew-container'); c.innerHTML = ""; if(game.crew.length === 0) { c.innerHTML = `<div style="color:#666; padding:10px;">Sozinho.</div>`; return; } game.crew.forEach((m, idx) => { c.innerHTML += `<div class="crew-card"><div class="crew-header"><strong>${m.name}</strong> <span class="crew-role">[${m.role}]</span></div><div class="crew-hp-bar"><div class="crew-hp-fill" style="width:${m.hp}%"></div></div><div class="crew-actions"><button onclick="game.actions.interactCrew(${idx}, 'feed')">ALIMENTAR (-10)</button><button onclick="game.actions.interactCrew(${idx}, 'talk')">CONVERSAR</button><button onclick="game.actions.interactCrew(${idx}, 'heal')" style="border-color:var(--text-safe); color:var(--text-safe)">CURAR</button></div></div>`; }); },
-                renderScene: function() { const loc = game.state.location; document.getElementById('ascii-art').innerText = scenes[loc]; document.getElementById('location-name').innerText = loc.toUpperCase() + " // " + (loc==='bunker'?"ZONA SEGURA":"ZONA DE RISCO"); const btns = document.getElementById('dynamic-actions'); btns.innerHTML = ""; if(loc === 'bunker') { document.getElementById('actions-title').innerText = "SISTEMAS VITAIS"; btns.innerHTML = `<button onclick="game.actions.watchTV()"><span>TV</span><span>-10E</span></button><button onclick="game.actions.radio()"><span>Rádio</span><span>-5E</span></button><button onclick="game.actions.repairDoor()"><span>Reparar</span><span>-15E</span></button><button onclick="game.ui.toggleMap()"><span>MAPA TÁTICO</span><span>VIAJAR</span></button>`; } else { document.getElementById('actions-title').innerText = "AÇÕES DE CAMPO"; btns.innerHTML = `<button onclick="game.actions.scavenge()"><span>VASCULHAR</span><span>-20E / ALTO RISCO</span></button><button onclick="game.actions.stealth()"><span>ESGUEIRAR</span><span>-10E / BAIXO RISCO</span></button><button onclick="game.actions.returnHome()" style="border-color:var(--text-safe); color:var(--text-safe)"><span>VOLTAR AO BUNKER</span><span>SEGURO</span></button>`; } }
-            },
-
-            log: function(msg, type="") { const c = document.getElementById('log-container'); c.innerHTML = `<div class="log-entry ${type}">> ${msg}</div>` + c.innerHTML; },
-            updateHUD: function() {
-                const s = game.state; document.getElementById('val-san').innerText = Math.floor(s.sanity) + "%"; document.getElementById('bar-san').style.width = s.sanity + "%";
-                document.getElementById('val-nrg').innerText = Math.floor(s.energy) + "%"; document.getElementById('bar-nrg').style.width = s.energy + "%";
-                document.getElementById('val-door').innerText = Math.floor(s.doorHealth) + "%"; document.getElementById('bar-door').style.width = s.doorHealth + "%";
-                document.getElementById('val-int').innerText = Math.floor(s.intimacy) + "%"; document.getElementById('bar-int').style.width = s.intimacy + "%";
-                let h = Math.floor(s.hour); let m = Math.floor((s.hour-h)*60); document.getElementById('clock-display').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; document.getElementById('val-day').innerText = s.day;
+            if (STATE.doorKnocking) {
+                ctx.fillStyle = 'red'; ctx.shadowColor = 'red';
+                ctx.fillText("ALERTA DE SEGURANÇA", 120, 450);
+                ctx.fillStyle = CRT_COLOR; ctx.shadowColor = CRT_COLOR;
             }
-        };
-    </script>
+
+            osButtons.push({ action: 'GO_MAP', ...drawButton(ctx, 40, 100, 430, 50, "EXPEDIÇÃO (AVANÇAR DIA)") });
+            osButtons.push({ action: 'GO_FAMILY', ...drawButton(ctx, 40, 170, 430, 50, "FAMÍLIA / SOBREVIVENTES") });
+            osButtons.push({ action: 'GO_REPAIR', ...drawButton(ctx, 40, 240, 430, 50, "MANUTENÇÃO / PORTA") });
+            osButtons.push({ action: 'GO_TROPHIES', ...drawButton(ctx, 40, 310, 200, 50, "TROFÉUS") });
+            osButtons.push({ action: 'MAIL', ...drawButton(ctx, 270, 310, 200, 50, "DIÁRIO") });
+        }
+        else if (STATE.screenView === 'TROPHIES') {
+            ctx.fillText("COLEÇÃO DE TROFÉUS", 40, 50);
+            let y = 100;
+            ctx.font = '16px monospace';
+            
+            const list = Object.values(TROPHIES);
+            list.forEach(t => {
+                const unlocked = STATE.stats.unlockedTrophies.includes(t.id);
+                const prefix = unlocked ? `[X] ${t.icon}` : `[ ] 🔒`;
+                ctx.fillStyle = unlocked ? CRT_COLOR : '#554400';
+                ctx.fillText(`${prefix} ${t.title}`, 40, y);
+                y += 30;
+            });
+            
+            ctx.fillStyle = CRT_COLOR;
+            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
+        }
+        else if (STATE.screenView === 'FAMILY') {
+            ctx.fillText("STATUS DA FAMÍLIA", 40, 50);
+            ctx.font = '16px monospace';
+            ctx.fillText(`HUMOR: ${STATE.familyMood}%`, 40, 90);
+            ctx.fillText(`Eles estão nos fundos do bunker.`, 40, 120);
+            
+            osButtons.push({ action: 'FAM_FEED', ...drawButton(ctx, 40, 200, 430, 50, "DAR RAÇÃO (Gasta 20 Energia)") });
+            osButtons.push({ action: 'FAM_TALK', ...drawButton(ctx, 40, 270, 430, 50, "CONVERSAR (Gasta 10 Energia)") });
+            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
+        }
+        else if (STATE.screenView === 'REPAIR') {
+            ctx.fillText("MANUTENÇÃO", 40, 50);
+            ctx.font = '16px monospace';
+            ctx.fillText(`INTEGRIDADE DA PORTA: ${STATE.doorHealth}%`, 40, 90);
+            
+            osButtons.push({ action: 'REP_DOOR', ...drawButton(ctx, 40, 200, 430, 50, "REPARAR PORTA (Gasta 30 Energia)") });
+            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
+        }
+        else if (STATE.screenView === 'MAP') {
+            ctx.fillText("DESTINO DA EXPEDIÇÃO:", 40, 50);
+            osButtons.push({ action: 'GO_MARKET', ...drawButton(ctx, 40, 100, 430, 50, "MERCADO (Risco Médio)") });
+            osButtons.push({ action: 'GO_PHARMA', ...drawButton(ctx, 40, 170, 430, 50, "FARMÁCIA (Risco Baixo)") });
+            osButtons.push({ action: 'GO_STREET', ...drawButton(ctx, 40, 240, 430, 50, "RUAS (Risco Alto)") });
+            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 400, 100, 40, "CANCELAR") });
+        }
+        else if (STATE.screenView === 'LOCATION_QUIZ') {
+            ctx.font = '20px monospace';
+            ctx.fillText(`LOCAL: ${STATE.currentLocation}`, 40, 40);
+            const words = STATE.quiz.question.split(' ');
+            let line = '', y = 80;
+            ctx.font = '16px monospace';
+            for(let n = 0; n < words.length; n++) {
+                if (ctx.measureText(line + words[n]).width > 450) { ctx.fillText(line, 40, y); line = words[n] + ' '; y += 25; }
+                else line += words[n] + ' ';
+            }
+            ctx.fillText(line, 40, y);
+            STATE.quiz.options.forEach((opt, idx) => {
+                osButtons.push({ action: `ANS_${idx}`, ...drawButton(ctx, 40, 200 + (idx * 70), 430, 50, `${idx+1}. ${opt}`) });
+            });
+        }
+        else if (STATE.screenView === 'RESULT') {
+            ctx.font = '20px monospace';
+            ctx.fillText("RESULTADO:", 40, 100);
+            ctx.fillText(STATE.quiz.resultMsg, 40, 150);
+        }
+        else if (STATE.screenView === 'BOOT') {
+            ctx.fillText("INICIALIZANDO...", 40, 100);
+            if(Math.random() > 0.9) STATE.screenView = 'DESKTOP';
+        }
+        else if (STATE.screenView === 'MAIL') {
+            ctx.fillText("DIÁRIO:", 40, 50);
+            ctx.font = '14px monospace';
+            ctx.fillText("- Mímicos podem parecer humanos.", 40, 100);
+            ctx.fillText("- Brutos não falam, só gritam.", 40, 120);
+            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
+        }
+
+        // Scanlines
+        ctx.fillStyle = "rgba(255, 200, 0, 0.1)";
+        for (let i = 0; i < CANVAS_H; i += 4) ctx.fillRect(0, i, CANVAS_W, 2);
+        monitorTexture.needsUpdate = true;
+    }
+
+    // --- LÓGICA DO JOGO ---
+    function startExpedition(loc) {
+        STATE.currentLocation = loc;
+        playSound('travel');
+        const pool = QUIZ_DATA[loc];
+        const qData = pool[Math.floor(Math.random() * pool.length)];
+        STATE.quiz = { question: qData.q, options: qData.opt, answer: qData.ans, rewardType: qData.type, rewardAmount: qData.val, failAmount: qData.fail };
+        STATE.screenView = 'LOCATION_QUIZ';
+    }
+
+    function handleQuizAnswer(idx) {
+        const correct = idx === STATE.quiz.answer;
+        let msg = "";
+        
+        if (correct) {
+            if (STATE.quiz.rewardType === 'energy') STATE.energy = Math.min(100, STATE.energy + STATE.quiz.rewardAmount);
+            if (STATE.quiz.rewardType === 'sanity') STATE.sanity = Math.min(100, STATE.sanity + STATE.quiz.rewardAmount);
+            msg = `SUCESSO! +${STATE.quiz.rewardAmount} ${STATE.quiz.rewardType}.`;
+            playSound('click');
+        } else {
+            STATE.energy = Math.max(0, STATE.energy - 10);
+            STATE.sanity = Math.max(0, STATE.sanity + STATE.quiz.failAmount);
+            msg = "FALHA. Dano sofrido.";
+            playSound('shock');
+        }
+
+        // Avançar dia e degradar status
+        STATE.day++;
+        STATE.familyMood -= 20; 
+        STATE.quiz.resultMsg = msg;
+        STATE.screenView = 'RESULT';
+        checkState();
+    }
+
+    function checkState() {
+        if (STATE.day > STATE.maxDays) {
+            victory();
+            return;
+        }
+        if (STATE.energy <= 0) triggerGameOver("Sem Energia. Sistemas vitais falharam.");
+        else if (STATE.sanity <= 0) triggerGameOver("Colapso Mental Total.");
+        else if (STATE.doorHealth <= 0) triggerGameOver("A porta foi derrubada.");
+        else if (STATE.familyMood <= 0) triggerGameOver("MOTIM! A família te atacou.");
+    }
+
+    function returnToBunker() {
+        STATE.currentLocation = 'BUNKER';
+        STATE.screenView = 'DESKTOP';
+    }
+
+    function victory() {
+        document.body.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:#ffcc00;font-family:monospace;"><h1>DIA 8: RESGATE CHEGOU</h1><p>Você e sua família sobreviveram.</p><button onclick="location.reload()">REINICIAR</button></div>`;
+        STATE.playing = false;
+    }
+
+    function triggerGameOver(reason) {
+        STATE.gameOver = true;
+        playSound('jumpscare');
+        document.getElementById('vhs-overlay').style.background = 'red';
+        setTimeout(() => {
+            document.body.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:red;font-family:monospace;text-align:center;"><h1>FIM DE JOGO</h1><p>${reason}</p><p>Dia: ${STATE.day}</p><button onclick="location.reload()">REINICIAR</button></div>`;
+        }, 2000);
+    }
+
+    // --- INTERAÇÕES DO MONITOR ---
+    function handleMonitorClick(uv) {
+        if (STATE.screenView === 'RESULT') return; 
+
+        const x = uv.x * CANVAS_W;
+        const y = (1 - uv.y) * CANVAS_H;
+        playSound('click');
+        
+        for (let btn of osButtons) {
+            if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+                // Navegação
+                if (btn.action === 'GO_MAP') STATE.screenView = 'MAP';
+                if (btn.action === 'GO_FAMILY') STATE.screenView = 'FAMILY';
+                if (btn.action === 'GO_REPAIR') STATE.screenView = 'REPAIR';
+                if (btn.action === 'GO_TROPHIES') STATE.screenView = 'TROPHIES';
+                if (btn.action === 'MAIL') STATE.screenView = 'MAIL';
+                if (btn.action === 'BACK') STATE.screenView = 'DESKTOP';
+                
+                // Ações de Família
+                if (btn.action === 'FAM_FEED') {
+                    if (STATE.energy >= 20) {
+                        STATE.energy -= 20;
+                        STATE.familyMood = Math.min(100, STATE.familyMood + 30);
+                        logMessage("Família alimentada.");
+                    } else logMessage("Energia insuficiente.");
+                }
+                if (btn.action === 'FAM_TALK') {
+                    if (STATE.energy >= 10) {
+                        STATE.energy -= 10;
+                        STATE.sanity = Math.min(100, STATE.sanity + 10);
+                        STATE.familyMood = Math.min(100, STATE.familyMood + 10);
+                        logMessage("Vocês conversaram um pouco.");
+                    } else logMessage("Energia insuficiente.");
+                }
+
+                // Ações de Reparo
+                if (btn.action === 'REP_DOOR') {
+                    if (STATE.energy >= 30) {
+                        STATE.energy -= 30;
+                        STATE.doorHealth = Math.min(100, STATE.doorHealth + 40);
+                        unlockTrophy('MECHANIC'); // Troféu possível
+                        logMessage("Porta reforçada.");
+                    } else logMessage("Energia insuficiente.");
+                }
+
+                // Expedições
+                if (btn.action === 'GO_MARKET') startExpedition('MARKET');
+                if (btn.action === 'GO_PHARMA') startExpedition('PHARMACY');
+                if (btn.action === 'GO_STREET') startExpedition('STREETS');
+
+                if (btn.action.startsWith('ANS_')) handleQuizAnswer(parseInt(btn.action.split('_')[1]));
+            }
+        }
+    }
+
+    // --- INTERAÇÕES DE PORTA ---
+    function triggerKnockEvent() {
+        if (STATE.doorKnocking || STATE.currentLocation !== 'BUNKER') return;
+        
+        STATE.doorKnocking = true;
+        
+        // Seleção de Visitante Complexo
+        const r = Math.random();
+        if (r < 0.3) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'survivor');
+        else if (r < 0.4) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'mimic');
+        else if (r < 0.5) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'brute');
+        else if (r < 0.6) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'medic');
+        else if (r < 0.7) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'mechanic');
+        else if (r < 0.8) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'weeper');
+        else if (r < 0.9) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'trader');
+        else STATE.visitor = VISITOR_TYPES.find(v => v.id === 'cultist');
+
+        STATE.interrogated = false;
+        playSound('knock', {x: 3, y: 1, z: 0});
+        
+        STATE.doorHealth -= 5; // Dano de aviso
+        updateHUD();
+        
+        const blinkInterval = setInterval(() => {
+            if (!STATE.doorKnocking) { clearInterval(blinkInterval); pointLightEmergency.intensity = 0; return; }
+            pointLightEmergency.intensity = pointLightEmergency.intensity > 0 ? 0 : 3;
+        }, 600);
+        logMessage(`ALERTA: ALGUÉM NA PORTA.`);
+    }
+
+    function resolveDoor(open) {
+        STATE.doorKnocking = false;
+        pointLightEmergency.intensity = 0;
+        exitPeepholeMode();
+        
+        if (open) {
+            if (STATE.visitor.type === 'good') {
+                // Aplicar recompensas específicas
+                if (STATE.visitor.reward.energy) STATE.energy = Math.min(100, STATE.energy + STATE.visitor.reward.energy);
+                if (STATE.visitor.reward.sanity) STATE.sanity = Math.min(100, STATE.sanity + STATE.visitor.reward.sanity);
+                if (STATE.visitor.reward.door) STATE.doorHealth = Math.min(100, STATE.doorHealth + STATE.visitor.reward.door);
+                
+                STATE.stats.humansSaved++;
+                if (STATE.stats.humansSaved >= 3) unlockTrophy('SAVIOR');
+                
+                playSound('click');
+                logMessage(`${STATE.visitor.name} entrou. ${STATE.visitor.desc}`);
+            } else {
+                // Aplicar danos específicos
+                STATE.doorHealth -= (STATE.visitor.damage.door || 0);
+                STATE.sanity -= (STATE.visitor.damage.sanity || 0);
+                
+                logMessage(`ERRO: ${STATE.visitor.name} entrou! ${STATE.visitor.desc}`);
+                playSound('shock');
+            }
+        } else {
+            playSound('shock', {x: 3, y: 1, z: 0});
+            unlockTrophy('FIRST_BLOOD'); // Primeiro choque
+            
+            if (STATE.visitor.type === 'good') {
+                STATE.sanity -= 20;
+                logMessage("Você eletrocutou um inocente.");
+            } else {
+                STATE.sanity += 10;
+                STATE.stats.monstersKilled++;
+                if (STATE.stats.monstersKilled >= 3) unlockTrophy('SLAYER');
+                logMessage("Ameaça eliminada.");
+            }
+        }
+        checkState();
+    }
+
+    function enterPeepholeMode() {
+        if (!STATE.doorKnocking) { logMessage("Silêncio."); return; }
+        STATE.lookingAtPeephole = true;
+        document.exitPointerLock(); 
+        document.getElementById('peephole-ui').style.display = 'block';
+        document.getElementById('dialogue-box').style.display = 'none';
+        
+        const visual = document.getElementById('visitor-visual');
+        visual.innerText = STATE.visitor.visual;
+        
+        camera.position.set(2.5, 1.6, 0); camera.lookAt(4, 1.6, 0);
+    }
+    
+    function exitPeepholeMode() {
+        STATE.lookingAtPeephole = false;
+        document.getElementById('peephole-ui').style.display = 'none';
+        document.body.requestPointerLock();
+        camera.position.set(0, 1.2, 2); camera.lookAt(0, 1.2, 0);
+    }
+    
+    function interrogateVisitor() {
+        if (STATE.interrogated) return;
+        STATE.interrogated = true;
+        generateVisitorDialogue(STATE.visitor);
+    }
+
+    function logMessage(msg) {
+        const el = document.getElementById('message-log');
+        el.innerText = `> ${msg}`;
+        el.style.opacity = 1;
+        setTimeout(() => el.style.opacity = 0, 3000);
+    }
+
+    // --- SETUP THREE.JS (BOILERPLATE) ---
+    function init3D() {
+        const container = document.getElementById('game-container');
+        scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x050505, 0.15);
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
+        camera.position.set(0, 1.2, 2);
+        renderer = new THREE.WebGLRenderer({ antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        // Assets
+        const wallMat = createNoiseMaterial(0x444444);
+        const room = new THREE.Mesh(new THREE.BoxGeometry(6,4,6), wallMat);
+        room.material.side = THREE.BackSide; scene.add(room);
+        
+        const desk = new THREE.Mesh(new THREE.BoxGeometry(2.5,0.1,1.5), createNoiseMaterial(0x333333));
+        desk.position.set(0,0.8,0); scene.add(desk);
+
+        initMonitorOS();
+        monitorMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.6), new THREE.MeshBasicMaterial({map:monitorTexture, side:THREE.DoubleSide}));
+        monitorMesh.position.set(0,1.2,0.31); monitorMesh.name="MONITOR"; scene.add(monitorMesh);
+        
+        const door = new THREE.Mesh(new THREE.BoxGeometry(0.1,2.2,1.2), new THREE.MeshStandardMaterial({color:0x2a2a2a}));
+        door.position.set(2.95,1.1,0); door.name="DOOR"; scene.add(door);
+        
+        const peep = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.15,16), new THREE.MeshBasicMaterial({color:0x000}));
+        peep.rotation.z=Math.PI/2; peep.position.set(2.90,1.6,0); peep.name="PEEPHOLE"; scene.add(peep);
+
+        scene.add(new THREE.AmbientLight(0x111111));
+        pointLightPC = new THREE.PointLight(0xffcc00, 1, 4); pointLightPC.position.set(0,1.2,0.5); scene.add(pointLightPC);
+        pointLightEmergency = new THREE.PointLight(0xff0000, 0, 15); pointLightEmergency.position.set(2.5,2.8,0); scene.add(pointLightEmergency);
+
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('click', onClick);
+    }
+
+    function createNoiseMaterial(c) {
+        const cnv = document.createElement('canvas'); cnv.width=64; cnv.height=64;
+        const ctx = cnv.getContext('2d'); ctx.fillStyle = '#'+c.toString(16); ctx.fillRect(0,0,64,64);
+        for(let i=0;i<500;i++){ ctx.fillStyle=`rgba(0,0,0,${Math.random()*0.2})`; ctx.fillRect(Math.random()*64,Math.random()*64,2,2); }
+        const tex = new THREE.CanvasTexture(cnv); return new THREE.MeshStandardMaterial({map:tex, roughness:0.9});
+    }
+
+    let rotX=0, rotY=0;
+    function onMouseMove(e) {
+        if(!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole) return;
+        rotY -= e.movementX*0.002; rotX -= e.movementY*0.002;
+        rotX = Math.max(-Math.PI/3, Math.min(Math.PI/3, rotX));
+        camera.rotation.set(0,0,0); camera.rotateY(rotY); camera.rotateX(rotX);
+    }
+
+    function onClick() {
+        if(!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole) return;
+        raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+        const hits = raycaster.intersectObjects(scene.children);
+        if(hits.length){
+            if(hits[0].object.name==="MONITOR") handleMonitorClick(hits[0].uv);
+            else if(hits[0].object.name==="PEEPHOLE" || hits[0].object.name==="DOOR") enterPeepholeMode();
+        }
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        if(!STATE.playing || STATE.gameOver) return;
+        
+        updateEnvironment3D();
+        updateHUD();
+        drawOS();
+
+        if (STATE.screenView === 'RESULT' && !STATE.resultTimer) {
+            STATE.resultTimer = setTimeout(() => { returnToBunker(); STATE.resultTimer = null; }, 3000);
+        }
+
+        if (STATE.currentLocation === 'BUNKER' && !STATE.doorKnocking && !STATE.lookingAtPeephole && Math.random() < 0.002) triggerKnockEvent();
+        renderer.render(scene, camera);
+    }
+
+    document.getElementById('overlay').addEventListener('click', () => {
+        document.getElementById('overlay').style.display = 'none';
+        document.body.requestPointerLock();
+        initAudio(); init3D(); playSound('hum');
+        STATE.playing = true; clock.start(); animate();
+    });
+
+</script>
 </body>
 </html>
