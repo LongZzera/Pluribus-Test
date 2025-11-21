@@ -8,15 +8,29 @@
         body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Courier New', monospace; user-select: none; }
         #game-container { position: relative; width: 100vw; height: 100vh; }
         
-        /* --- UI GERAL (AGORA AMARELO) --- */
-        #overlay {
+        /* --- UI GERAL --- */
+        #overlay, #narrative-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; color: #ffcc00; display: flex; flex-direction: column;
             justify-content: center; align-items: center; z-index: 1000;
             cursor: pointer; text-align: center;
         }
+        #narrative-overlay { display: none; cursor: default; background: rgba(0,0,0,0.95); z-index: 2000; }
+        
         #overlay h1 { text-shadow: 0 0 10px #ffcc00; margin-bottom: 10px; }
         #overlay p { opacity: 0.8; max-width: 600px; line-height: 1.5; }
+
+        /* Estilo Telltale */
+        .narrative-title { font-size: 32px; margin-bottom: 20px; color: #fff; text-transform: uppercase; letter-spacing: 4px; border-bottom: 2px solid #ffcc00; padding-bottom: 10px; }
+        .narrative-body { font-size: 18px; max-width: 700px; color: #ddd; margin-bottom: 40px; line-height: 1.6; }
+        .narrative-choices { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+        .choice-btn {
+            background: transparent; border: 2px solid #555; color: #aaa;
+            padding: 15px 30px; font-family: 'Courier New'; font-size: 16px;
+            cursor: pointer; transition: 0.3s; min-width: 200px;
+        }
+        .choice-btn:hover { border-color: #ffcc00; color: #ffcc00; background: rgba(255, 204, 0, 0.1); }
+        .consequence-text { margin-top: 20px; font-style: italic; color: #ff3333; opacity: 0; transition: opacity 1s; }
 
         #crosshair {
             position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
@@ -61,8 +75,10 @@
         .hud-bar-fill { height: 100%; background: #ffcc00; transition: width 0.3s; }
         .danger { color: #ff3333; }
         .danger .hud-bar-fill { background: #ff3333; }
+        #timer-display { font-size: 20px; font-weight: bold; text-align: center; margin-bottom: 10px; color: #fff; text-shadow: 0 0 5px #ffcc00; }
+        .hud-quota-val { color: #fff; font-weight: bold; }
 
-        /* --- EFEITOS VHS/CRT (TINTADO DE AMARELO) --- */
+        /* --- EFEITOS VHS/CRT --- */
         #vhs-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 90;
@@ -77,14 +93,12 @@
         }
         @keyframes scanline { 0% { top: -10%; } 100% { top: 110%; } }
         
-        /* --- LOGS DE MENSAGENS --- */
         #message-log {
             position: absolute; bottom: 20px; left: 20px; color: #ffcc00;
             font-size: 14px; opacity: 0.8; pointer-events: none; z-index: 80;
             text-shadow: 1px 1px 2px black;
         }
 
-        /* --- UI DA PORTA / OLHO MÁGICO --- */
         #peephole-ui {
             display: none; 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -134,15 +148,29 @@
 
 <div id="overlay">
     <h1>PLURIBUS: A JUNÇÃO</h1>
-    <p>MODO HISTÓRIA: SOBREVIVÊNCIA DE 8 DIAS + TROFÉUS</p>
+    <p>MODO HISTÓRIA: SOBREVIVÊNCIA DE 8 DIAS</p>
     <br>
     <p style="font-size: 12px; color: #aa8800;">[CLIQUE PARA INICIAR]</p>
     <br>
     <p>
-        <b>OBJETIVO:</b> Sobreviva até o Dia 8. Cuide da Família.<br>
-        <b>NOVOS PERIGOS:</b> Mímicos, Cultistas, Brutos.<br>
-        <b>PLATINAS:</b> Desbloqueie conquistas no sistema.
+        <b>OBJETIVO:</b> Sobreviva até o Dia 8.<br>
+        <b>COTA:</b> Deixe entrar pelo menos 2 pessoas por dia.<br>
+        <b>ALERTA:</b> A porta enfraquece se você demorar para atender.
     </p>
+</div>
+
+<!-- NARRATIVE OVERLAY (TELLTALE STYLE) -->
+<div id="narrative-overlay">
+    <div class="narrative-title" id="narrative-title">NOITE 1: O SINAL</div>
+    <div class="narrative-body" id="narrative-body">
+        O sistema de rádio captou uma transmissão antiga da Iniciativa Pluribus. 
+        Parece ser um código de ativação para as unidades robóticas da cidade.
+        Sua família acha que isso pode nos salvar, mas ativar o sinal pode revelar nossa posição.
+    </div>
+    <div class="narrative-choices" id="narrative-choices">
+        <!-- Buttons injected via JS -->
+    </div>
+    <div class="consequence-text" id="consequence-text">Sua família vai se lembrar disso.</div>
 </div>
 
 <div id="game-container">
@@ -150,7 +178,6 @@
     <div id="scanline"></div>
     <div id="crosshair"></div>
     
-    <!-- NOTIFICAÇÃO DE TROFÉU -->
     <div id="trophy-popup">
         <div id="trophy-icon">🏆</div>
         <div id="trophy-text">
@@ -159,11 +186,16 @@
         </div>
     </div>
 
-    <!-- HUD DE STATUS -->
     <div id="hud-overlay">
+        <div id="timer-display">05:00</div>
         <div class="hud-row">
             <span class="hud-label">DIA:</span>
             <span id="hud-day">1/8</span>
+        </div>
+        <!-- NOVA LINHA DE COTA -->
+        <div class="hud-row">
+            <span class="hud-label">COTA DIÁRIA:</span>
+            <span id="hud-quota" class="hud-quota-val">0/2</span>
         </div>
         <div class="hud-row" id="row-sanity">
             <span class="hud-label">SANIDADE:</span>
@@ -184,7 +216,6 @@
 
     <div id="message-log"></div>
 
-    <!-- UI DO OLHO MÁGICO -->
     <div id="peephole-ui">
         <div id="visitor-visual"></div>
         <div id="dialogue-box"><span id="dialogue-text">...</span></div>
@@ -197,14 +228,66 @@
     </div>
 </div>
 
-<!-- Import Three.js -->
 <script type="module">
     import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
 
-    // --- CONFIGURAÇÃO GLOBAL ---
     const apiKey = ""; 
     
-    // Lista de Troféus
+    // --- VARIÁVEIS DE CÂMERA (NOVO) ---
+    let camPitch = 0;
+    let camYaw = 0;
+    let targetPitch = 0;
+    let targetYaw = 0;
+    const LOOK_SPEED = 0.002;
+    const SMOOTH_FACTOR = 0.15; // Quanto menor, mais pesado
+    const MAX_YAW = Math.PI / 1.5; // Limite lateral (120 graus)
+    const MAX_PITCH = Math.PI / 3; // Limite vertical (60 graus)
+
+    // --- LORE & EVENTOS NARRATIVOS (PLURIBUS) ---
+    const NARRATIVE_EVENTS = [
+        {
+            title: "NOITE 1: O PROTOCOLO DE HERANÇA",
+            body: "Você encontra um arquivo criptografado no sistema chamado 'Protocolo de Herança'. Ele detalha que a família no bunker foi selecionada geneticamente para 'repopular' a Terra, mas o custo foi a eliminação dos 'imperfeitos' lá fora. Sua família pergunta o que você está lendo.",
+            choices: [
+                { text: "Contar a verdade (Aumenta Sanidade, Diminui Humor)", effect: { sanity: 20, family: -20 }, msg: "A verdade dói. Eles olham para você com medo." },
+                { text: "Mentir para proteger (Aumenta Humor, Diminui Sanidade)", effect: { sanity: -10, family: 10 }, msg: "Você guarda o fardo sozinho. A ignorância é uma bênção." }
+            ]
+        },
+        {
+            title: "NOITE 2: O RÁDIO AMADOR",
+            body: "Sua filha mais nova consertou um rádio velho. Ela diz ter ouvido uma voz chamando por 'Cobaia 7'. Esse era o seu codinome na Iniciativa Pluribus antes da Junção. Ela quer responder.",
+            choices: [
+                { text: "Permitir contato (Risco Alto)", effect: { energy: -20, door: -20 }, msg: "O sinal atraiu atenção indesejada para a porta." },
+                { text: "Destruir o rádio (Diminui Humor)", effect: { family: -30 }, msg: "Ela chora. O silêncio retorna ao bunker." }
+            ]
+        },
+        {
+            title: "NOITE 3: A OFERTA DA CORPORAÇÃO",
+            body: "Um drone da Lumon-Pluribus paira na ventilação. Ele oferece cápsulas de nutrição perfeitas em troca de dados biométricos de um dos membros da família. Alguém teria que doar sangue... muito sangue.",
+            choices: [
+                { text: "Aceitar a troca (Energia Máxima, Dano Família)", effect: { energy: 100, family: -40 }, msg: "O drone parte com o sangue. A comida tem gosto de culpa." },
+                { text: "Recusar e passar fome (Perde Energia)", effect: { energy: -30, sanity: 10 }, msg: "Vocês mantêm a dignidade, mas a fome aperta." }
+            ]
+        },
+        {
+            title: "NOITE 4: O PASSADO ESQUECIDO",
+            body: "Você tem um sonho vívido. Antes do bunker, você não era um civil. Você era um dos arquitetos da Junção. Você lembra de ter trancado as portas do lado de fora.",
+            choices: [
+                { text: "Aceitar seu passado (Perde Sanidade)", effect: { sanity: -30 }, msg: "A culpa é esmagadora, mas real." },
+                { text: "Reprimir a memória (Gasta Energia)", effect: { energy: -20 }, msg: "Você toma pílulas para dormir. O passado morre." }
+            ]
+        },
+        // Genéricos para dias extras
+        {
+            title: "NOITE SILENCIOSA",
+            body: "A noite caiu e nada se ouve lá fora. Apenas o zumbido do monitor e a respiração da sua família. É um momento de paz ou o prelúdio do fim?",
+            choices: [
+                { text: "Dormir (Recupera Energia)", effect: { energy: 20 }, msg: "Um descanso merecido." },
+                { text: "Vigiar (Recupera Porta)", effect: { door: 20 }, msg: "Você reforça as trancas enquanto eles dormem." }
+            ]
+        }
+    ];
+
     const TROPHIES = {
         FIRST_BLOOD: { id: 'first_blood', title: "Primeiro Sangue", desc: "Eletrocutou um visitante.", icon: "⚡" },
         SAVIOR: { id: 'savior', title: "O Salvador", desc: "Salvou 3 humanos.", icon: "🤝" },
@@ -215,120 +298,54 @@
         PLATINUM: { id: 'plat', title: "A JUNÇÃO PERFEITA", desc: "Coletou todos os troféus.", icon: "🏆" }
     };
 
-    // Definição de Visitantes
     const VISITOR_TYPES = [
-        // BONS
-        { 
-            id: 'survivor', type: 'good', name: 'Sobrevivente', 
-            visual: `___\n(o o)\n| - |\n-----`, 
-            prompt: "Humano desesperado. Fale 10 palavras pedindo abrigo.",
-            reward: { energy: 10, sanity: 5 },
-            desc: "Apenas alguém tentando viver."
-        },
-        { 
-            id: 'medic', type: 'good', name: 'Médico de Campo', 
-            visual: `___\n(o o)\n| + |\n-----`, 
-            prompt: "Médico militar calmo. Ofereça ajuda médica em troca de abrigo.",
-            reward: { energy: 10, sanity: 30 }, // Cura muita sanidade
-            desc: "Traz remédios."
-        },
-        { 
-            id: 'mechanic', type: 'good', name: 'Mecânico', 
-            visual: `___\n[o o]\n| # |\n-----`, 
-            prompt: "Mecânico prático. Diga que pode consertar a porta se entrar.",
-            reward: { energy: 10, door: 40 }, // Repara a porta
-            desc: "Pode reparar a porta."
-        },
-        { 
-            id: 'trader', type: 'good', name: 'Mercador', 
-            visual: `___\n($ $)\n| - |\n-----`, 
-            prompt: "Vendedor ambulante. Ofereça baterias em troca de pouso.",
-            reward: { energy: 50, sanity: 0 }, // Muita energia
-            desc: "Carrega baterias pesadas."
-        },
-
-        // MAUS
-        { 
-            id: 'mimic', type: 'bad', name: 'Mímico', 
-            visual: `___\n(o o)\n| O |\n-----`, // Visualmente igual ao humano normal
-            prompt: "Monstro Mímico. Tente falar como humano, mas gagueje ou repita palavras de forma estranha.",
-            damage: { door: 30, sanity: 30 },
-            desc: "Finge ser gente. Falha na fala."
-        },
-        { 
-            id: 'brute', type: 'bad', name: 'Brutamontes', 
-            visual: `/ \\\n(X X)\n(###)\n\\___/`, 
-            prompt: "Monstro violento e burro. Grite e ameace derrubar a porta.",
-            damage: { door: 60, sanity: 10 }, // Destrói a porta rápido
-            desc: "Dano massivo na porta."
-        },
-        { 
-            id: 'cultist', type: 'bad', name: 'Cultista', 
-            visual: ` / \\\n(o o)\n |^| \n-----`, 
-            prompt: "Fanático religioso. Fale sobre 'A Junção' e a glória da morte.",
-            damage: { door: 10, sanity: 50 }, // Dano mental alto
-            desc: "Drena sua sanidade."
-        },
-        { 
-            id: 'weeper', type: 'bad', name: 'A Chorona', 
-            visual: `___\n(T T)\n| o |\n-----`, 
-            prompt: "Mulher chorando incontrolavelmente. Soluços entre palavras.",
-            damage: { door: 20, sanity: 40 },
-            desc: "Choro enlouquecedor."
-        }
+        { id: 'survivor', type: 'good', name: 'Sobrevivente', visual: `___\n(o o)\n| - |\n-----`, prompt: "Humano desesperado. Fale 10 palavras pedindo abrigo.", reward: { energy: 10, sanity: 5 }, desc: "Apenas alguém tentando viver." },
+        { id: 'medic', type: 'good', name: 'Médico', visual: `___\n(o o)\n| + |\n-----`, prompt: "Médico militar calmo.", reward: { energy: 10, sanity: 30 }, desc: "Traz remédios." },
+        { id: 'mechanic', type: 'good', name: 'Mecânico', visual: `___\n[o o]\n| # |\n-----`, prompt: "Mecânico prático.", reward: { energy: 10, door: 40 }, desc: "Pode reparar a porta." },
+        { id: 'mimic', type: 'bad', name: 'Mímico', visual: `___\n(o o)\n| O |\n-----`, prompt: "Monstro Mímico. Tente falar como humano, mas falhe.", damage: { door: 30, sanity: 30 }, desc: "Finge ser gente." },
+        { id: 'brute', type: 'bad', name: 'Brutamontes', visual: `/ \\\n(X X)\n(###)\n\\___/`, prompt: "Monstro violento.", damage: { door: 60, sanity: 10 }, desc: "Dano massivo na porta." },
+        { id: 'cultist', type: 'bad', name: 'Cultista', visual: ` / \\\n(o o)\n |^| \n-----`, prompt: "Fanático religioso.", damage: { door: 10, sanity: 50 }, desc: "Drena sua sanidade." }
     ];
 
     const STATE = {
         playing: false,
         day: 1,
         maxDays: 8,
+        dayTime: 300, // 5 minutos em segundos
+        
         sanity: 80,
         energy: 80,
         doorHealth: 100,
         familyMood: 100,
         
+        // NOVAS VARIÁVEIS DE COTA
+        dailySurvivorsLetIn: 0,
+        survivorsQuota: 2,
+        
         doorKnocking: false,
-        visitor: null, // Objeto do visitante atual
+        visitor: null,
         lookingAtPeephole: false,
         screenView: 'BOOT', 
         currentLocation: 'BUNKER',
         gameOver: false,
         interrogated: false,
+        isNarrativeMode: false,
         
-        // Estatísticas para Troféus
-        stats: {
-            humansSaved: 0,
-            monstersKilled: 0,
-            unlockedTrophies: []
-        },
-
+        stats: { humansSaved: 0, monstersKilled: 0, unlockedTrophies: [] },
         quiz: { question: "", options: [], answer: 0, rewardType: '', rewardAmount: 0 }
     };
 
-    // CORES ATUALIZADAS PARA AMARELO/ÂMBAR
+    // Locais e Quizzes
     const LOCATIONS = {
-        BUNKER: { color: 0xffcc00, fog: 0x050505, fogDens: 0.15 }, // Âmbar principal
+        BUNKER: { color: 0xffcc00, fog: 0x050505, fogDens: 0.15 },
         MARKET: { color: 0x00FFFF, fog: 0x001133, fogDens: 0.3 },
         PHARMACY: { color: 0xFFFFFF, fog: 0xEEEEEE, fogDens: 0.4 },
         STREETS: { color: 0xFF6600, fog: 0x331100, fogDens: 0.6 }
     };
-
     const QUIZ_DATA = {
-        MARKET: [
-            { q: "Lata sem rótulo encontrada.", opt: ["Comer", "Ignorar", "Guardar"], ans: 1, type: 'energy', val: 20, fail: -10 },
-            { q: "Robô de segurança bloqueia a passagem.", opt: ["Lutar", "Hackear ID", "Fugir"], ans: 1, type: 'energy', val: 30, fail: -20 },
-            { q: "Vendedor suspeito oferece troca.", opt: ["Aceitar", "Recusar", "Roubar"], ans: 0, type: 'energy', val: 25, fail: -10 }
-        ],
-        PHARMACY: [
-            { q: "Soro experimental encontrado.", opt: ["Usar", "Estocar", "Destruir"], ans: 1, type: 'sanity', val: 30, fail: -20 },
-            { q: "Receita médica antiga no chão.", opt: ["Ler", "Ignorar", "Comer"], ans: 0, type: 'sanity', val: 15, fail: -5 },
-            { q: "Alarme de gás dispara.", opt: ["Correr", "Máscara", "Esconder"], ans: 1, type: 'sanity', val: 20, fail: -30 }
-        ],
-        STREETS: [
-            { q: "Névoa ácida se aproxima.", opt: ["Correr", "Sinalizador", "Abrigo"], ans: 2, type: 'sanity', val: 20, fail: -40 },
-            { q: "Drone espião avistado.", opt: ["Acenar", "Imóvel", "Atirar"], ans: 1, type: 'energy', val: 10, fail: -30 },
-            { q: "Gritos em um beco.", opt: ["Investigar", "Armadilha", "Ignorar"], ans: 1, type: 'sanity', val: 40, fail: -10 }
-        ]
+        MARKET: [{ q: "Lata sem rótulo.", opt: ["Comer", "Ignorar", "Guardar"], ans: 1, type: 'energy', val: 20, fail: -10 }],
+        PHARMACY: [{ q: "Soro experimental.", opt: ["Usar", "Estocar", "Destruir"], ans: 1, type: 'sanity', val: 30, fail: -20 }],
+        STREETS: [{ q: "Névoa ácida.", opt: ["Correr", "Sinalizador", "Abrigo"], ans: 2, type: 'sanity', val: 20, fail: -40 }]
     };
 
     window.gameActions = {
@@ -345,155 +362,226 @@
     let clock = new THREE.Clock();
     let audioCtx, masterGain;
 
-    // --- SISTEMA DE TROFÉUS ---
-    function unlockTrophy(key) {
-        const trophy = TROPHIES[key];
-        if (!trophy || STATE.stats.unlockedTrophies.includes(key)) return;
+    // --- SISTEMA DE CÂMERA MELHORADO ---
+    function onMouseMove(e) {
+        if (!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole || STATE.isNarrativeMode) return;
+        
+        // Atualiza o alvo da rotação (Target)
+        targetYaw -= e.movementX * LOOK_SPEED;
+        targetPitch -= e.movementY * LOOK_SPEED;
 
-        STATE.stats.unlockedTrophies.push(key);
-        showTrophyPopup(trophy);
-        playSound('trophy');
+        // Clamp (Limitar) a rotação do alvo
+        targetPitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetPitch));
+        targetYaw = Math.max(-MAX_YAW, Math.min(MAX_YAW, targetYaw));
+    }
 
-        // Check Platinum
-        const totalTrophies = Object.keys(TROPHIES).length - 1; // -1 pela platina
-        if (STATE.stats.unlockedTrophies.length === totalTrophies && !STATE.stats.unlockedTrophies.includes('PLATINUM')) {
-            setTimeout(() => unlockTrophy('PLATINUM'), 2000);
+    function updateCameraSmooth() {
+        if (!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole) return;
+
+        // Interpolação Linear (Lerp) para suavizar movimento
+        // Move o valor atual em direção ao alvo por uma fração (SMOOTH_FACTOR)
+        camPitch += (targetPitch - camPitch) * SMOOTH_FACTOR;
+        camYaw += (targetYaw - camYaw) * SMOOTH_FACTOR;
+
+        // Aplica à câmera
+        camera.rotation.set(camPitch, camYaw, 0, 'YXZ');
+    }
+
+    // --- SISTEMA DE DIAS E NARRATIVA ---
+    function updateTimer(dt) {
+        if (STATE.gameOver || STATE.isNarrativeMode || STATE.screenView === 'LOCATION_QUIZ') return;
+        
+        STATE.dayTime -= dt;
+        
+        // --- NOVA REGRA DE DECAY DA PORTA ---
+        if (STATE.doorKnocking) {
+            // 2% de dano por segundo (ajustado pelo delta time)
+            const decay = 2.0 * dt; 
+            STATE.doorHealth -= decay;
+            if (STATE.doorHealth <= 0) checkState();
+        }
+
+        if (STATE.dayTime <= 0) {
+            STATE.dayTime = 0;
+            triggerEndOfDay();
+        }
+        
+        // Formatar tempo
+        const min = Math.floor(STATE.dayTime / 60);
+        const sec = Math.floor(STATE.dayTime % 60);
+        document.getElementById('timer-display').innerText = `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+        
+        // Update barra de porta visualmente continuo
+        if(STATE.doorKnocking) updateHUD();
+    }
+
+    function triggerEndOfDay() {
+        // --- NOVA REGRA DE COTA ---
+        if (STATE.dailySurvivorsLetIn < STATE.survivorsQuota) {
+            triggerGameOver(`COTA NÃO ATINGIDA (${STATE.dailySurvivorsLetIn}/${STATE.survivorsQuota}). O Comando Central isolou seu bunker.`);
+            return;
+        }
+
+        STATE.isNarrativeMode = true;
+        document.exitPointerLock();
+        
+        // Escolher evento
+        const eventIdx = Math.min(STATE.day - 1, NARRATIVE_EVENTS.length - 1);
+        const event = NARRATIVE_EVENTS[eventIdx] || NARRATIVE_EVENTS[NARRATIVE_EVENTS.length-1];
+        
+        // Setup UI
+        const overlay = document.getElementById('narrative-overlay');
+        const title = document.getElementById('narrative-title');
+        const body = document.getElementById('narrative-body');
+        const choicesDiv = document.getElementById('narrative-choices');
+        const consq = document.getElementById('consequence-text');
+        
+        title.innerText = event.title;
+        body.innerText = event.body;
+        consq.style.opacity = 0;
+        choicesDiv.innerHTML = '';
+        
+        event.choices.forEach(choice => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerText = choice.text;
+            btn.onclick = () => resolveNarrative(choice);
+            choicesDiv.appendChild(btn);
+        });
+        
+        overlay.style.display = 'flex';
+        playSound('travel'); // Som dramático
+    }
+
+    function resolveNarrative(choice) {
+        // Aplicar efeitos
+        if (choice.effect.sanity) STATE.sanity += choice.effect.sanity;
+        if (choice.effect.energy) STATE.energy += choice.effect.energy;
+        if (choice.effect.family) STATE.familyMood += choice.effect.family;
+        if (choice.effect.door) STATE.doorHealth += choice.effect.door;
+        
+        // Limites
+        STATE.sanity = Math.min(100, Math.max(0, STATE.sanity));
+        STATE.energy = Math.min(100, Math.max(0, STATE.energy));
+        STATE.familyMood = Math.min(100, Math.max(0, STATE.familyMood));
+        STATE.doorHealth = Math.min(100, Math.max(0, STATE.doorHealth));
+
+        // Feedback
+        const consq = document.getElementById('consequence-text');
+        consq.innerText = choice.msg || "Sua família vai se lembrar disso.";
+        consq.style.opacity = 1;
+        
+        document.getElementById('narrative-choices').innerHTML = '<button class="choice-btn" id="next-day-btn">INICIAR PRÓXIMO DIA</button>';
+        document.getElementById('next-day-btn').onclick = startNextDay;
+    }
+
+    function startNextDay() {
+        document.getElementById('narrative-overlay').style.display = 'none';
+        document.body.requestPointerLock();
+        
+        STATE.day++;
+        STATE.dayTime = 300; // Reset timer 5 min
+        STATE.isNarrativeMode = false;
+        STATE.dailySurvivorsLetIn = 0; // Reset cota
+        
+        // Degradação passiva diária
+        STATE.familyMood -= 10;
+        STATE.energy -= 10;
+
+        checkState();
+        if (!STATE.gameOver) {
+            logMessage(`DIA ${STATE.day} INICIADO. COTA: 0/${STATE.survivorsQuota}`);
         }
     }
 
-    function showTrophyPopup(trophy) {
+    // --- FUNÇÕES BÁSICAS ---
+    function unlockTrophy(key) {
+        if (!TROPHIES[key] || STATE.stats.unlockedTrophies.includes(key)) return;
+        STATE.stats.unlockedTrophies.push(key);
         const popup = document.getElementById('trophy-popup');
-        document.getElementById('trophy-icon').innerText = trophy.icon;
-        document.getElementById('trophy-name').innerText = trophy.title;
-        
-        popup.style.top = '20px';
-        setTimeout(() => { popup.style.top = '-100px'; }, 4000);
+        document.getElementById('trophy-icon').innerText = TROPHIES[key].icon;
+        document.getElementById('trophy-name').innerText = TROPHIES[key].title;
+        popup.style.top = '20px'; setTimeout(() => popup.style.top = '-100px', 4000);
+        playSound('trophy');
+        if (STATE.stats.unlockedTrophies.length === Object.keys(TROPHIES).length - 1 && !STATE.stats.unlockedTrophies.includes('PLATINUM')) setTimeout(() => unlockTrophy('PLATINUM'), 2000);
     }
 
-    // --- FUNÇÕES DE STATUS E HUD ---
     function updateHUD() {
         if (!STATE.playing) return;
         document.getElementById('hud-day').innerText = `${STATE.day}/${STATE.maxDays}`;
+        document.getElementById('hud-quota').innerText = `${STATE.dailySurvivorsLetIn}/${STATE.survivorsQuota}`;
         document.getElementById('hud-energy').innerText = Math.floor(STATE.energy);
         updateBar('bar-sanity', STATE.sanity, 'row-sanity');
         updateBar('bar-door', STATE.doorHealth, 'row-door');
         updateBar('bar-family', STATE.familyMood, 'row-family');
-
-        // Checks de Troféu Passivos
         if (STATE.day >= 4) unlockTrophy('SURVIVOR');
         if (STATE.familyMood >= 100) unlockTrophy('FAMILY_FIRST');
     }
 
-    function updateBar(id, value, rowId) {
-        const bar = document.getElementById(id);
-        const row = document.getElementById(rowId);
-        bar.style.width = `${Math.max(0, Math.min(100, value))}%`;
-        if (value <= 30) row.classList.add('danger');
-        else row.classList.remove('danger');
+    function updateBar(id, val, rowId) {
+        document.getElementById(id).style.width = `${Math.max(0, Math.min(100, val))}%`;
+        document.getElementById(rowId).classList.toggle('danger', val <= 30);
     }
 
-    // --- GEMINI API ---
     async function generateVisitorDialogue(visitor) {
-        const dialogueText = document.getElementById('dialogue-text');
+        const txt = document.getElementById('dialogue-text');
         document.getElementById('dialogue-box').style.display = 'block';
-        dialogueText.innerText = "Analisando voz...";
-        
+        txt.innerText = "Analisando...";
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: visitor.prompt + " Max 12 palavras." }] }] })
             });
-            const data = await response.json();
-            typeWriterEffect(data.candidates[0].content.parts[0].text, dialogueText);
-        } catch (e) {
-            typeWriterEffect("...ruído estático...", dialogueText);
-        }
+            const data = await res.json();
+            typeWriterEffect(data.candidates[0].content.parts[0].text, txt);
+        } catch (e) { typeWriterEffect("...estática...", txt); }
     }
 
-    function typeWriterEffect(text, element) {
-        element.innerText = "";
-        let i = 0;
-        function type() {
-            if (i < text.length) { element.innerText += text.charAt(i); i++; setTimeout(type, 50); }
-        }
+    function typeWriterEffect(text, el) {
+        el.innerText = ""; let i = 0;
+        function type() { if (i < text.length) { el.innerText += text.charAt(i); i++; setTimeout(type, 50); } }
         type();
     }
 
-    // --- ÁUDIO ---
     function initAudio() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContext();
-        masterGain = audioCtx.createGain();
-        masterGain.gain.value = 0.4;
-        masterGain.connect(audioCtx.destination);
+        audioCtx = new AudioContext(); masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.4; masterGain.connect(audioCtx.destination);
     }
 
-    function playSound(type, pos = null) {
+    function playSound(type, pos) {
         if (!audioCtx || STATE.gameOver) return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
         if (pos) {
-            const panner = audioCtx.createPanner();
-            panner.panningModel = 'HRTF';
-            panner.positionX.value = pos.x; panner.positionY.value = pos.y; panner.positionZ.value = pos.z;
-            osc.connect(gain).connect(panner).connect(masterGain);
-        } else {
-            osc.connect(gain).connect(masterGain);
-        }
-
+            const p = audioCtx.createPanner(); p.panningModel = 'HRTF';
+            p.positionX.value = pos.x; p.positionY.value = pos.y; p.positionZ.value = pos.z;
+            osc.connect(gain).connect(p).connect(masterGain);
+        } else osc.connect(gain).connect(masterGain);
         const now = audioCtx.currentTime;
-        if (type === 'click') {
-            osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.1);
-            gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now+0.1);
-            osc.start(now); osc.stop(now+0.1);
-        } else if (type === 'trophy') { // Som PS5-ish
-            osc.type = 'sine'; 
-            osc.frequency.setValueAtTime(400, now); 
-            osc.frequency.linearRampToValueAtTime(800, now+0.2);
-            gain.gain.setValueAtTime(0.1, now); 
-            gain.gain.linearRampToValueAtTime(0, now+1.0);
-            osc.start(now); osc.stop(now+1.0);
-        } else if (type === 'travel') {
-            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+2);
-            gain.gain.value = 0.1; osc.start(now); osc.stop(now+2);
-        } else if (type === 'hum') {
-            osc.type = 'sine'; osc.frequency.value = 60; gain.gain.value = 0.05; osc.start(now);
-        } else if (type === 'knock') {
-            // Som mais pesado para Brutos
-            const freq = STATE.visitor && STATE.visitor.id === 'brute' ? 30 : 60;
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, now); osc.frequency.exponentialRampToValueAtTime(10, now+0.2);
-            gain.gain.setValueAtTime(1, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.3);
-            osc.start(now); osc.stop(now+0.3);
-        } else if (type === 'shock') {
-            osc.type = 'sawtooth'; osc.frequency.linearRampToValueAtTime(1000, now+0.5);
-            gain.gain.setValueAtTime(0.5, now); osc.start(now); osc.stop(now+0.5);
-        } else if (type === 'jumpscare') {
-            osc.type = 'sawtooth'; osc.frequency.value = 50; gain.gain.value = 1; osc.start(now); osc.stop(now+2);
-        }
+        if (type === 'click') { osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now+0.1); osc.start(now); osc.stop(now+0.1); }
+        else if (type === 'trophy') { osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(800, now+0.2); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+1); osc.start(now); osc.stop(now+1); }
+        else if (type === 'travel') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+2); gain.gain.value = 0.1; osc.start(now); osc.stop(now+2); }
+        else if (type === 'hum') { osc.type = 'sine'; osc.frequency.value = 60; gain.gain.value = 0.05; osc.start(now); }
+        else if (type === 'knock') { osc.type = 'triangle'; osc.frequency.setValueAtTime(60, now); osc.frequency.exponentialRampToValueAtTime(10, now+0.2); gain.gain.setValueAtTime(1, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.3); osc.start(now); osc.stop(now+0.3); }
+        else if (type === 'shock') { osc.type = 'sawtooth'; osc.frequency.linearRampToValueAtTime(1000, now+0.5); gain.gain.setValueAtTime(0.5, now); osc.start(now); osc.stop(now+0.5); }
+        else if (type === 'jumpscare') { osc.type = 'sawtooth'; osc.frequency.value = 50; gain.gain.value = 1; osc.start(now); osc.stop(now+2); }
     }
 
-    // --- VISUAIS ---
     function updateEnvironment3D() {
-        const target = LOCATIONS[STATE.currentLocation];
-        const curCol = pointLightPC.color;
-        curCol.lerp(new THREE.Color(target.color), 0.05);
-        scene.fog.color.lerp(new THREE.Color(target.fog), 0.05);
-        scene.fog.density = THREE.MathUtils.lerp(scene.fog.density, target.fogDens, 0.02);
+        const t = LOCATIONS[STATE.currentLocation];
+        pointLightPC.color.lerp(new THREE.Color(t.color), 0.05);
+        scene.fog.color.lerp(new THREE.Color(t.fog), 0.05);
+        scene.fog.density = THREE.MathUtils.lerp(scene.fog.density, t.fogDens, 0.02);
     }
 
-    // --- SISTEMA OPERACIONAL (OS) ---
-    const CANVAS_W = 512;
-    const CANVAS_H = 512;
-    const CRT_COLOR = '#ffcc00'; // AMARELO AGORA
+    const CANVAS_W = 512, CANVAS_H = 512, CRT_COLOR = '#ffcc00';
     let osButtons = [];
 
     function initMonitorOS() {
-        const canvas = document.createElement('canvas');
-        canvas.width = CANVAS_W; canvas.height = CANVAS_H;
-        monitorContext = canvas.getContext('2d');
-        monitorTexture = new THREE.CanvasTexture(canvas);
+        const c = document.createElement('canvas'); c.width = CANVAS_W; c.height = CANVAS_H;
+        monitorContext = c.getContext('2d');
+        monitorTexture = new THREE.CanvasTexture(c);
         monitorTexture.minFilter = THREE.LinearFilter; monitorTexture.magFilter = THREE.NearestFilter;
-        drawOS();
     }
 
     function drawButton(ctx, x, y, w, h, text) {
@@ -503,407 +591,231 @@
     }
 
     function drawOS() {
-        const ctx = monitorContext;
-        if (!ctx) return;
-        ctx.fillStyle = '#110d00'; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H); // Fundo amarelado escuro
+        const ctx = monitorContext; if (!ctx) return;
+        ctx.fillStyle = '#110d00'; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
         ctx.shadowBlur = 4; ctx.shadowColor = CRT_COLOR; ctx.fillStyle = CRT_COLOR;
         osButtons = [];
 
         if (STATE.screenView === 'DESKTOP') {
             ctx.font = '28px monospace'; ctx.fillText(`PLURIBUS OS v9.0`, 40, 50);
-            
-            if (STATE.doorKnocking) {
-                ctx.fillStyle = 'red'; ctx.shadowColor = 'red';
-                ctx.fillText("ALERTA DE SEGURANÇA", 120, 450);
-                ctx.fillStyle = CRT_COLOR; ctx.shadowColor = CRT_COLOR;
-            }
-
-            osButtons.push({ action: 'GO_MAP', ...drawButton(ctx, 40, 100, 430, 50, "EXPEDIÇÃO (AVANÇAR DIA)") });
-            osButtons.push({ action: 'GO_FAMILY', ...drawButton(ctx, 40, 170, 430, 50, "FAMÍLIA / SOBREVIVENTES") });
-            osButtons.push({ action: 'GO_REPAIR', ...drawButton(ctx, 40, 240, 430, 50, "MANUTENÇÃO / PORTA") });
+            if (STATE.doorKnocking) { ctx.fillStyle = 'red'; ctx.shadowColor = 'red'; ctx.fillText("ALERTA DE SEGURANÇA", 120, 450); ctx.fillStyle = CRT_COLOR; ctx.shadowColor = CRT_COLOR; }
+            osButtons.push({ action: 'GO_MAP', ...drawButton(ctx, 40, 100, 430, 50, "EXPEDIÇÃO") });
+            osButtons.push({ action: 'GO_FAMILY', ...drawButton(ctx, 40, 170, 430, 50, "FAMÍLIA") });
+            osButtons.push({ action: 'GO_REPAIR', ...drawButton(ctx, 40, 240, 430, 50, "MANUTENÇÃO") });
             osButtons.push({ action: 'GO_TROPHIES', ...drawButton(ctx, 40, 310, 200, 50, "TROFÉUS") });
             osButtons.push({ action: 'MAIL', ...drawButton(ctx, 270, 310, 200, 50, "DIÁRIO") });
         }
         else if (STATE.screenView === 'TROPHIES') {
-            ctx.fillText("COLEÇÃO DE TROFÉUS", 40, 50);
-            let y = 100;
-            ctx.font = '16px monospace';
-            
-            const list = Object.values(TROPHIES);
-            list.forEach(t => {
-                const unlocked = STATE.stats.unlockedTrophies.includes(t.id);
-                const prefix = unlocked ? `[X] ${t.icon}` : `[ ] 🔒`;
-                ctx.fillStyle = unlocked ? CRT_COLOR : '#554400';
-                ctx.fillText(`${prefix} ${t.title}`, 40, y);
-                y += 30;
+            ctx.fillText("COLEÇÃO DE TROFÉUS", 40, 50); let y = 100;
+            Object.values(TROPHIES).forEach(t => {
+                const un = STATE.stats.unlockedTrophies.includes(t.id);
+                ctx.fillStyle = un ? CRT_COLOR : '#554400'; ctx.fillText(`${un ? `[X] ${t.icon}` : `[ ] 🔒`} ${t.title}`, 40, y); y += 30;
             });
-            
-            ctx.fillStyle = CRT_COLOR;
-            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
+            ctx.fillStyle = CRT_COLOR; osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
         }
         else if (STATE.screenView === 'FAMILY') {
             ctx.fillText("STATUS DA FAMÍLIA", 40, 50);
-            ctx.font = '16px monospace';
             ctx.fillText(`HUMOR: ${STATE.familyMood}%`, 40, 90);
-            ctx.fillText(`Eles estão nos fundos do bunker.`, 40, 120);
-            
-            osButtons.push({ action: 'FAM_FEED', ...drawButton(ctx, 40, 200, 430, 50, "DAR RAÇÃO (Gasta 20 Energia)") });
-            osButtons.push({ action: 'FAM_TALK', ...drawButton(ctx, 40, 270, 430, 50, "CONVERSAR (Gasta 10 Energia)") });
+            osButtons.push({ action: 'FAM_FEED', ...drawButton(ctx, 40, 200, 430, 50, "DAR RAÇÃO (20 EN)") });
+            osButtons.push({ action: 'FAM_TALK', ...drawButton(ctx, 40, 270, 430, 50, "CONVERSAR (10 EN)") });
             osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
         }
         else if (STATE.screenView === 'REPAIR') {
             ctx.fillText("MANUTENÇÃO", 40, 50);
-            ctx.font = '16px monospace';
-            ctx.fillText(`INTEGRIDADE DA PORTA: ${STATE.doorHealth}%`, 40, 90);
-            
-            osButtons.push({ action: 'REP_DOOR', ...drawButton(ctx, 40, 200, 430, 50, "REPARAR PORTA (Gasta 30 Energia)") });
+            ctx.fillText(`INTEGRIDADE: ${STATE.doorHealth.toFixed(1)}%`, 40, 90);
+            osButtons.push({ action: 'REP_DOOR', ...drawButton(ctx, 40, 200, 430, 50, "REPARAR (30 EN)") });
             osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
         }
         else if (STATE.screenView === 'MAP') {
             ctx.fillText("DESTINO DA EXPEDIÇÃO:", 40, 50);
-            osButtons.push({ action: 'GO_MARKET', ...drawButton(ctx, 40, 100, 430, 50, "MERCADO (Risco Médio)") });
-            osButtons.push({ action: 'GO_PHARMA', ...drawButton(ctx, 40, 170, 430, 50, "FARMÁCIA (Risco Baixo)") });
-            osButtons.push({ action: 'GO_STREET', ...drawButton(ctx, 40, 240, 430, 50, "RUAS (Risco Alto)") });
+            osButtons.push({ action: 'GO_MARKET', ...drawButton(ctx, 40, 100, 430, 50, "MERCADO") });
+            osButtons.push({ action: 'GO_PHARMA', ...drawButton(ctx, 40, 170, 430, 50, "FARMÁCIA") });
+            osButtons.push({ action: 'GO_STREET', ...drawButton(ctx, 40, 240, 430, 50, "RUAS") });
             osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 400, 100, 40, "CANCELAR") });
         }
         else if (STATE.screenView === 'LOCATION_QUIZ') {
-            ctx.font = '20px monospace';
             ctx.fillText(`LOCAL: ${STATE.currentLocation}`, 40, 40);
-            const words = STATE.quiz.question.split(' ');
-            let line = '', y = 80;
-            ctx.font = '16px monospace';
-            for(let n = 0; n < words.length; n++) {
-                if (ctx.measureText(line + words[n]).width > 450) { ctx.fillText(line, 40, y); line = words[n] + ' '; y += 25; }
-                else line += words[n] + ' ';
-            }
-            ctx.fillText(line, 40, y);
-            STATE.quiz.options.forEach((opt, idx) => {
-                osButtons.push({ action: `ANS_${idx}`, ...drawButton(ctx, 40, 200 + (idx * 70), 430, 50, `${idx+1}. ${opt}`) });
-            });
+            const w = STATE.quiz.question.split(' '); let l = '', y = 80;
+            w.forEach(word => { if (ctx.measureText(l + word).width > 450) { ctx.fillText(l, 40, y); l = word + ' '; y += 25; } else l += word + ' '; });
+            ctx.fillText(l, 40, y);
+            STATE.quiz.options.forEach((opt, i) => osButtons.push({ action: `ANS_${i}`, ...drawButton(ctx, 40, 200 + (i * 70), 430, 50, `${i+1}. ${opt}`) }));
         }
         else if (STATE.screenView === 'RESULT') {
-            ctx.font = '20px monospace';
-            ctx.fillText("RESULTADO:", 40, 100);
-            ctx.fillText(STATE.quiz.resultMsg, 40, 150);
+            ctx.fillText("RESULTADO:", 40, 100); ctx.fillText(STATE.quiz.resultMsg, 40, 150);
         }
         else if (STATE.screenView === 'BOOT') {
-            ctx.fillText("INICIALIZANDO...", 40, 100);
-            if(Math.random() > 0.9) STATE.screenView = 'DESKTOP';
+            ctx.fillText("INICIALIZANDO...", 40, 100); if (Math.random() > 0.9) STATE.screenView = 'DESKTOP';
         }
         else if (STATE.screenView === 'MAIL') {
             ctx.fillText("DIÁRIO:", 40, 50);
-            ctx.font = '14px monospace';
             ctx.fillText("- Mímicos podem parecer humanos.", 40, 100);
-            ctx.fillText("- Brutos não falam, só gritam.", 40, 120);
             osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
         }
 
-        // Scanlines
-        ctx.fillStyle = "rgba(255, 200, 0, 0.1)";
-        for (let i = 0; i < CANVAS_H; i += 4) ctx.fillRect(0, i, CANVAS_W, 2);
+        ctx.fillStyle = "rgba(255, 200, 0, 0.1)"; for (let i = 0; i < CANVAS_H; i += 4) ctx.fillRect(0, i, CANVAS_W, 2);
         monitorTexture.needsUpdate = true;
     }
 
-    // --- LÓGICA DO JOGO ---
     function startExpedition(loc) {
-        STATE.currentLocation = loc;
-        playSound('travel');
-        const pool = QUIZ_DATA[loc];
-        const qData = pool[Math.floor(Math.random() * pool.length)];
-        STATE.quiz = { question: qData.q, options: qData.opt, answer: qData.ans, rewardType: qData.type, rewardAmount: qData.val, failAmount: qData.fail };
+        STATE.currentLocation = loc; playSound('travel');
+        const p = QUIZ_DATA[loc]; const q = p[Math.floor(Math.random()*p.length)];
+        STATE.quiz = { question: q.q, options: q.opt, answer: q.ans, rewardType: q.type, rewardAmount: q.val, failAmount: q.fail };
         STATE.screenView = 'LOCATION_QUIZ';
     }
 
     function handleQuizAnswer(idx) {
-        const correct = idx === STATE.quiz.answer;
-        let msg = "";
-        
-        if (correct) {
-            if (STATE.quiz.rewardType === 'energy') STATE.energy = Math.min(100, STATE.energy + STATE.quiz.rewardAmount);
-            if (STATE.quiz.rewardType === 'sanity') STATE.sanity = Math.min(100, STATE.sanity + STATE.quiz.rewardAmount);
-            msg = `SUCESSO! +${STATE.quiz.rewardAmount} ${STATE.quiz.rewardType}.`;
-            playSound('click');
+        const ok = idx === STATE.quiz.answer;
+        if (ok) {
+            STATE[STATE.quiz.rewardType] = Math.min(100, STATE[STATE.quiz.rewardType] + STATE.quiz.rewardAmount);
+            playSound('click'); STATE.quiz.resultMsg = "SUCESSO!";
         } else {
-            STATE.energy = Math.max(0, STATE.energy - 10);
-            STATE.sanity = Math.max(0, STATE.sanity + STATE.quiz.failAmount);
-            msg = "FALHA. Dano sofrido.";
-            playSound('shock');
+            STATE.energy = Math.max(0, STATE.energy - 10); STATE.sanity = Math.max(0, STATE.sanity + STATE.quiz.failAmount);
+            playSound('shock'); STATE.quiz.resultMsg = "FALHA.";
         }
-
-        // Avançar dia e degradar status
-        STATE.day++;
-        STATE.familyMood -= 20; 
-        STATE.quiz.resultMsg = msg;
-        STATE.screenView = 'RESULT';
-        checkState();
+        STATE.screenView = 'RESULT'; setTimeout(() => { STATE.screenView = 'DESKTOP'; STATE.currentLocation = 'BUNKER'; }, 2000);
     }
 
     function checkState() {
-        if (STATE.day > STATE.maxDays) {
-            victory();
-            return;
-        }
-        if (STATE.energy <= 0) triggerGameOver("Sem Energia. Sistemas vitais falharam.");
-        else if (STATE.sanity <= 0) triggerGameOver("Colapso Mental Total.");
-        else if (STATE.doorHealth <= 0) triggerGameOver("A porta foi derrubada.");
-        else if (STATE.familyMood <= 0) triggerGameOver("MOTIM! A família te atacou.");
+        if (STATE.day > STATE.maxDays) { document.body.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:#ffcc00;font-family:monospace;"><h1>DIA 8: RESGATE CHEGOU</h1><p>Você sobreviveu.</p><button onclick="location.reload()">REINICIAR</button></div>`; STATE.playing = false; }
+        else if (STATE.energy <= 0) triggerGameOver("Sem Energia.");
+        else if (STATE.sanity <= 0) triggerGameOver("Loucura Total.");
+        else if (STATE.doorHealth <= 0) triggerGameOver("Porta Destruída.");
+        else if (STATE.familyMood <= 0) triggerGameOver("Motim Familiar.");
     }
 
-    function returnToBunker() {
-        STATE.currentLocation = 'BUNKER';
-        STATE.screenView = 'DESKTOP';
+    function triggerGameOver(r) {
+        STATE.gameOver = true; playSound('jumpscare'); document.getElementById('vhs-overlay').style.background = 'red';
+        setTimeout(() => document.body.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:red;font-family:monospace;text-align:center;"><h1>FIM DE JOGO</h1><p>${r}</p><button onclick="location.reload()">REINICIAR</button></div>`, 2000);
     }
 
-    function victory() {
-        document.body.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:#ffcc00;font-family:monospace;"><h1>DIA 8: RESGATE CHEGOU</h1><p>Você e sua família sobreviveram.</p><button onclick="location.reload()">REINICIAR</button></div>`;
-        STATE.playing = false;
-    }
-
-    function triggerGameOver(reason) {
-        STATE.gameOver = true;
-        playSound('jumpscare');
-        document.getElementById('vhs-overlay').style.background = 'red';
-        setTimeout(() => {
-            document.body.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:red;font-family:monospace;text-align:center;"><h1>FIM DE JOGO</h1><p>${reason}</p><p>Dia: ${STATE.day}</p><button onclick="location.reload()">REINICIAR</button></div>`;
-        }, 2000);
-    }
-
-    // --- INTERAÇÕES DO MONITOR ---
     function handleMonitorClick(uv) {
-        if (STATE.screenView === 'RESULT') return; 
-
-        const x = uv.x * CANVAS_W;
-        const y = (1 - uv.y) * CANVAS_H;
-        playSound('click');
-        
+        const x = uv.x * CANVAS_W, y = (1 - uv.y) * CANVAS_H; playSound('click');
         for (let btn of osButtons) {
             if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
-                // Navegação
                 if (btn.action === 'GO_MAP') STATE.screenView = 'MAP';
-                if (btn.action === 'GO_FAMILY') STATE.screenView = 'FAMILY';
-                if (btn.action === 'GO_REPAIR') STATE.screenView = 'REPAIR';
-                if (btn.action === 'GO_TROPHIES') STATE.screenView = 'TROPHIES';
-                if (btn.action === 'MAIL') STATE.screenView = 'MAIL';
-                if (btn.action === 'BACK') STATE.screenView = 'DESKTOP';
-                
-                // Ações de Família
-                if (btn.action === 'FAM_FEED') {
-                    if (STATE.energy >= 20) {
-                        STATE.energy -= 20;
-                        STATE.familyMood = Math.min(100, STATE.familyMood + 30);
-                        logMessage("Família alimentada.");
-                    } else logMessage("Energia insuficiente.");
-                }
-                if (btn.action === 'FAM_TALK') {
-                    if (STATE.energy >= 10) {
-                        STATE.energy -= 10;
-                        STATE.sanity = Math.min(100, STATE.sanity + 10);
-                        STATE.familyMood = Math.min(100, STATE.familyMood + 10);
-                        logMessage("Vocês conversaram um pouco.");
-                    } else logMessage("Energia insuficiente.");
-                }
-
-                // Ações de Reparo
-                if (btn.action === 'REP_DOOR') {
-                    if (STATE.energy >= 30) {
-                        STATE.energy -= 30;
-                        STATE.doorHealth = Math.min(100, STATE.doorHealth + 40);
-                        unlockTrophy('MECHANIC'); // Troféu possível
-                        logMessage("Porta reforçada.");
-                    } else logMessage("Energia insuficiente.");
-                }
-
-                // Expedições
-                if (btn.action === 'GO_MARKET') startExpedition('MARKET');
-                if (btn.action === 'GO_PHARMA') startExpedition('PHARMACY');
-                if (btn.action === 'GO_STREET') startExpedition('STREETS');
-
-                if (btn.action.startsWith('ANS_')) handleQuizAnswer(parseInt(btn.action.split('_')[1]));
+                else if (btn.action === 'GO_FAMILY') STATE.screenView = 'FAMILY';
+                else if (btn.action === 'GO_REPAIR') STATE.screenView = 'REPAIR';
+                else if (btn.action === 'GO_TROPHIES') STATE.screenView = 'TROPHIES';
+                else if (btn.action === 'MAIL') STATE.screenView = 'MAIL';
+                else if (btn.action === 'BACK') STATE.screenView = 'DESKTOP';
+                else if (btn.action === 'FAM_FEED' && STATE.energy >= 20) { STATE.energy -= 20; STATE.familyMood = Math.min(100, STATE.familyMood + 30); }
+                else if (btn.action === 'FAM_TALK' && STATE.energy >= 10) { STATE.energy -= 10; STATE.sanity = Math.min(100, STATE.sanity + 10); }
+                else if (btn.action === 'REP_DOOR' && STATE.energy >= 30) { STATE.energy -= 30; STATE.doorHealth = Math.min(100, STATE.doorHealth + 40); unlockTrophy('MECHANIC'); }
+                else if (btn.action === 'GO_MARKET') startExpedition('MARKET');
+                else if (btn.action === 'GO_PHARMA') startExpedition('PHARMACY');
+                else if (btn.action === 'GO_STREET') startExpedition('STREETS');
+                else if (btn.action.startsWith('ANS_')) handleQuizAnswer(parseInt(btn.action.split('_')[1]));
             }
         }
     }
 
-    // --- INTERAÇÕES DE PORTA ---
     function triggerKnockEvent() {
-        if (STATE.doorKnocking || STATE.currentLocation !== 'BUNKER') return;
-        
+        if (STATE.doorKnocking || STATE.currentLocation !== 'BUNKER' || STATE.isNarrativeMode) return;
         STATE.doorKnocking = true;
-        
-        // Seleção de Visitante Complexo
-        const r = Math.random();
-        if (r < 0.3) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'survivor');
-        else if (r < 0.4) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'mimic');
-        else if (r < 0.5) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'brute');
-        else if (r < 0.6) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'medic');
-        else if (r < 0.7) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'mechanic');
-        else if (r < 0.8) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'weeper');
-        else if (r < 0.9) STATE.visitor = VISITOR_TYPES.find(v => v.id === 'trader');
-        else STATE.visitor = VISITOR_TYPES.find(v => v.id === 'cultist');
-
-        STATE.interrogated = false;
-        playSound('knock', {x: 3, y: 1, z: 0});
-        
-        STATE.doorHealth -= 5; // Dano de aviso
+        STATE.visitor = VISITOR_TYPES[Math.floor(Math.random() * VISITOR_TYPES.length)];
+        STATE.interrogated = false; playSound('knock', {x: 3, y: 1, z: 0});
+        // STATE.doorHealth -= 5; // Removido dano instantâneo, agora é continuo
         updateHUD();
-        
-        const blinkInterval = setInterval(() => {
-            if (!STATE.doorKnocking) { clearInterval(blinkInterval); pointLightEmergency.intensity = 0; return; }
-            pointLightEmergency.intensity = pointLightEmergency.intensity > 0 ? 0 : 3;
-        }, 600);
-        logMessage(`ALERTA: ALGUÉM NA PORTA.`);
+        const b = setInterval(() => { if (!STATE.doorKnocking) { clearInterval(b); pointLightEmergency.intensity = 0; return; } pointLightEmergency.intensity = pointLightEmergency.intensity > 0 ? 0 : 3; }, 600);
+        logMessage(`ALERTA NA PORTA.`);
     }
 
     function resolveDoor(open) {
-        STATE.doorKnocking = false;
-        pointLightEmergency.intensity = 0;
-        exitPeepholeMode();
-        
+        STATE.doorKnocking = false; pointLightEmergency.intensity = 0; exitPeepholeMode();
         if (open) {
             if (STATE.visitor.type === 'good') {
-                // Aplicar recompensas específicas
-                if (STATE.visitor.reward.energy) STATE.energy = Math.min(100, STATE.energy + STATE.visitor.reward.energy);
-                if (STATE.visitor.reward.sanity) STATE.sanity = Math.min(100, STATE.sanity + STATE.visitor.reward.sanity);
-                if (STATE.visitor.reward.door) STATE.doorHealth = Math.min(100, STATE.doorHealth + STATE.visitor.reward.door);
+                if (STATE.visitor.reward.energy) STATE.energy += STATE.visitor.reward.energy;
+                if (STATE.visitor.reward.sanity) STATE.sanity += STATE.visitor.reward.sanity;
+                if (STATE.visitor.reward.door) STATE.doorHealth += STATE.visitor.reward.door;
                 
-                STATE.stats.humansSaved++;
-                if (STATE.stats.humansSaved >= 3) unlockTrophy('SAVIOR');
+                // --- NOVA CONTAGEM DE COTA ---
+                STATE.dailySurvivorsLetIn++;
                 
-                playSound('click');
-                logMessage(`${STATE.visitor.name} entrou. ${STATE.visitor.desc}`);
+                STATE.stats.humansSaved++; if (STATE.stats.humansSaved >= 3) unlockTrophy('SAVIOR');
+                playSound('click'); logMessage("Acesso permitido.");
             } else {
-                // Aplicar danos específicos
-                STATE.doorHealth -= (STATE.visitor.damage.door || 0);
-                STATE.sanity -= (STATE.visitor.damage.sanity || 0);
-                
-                logMessage(`ERRO: ${STATE.visitor.name} entrou! ${STATE.visitor.desc}`);
-                playSound('shock');
+                STATE.doorHealth -= STATE.visitor.damage.door; STATE.sanity -= STATE.visitor.damage.sanity;
+                playSound('shock'); logMessage("ERRO! Intruso!");
             }
         } else {
-            playSound('shock', {x: 3, y: 1, z: 0});
-            unlockTrophy('FIRST_BLOOD'); // Primeiro choque
-            
-            if (STATE.visitor.type === 'good') {
-                STATE.sanity -= 20;
-                logMessage("Você eletrocutou um inocente.");
-            } else {
-                STATE.sanity += 10;
-                STATE.stats.monstersKilled++;
-                if (STATE.stats.monstersKilled >= 3) unlockTrophy('SLAYER');
-                logMessage("Ameaça eliminada.");
-            }
+            playSound('shock', {x: 3, y: 1, z: 0}); unlockTrophy('FIRST_BLOOD');
+            if (STATE.visitor.type === 'good') { STATE.sanity -= 20; logMessage("Inocente eletrocutado."); }
+            else { STATE.sanity += 10; STATE.stats.monstersKilled++; if (STATE.stats.monstersKilled >= 3) unlockTrophy('SLAYER'); logMessage("Ameaça eliminada."); }
         }
+        // Clamp stats
+        STATE.energy = Math.min(100, STATE.energy); STATE.sanity = Math.min(100, STATE.sanity);
+        STATE.doorHealth = Math.min(100, STATE.doorHealth);
         checkState();
     }
 
     function enterPeepholeMode() {
-        if (!STATE.doorKnocking) { logMessage("Silêncio."); return; }
-        STATE.lookingAtPeephole = true;
-        document.exitPointerLock(); 
-        document.getElementById('peephole-ui').style.display = 'block';
-        document.getElementById('dialogue-box').style.display = 'none';
-        
-        const visual = document.getElementById('visitor-visual');
-        visual.innerText = STATE.visitor.visual;
-        
+        if (!STATE.doorKnocking) { logMessage("Ninguém."); return; }
+        STATE.lookingAtPeephole = true; document.exitPointerLock();
+        document.getElementById('peephole-ui').style.display = 'block'; document.getElementById('dialogue-box').style.display = 'none';
+        document.getElementById('visitor-visual').innerText = STATE.visitor.visual;
         camera.position.set(2.5, 1.6, 0); camera.lookAt(4, 1.6, 0);
     }
     
     function exitPeepholeMode() {
-        STATE.lookingAtPeephole = false;
-        document.getElementById('peephole-ui').style.display = 'none';
-        document.body.requestPointerLock();
+        STATE.lookingAtPeephole = false; document.getElementById('peephole-ui').style.display = 'none';
+        document.body.requestPointerLock(); 
+        
+        // Reset camera rotation to look forward
+        camPitch = 0; camYaw = 0; targetPitch = 0; targetYaw = 0;
         camera.position.set(0, 1.2, 2); camera.lookAt(0, 1.2, 0);
     }
     
     function interrogateVisitor() {
-        if (STATE.interrogated) return;
-        STATE.interrogated = true;
-        generateVisitorDialogue(STATE.visitor);
+        if (STATE.interrogated) return; STATE.interrogated = true; generateVisitorDialogue(STATE.visitor);
     }
-
+    
     function logMessage(msg) {
-        const el = document.getElementById('message-log');
-        el.innerText = `> ${msg}`;
-        el.style.opacity = 1;
-        setTimeout(() => el.style.opacity = 0, 3000);
+        const el = document.getElementById('message-log'); el.innerText = `> ${msg}`; el.style.opacity = 1; setTimeout(() => el.style.opacity = 0, 3000);
     }
 
-    // --- SETUP THREE.JS (BOILERPLATE) ---
     function init3D() {
-        const container = document.getElementById('game-container');
+        const c = document.getElementById('game-container');
         scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x050505, 0.15);
-        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
-        camera.position.set(0, 1.2, 2);
-        renderer = new THREE.WebGLRenderer({ antialias: false });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        container.appendChild(renderer.domElement);
-
-        // Assets
-        const wallMat = createNoiseMaterial(0x444444);
-        const room = new THREE.Mesh(new THREE.BoxGeometry(6,4,6), wallMat);
-        room.material.side = THREE.BackSide; scene.add(room);
-        
-        const desk = new THREE.Mesh(new THREE.BoxGeometry(2.5,0.1,1.5), createNoiseMaterial(0x333333));
-        desk.position.set(0,0.8,0); scene.add(desk);
-
-        initMonitorOS();
-        monitorMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.6), new THREE.MeshBasicMaterial({map:monitorTexture, side:THREE.DoubleSide}));
-        monitorMesh.position.set(0,1.2,0.31); monitorMesh.name="MONITOR"; scene.add(monitorMesh);
-        
-        const door = new THREE.Mesh(new THREE.BoxGeometry(0.1,2.2,1.2), new THREE.MeshStandardMaterial({color:0x2a2a2a}));
-        door.position.set(2.95,1.1,0); door.name="DOOR"; scene.add(door);
-        
-        const peep = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.15,16), new THREE.MeshBasicMaterial({color:0x000}));
-        peep.rotation.z=Math.PI/2; peep.position.set(2.90,1.6,0); peep.name="PEEPHOLE"; scene.add(peep);
-
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100); camera.position.set(0, 1.2, 2);
+        renderer = new THREE.WebGLRenderer({ antialias: false }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = true; c.appendChild(renderer.domElement);
+        const w = createNoiseMaterial(0x444444); const r = new THREE.Mesh(new THREE.BoxGeometry(6,4,6), w); r.material.side = THREE.BackSide; scene.add(r);
+        const d = new THREE.Mesh(new THREE.BoxGeometry(2.5,0.1,1.5), createNoiseMaterial(0x333333)); d.position.set(0,0.8,0); scene.add(d);
+        initMonitorOS(); monitorMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.6), new THREE.MeshBasicMaterial({map:monitorTexture, side:THREE.DoubleSide})); monitorMesh.position.set(0,1.2,0.31); monitorMesh.name="MONITOR"; scene.add(monitorMesh);
+        const dr = new THREE.Mesh(new THREE.BoxGeometry(0.1,2.2,1.2), new THREE.MeshStandardMaterial({color:0x2a2a2a})); dr.position.set(2.95,1.1,0); dr.name="DOOR"; scene.add(dr);
+        const pp = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.15,16), new THREE.MeshBasicMaterial({color:0x000})); pp.rotation.z=Math.PI/2; pp.position.set(2.90,1.6,0); pp.name="PEEPHOLE"; scene.add(pp);
         scene.add(new THREE.AmbientLight(0x111111));
         pointLightPC = new THREE.PointLight(0xffcc00, 1, 4); pointLightPC.position.set(0,1.2,0.5); scene.add(pointLightPC);
         pointLightEmergency = new THREE.PointLight(0xff0000, 0, 15); pointLightEmergency.position.set(2.5,2.8,0); scene.add(pointLightEmergency);
-
         window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+        
+        // NOVO: Uso da função melhorada onMouseMove
         document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('click', onClick);
+        
+        document.addEventListener('click', () => {
+            if(!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole) return;
+            raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+            const h = raycaster.intersectObjects(scene.children);
+            if(h.length){ if(h[0].object.name==="MONITOR") handleMonitorClick(h[0].uv); else if(h[0].object.name==="PEEPHOLE" || h[0].object.name==="DOOR") enterPeepholeMode(); }
+        });
     }
 
     function createNoiseMaterial(c) {
-        const cnv = document.createElement('canvas'); cnv.width=64; cnv.height=64;
-        const ctx = cnv.getContext('2d'); ctx.fillStyle = '#'+c.toString(16); ctx.fillRect(0,0,64,64);
-        for(let i=0;i<500;i++){ ctx.fillStyle=`rgba(0,0,0,${Math.random()*0.2})`; ctx.fillRect(Math.random()*64,Math.random()*64,2,2); }
-        const tex = new THREE.CanvasTexture(cnv); return new THREE.MeshStandardMaterial({map:tex, roughness:0.9});
-    }
-
-    let rotX=0, rotY=0;
-    function onMouseMove(e) {
-        if(!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole) return;
-        rotY -= e.movementX*0.002; rotX -= e.movementY*0.002;
-        rotX = Math.max(-Math.PI/3, Math.min(Math.PI/3, rotX));
-        camera.rotation.set(0,0,0); camera.rotateY(rotY); camera.rotateX(rotX);
-    }
-
-    function onClick() {
-        if(!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole) return;
-        raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-        const hits = raycaster.intersectObjects(scene.children);
-        if(hits.length){
-            if(hits[0].object.name==="MONITOR") handleMonitorClick(hits[0].uv);
-            else if(hits[0].object.name==="PEEPHOLE" || hits[0].object.name==="DOOR") enterPeepholeMode();
-        }
+        const cv = document.createElement('canvas'); cv.width=64; cv.height=64;
+        const x = cv.getContext('2d'); x.fillStyle = '#'+c.toString(16); x.fillRect(0,0,64,64);
+        for(let i=0;i<500;i++){ x.fillStyle=`rgba(0,0,0,${Math.random()*0.2})`; x.fillRect(Math.random()*64,Math.random()*64,2,2); }
+        return new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(cv), roughness:0.9});
     }
 
     function animate() {
-        requestAnimationFrame(animate);
-        if(!STATE.playing || STATE.gameOver) return;
+        requestAnimationFrame(animate); if(!STATE.playing || STATE.gameOver) return;
+        const dt = clock.getDelta();
+        updateTimer(dt);
         
-        updateEnvironment3D();
-        updateHUD();
-        drawOS();
-
-        if (STATE.screenView === 'RESULT' && !STATE.resultTimer) {
-            STATE.resultTimer = setTimeout(() => { returnToBunker(); STATE.resultTimer = null; }, 3000);
-        }
-
-        if (STATE.currentLocation === 'BUNKER' && !STATE.doorKnocking && !STATE.lookingAtPeephole && Math.random() < 0.002) triggerKnockEvent();
+        // NOVO: Atualização suave da câmera
+        updateCameraSmooth();
+        
+        updateEnvironment3D(); updateHUD(); drawOS();
+        if(STATE.currentLocation === 'BUNKER' && !STATE.doorKnocking && !STATE.lookingAtPeephole && Math.random() < 0.001) triggerKnockEvent();
         renderer.render(scene, camera);
     }
 
@@ -913,7 +825,6 @@
         initAudio(); init3D(); playSound('hum');
         STATE.playing = true; clock.start(); animate();
     });
-
 </script>
 </body>
 </html>
