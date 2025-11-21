@@ -154,7 +154,7 @@
     <br>
     <p>
         <b>OBJETIVO:</b> Sobreviva até o Dia 8.<br>
-        <b>COTA:</b> Deixe entrar pelo menos 2 pessoas por dia.<br>
+        <b>COTA:</b> Verifique a cota diária no monitor.<br>
         <b>ALERTA:</b> A porta enfraquece se você demorar para atender.
     </p>
 </div>
@@ -296,6 +296,14 @@
         PLATINUM: { id: 'plat', title: "A JUNÇÃO PERFEITA", desc: "Coletou todos os troféus.", icon: "🏆" }
     };
 
+    const LORE_DATABASE = [
+        { id: 1, title: "PROTOCOLO 0", text: "A Junção não é salvação. É um filtro. Apenas o DNA puro deve restar. O bunker é uma gaiola." },
+        { id: 2, title: "MÍMICOS", text: "Eles não conseguem piscar corretamente. Observe os olhos. Eles repetem a última palavra." },
+        { id: 3, title: "FREQUÊNCIA 98.5", text: "Ouve-se música clássica na 98.5. Dizem que acalma os brutamontes. Vale a pena tentar." },
+        { id: 4, title: "BUNKER 7", text: "Nós somos o grupo de controle. Não há resgate vindo. A comida tem sedativos." },
+        { id: 5, title: "CULTISTAS", text: "Eles usam mantos para esconder as mutações. Não olhe para a luz que eles carregam." }
+    ];
+
     const VISITOR_TYPES = [
         { 
             id: 'survivor', type: 'good', name: 'Sobrevivente', visual: `___\n(o o)\n| - |\n-----`, 
@@ -345,12 +353,16 @@
         energy: 80,
         doorHealth: 100,
         familyMood: 100,
+        familyHealth: 100, // --- NOVA MECÂNICA ---
         
         dailySurvivorsLetIn: 0,
         survivorsQuota: 2,
         
-        // CONTROLE DE VISITA
-        nextVisitorTimer: 60, // 60 segundos
+        // CONTROLE DE VISITA E REVIVAL
+        nextVisitorTimer: 60,
+        revivalUsed: false,
+        revivalReason: '',
+        
         doorKnocking: false,
         visitor: null,
         lookingAtPeephole: false,
@@ -360,17 +372,22 @@
         interrogated: false,
         isNarrativeMode: false,
         
+        // LORE & RADIO
+        unlockedLore: [], // IDs dos fragmentos de lore desbloqueados
+        radio: { freq: 90.0, target: 0, locked: false },
+        
         stats: { humansSaved: 0, monstersKilled: 0, unlockedTrophies: [] },
         quiz: { question: "", options: [], answer: 0, rewardType: '', rewardAmount: 0 },
         
         // MINIGAMES STATE
         minigame: {
             active: null, // 'SNAKE', 'MEMORY', 'PACMAN'
+            isRevival: false, // FLAG DE REVIVAL
             snake: { snake: [{x:10, y:10}], dir: {x:0, y:0}, food: {x:15, y:15}, score: 0, speed: 10, tick: 0 },
             memory: { cards: [], flipped: [], matches: 0, locked: false, grid: [4, 3] },
             pacman: { 
                 player: {x:1, y:1}, 
-                ghost: {x:7, y:7, tick: 0, speed: 8}, // Velocidade ajustada
+                ghost: {x:7, y:7, tick: 0, speed: 8}, 
                 score: 0, 
                 map: [], 
                 width: 15, 
@@ -408,17 +425,29 @@
     // --- INPUTS ---
     function onMouseMove(e) {
         if (!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole || STATE.isNarrativeMode) return;
+        // Se for minigame de revival, bloqueia movimento da câmera
+        if (STATE.screenView.startsWith('GAME_') && STATE.minigame.isRevival) return;
+        
         targetYaw -= e.movementX * LOOK_SPEED;
         targetPitch -= e.movementY * LOOK_SPEED;
         targetPitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetPitch));
         targetYaw = Math.max(-MAX_YAW, Math.min(MAX_YAW, targetYaw));
     }
     
-    // CONTROLE DOS MINIGAMES
+    // CONTROLE DOS MINIGAMES E RÁDIO
     document.addEventListener('keydown', (e) => {
-        if (!STATE.playing || STATE.screenView.startsWith('GAME_') === false) return;
+        if (!STATE.playing) return;
         
         const key = e.key.toLowerCase();
+        
+        // RADIO CONTROL
+        if (STATE.screenView === 'RADIO') {
+            if (key === 'arrowleft' || key === 'a') STATE.radio.freq = Math.max(88.0, STATE.radio.freq - 0.1);
+            if (key === 'arrowright' || key === 'd') STATE.radio.freq = Math.min(108.0, STATE.radio.freq + 0.1);
+            return;
+        }
+
+        if (STATE.screenView.startsWith('GAME_') === false) return;
         
         // Snake Controls
         if (STATE.screenView === 'GAME_SNAKE') {
@@ -449,7 +478,10 @@
                         p.map[ny][nx] = 0;
                         p.score++;
                         playSound('click');
-                        if (checkPacmanWin()) winMinigame();
+                        if (checkPacmanWin()) {
+                            if (STATE.minigame.isRevival) revivePlayer();
+                            else winMinigame();
+                        }
                     }
                 }
             }
@@ -458,19 +490,31 @@
 
     function updateCameraSmooth() {
         if (!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole) return;
+        
+        // Em modo Revival, trava a câmera no monitor (0, 1.2, 0) mas deixa um pouco de "drift"
+        if (STATE.minigame.isRevival) {
+            camera.lookAt(0, 1.2, 0.31); // Olha pro monitor
+            return;
+        }
+
         camPitch += (targetPitch - camPitch) * SMOOTH_FACTOR;
         camYaw += (targetYaw - camYaw) * SMOOTH_FACTOR;
         camera.rotation.set(camPitch, camYaw, 0, 'YXZ');
     }
 
     function updateTimer(dt) {
+        // PAUSA O TEMPO SE ESTIVER NO REVIVAL
         if (STATE.gameOver || STATE.isNarrativeMode || STATE.screenView === 'LOCATION_QUIZ' || STATE.screenView.startsWith('GAME_')) return;
         
-        STATE.dayTime -= dt;
+        // --- VELOCIDADE DO TEMPO AJUSTADA (2.5x) ---
+        const TIME_SCALE = 2.5; 
+        const gameDt = dt * TIME_SCALE;
         
-        // --- MECÂNICA DE VISITA AGENDADA (1 MINUTO) ---
+        STATE.dayTime -= gameDt;
+        
+        // --- MECÂNICA DE VISITA AGENDADA (1 MINUTO DO CRONÔMETRO) ---
         if (STATE.currentLocation === 'BUNKER' && !STATE.doorKnocking && !STATE.isNarrativeMode) {
-            STATE.nextVisitorTimer -= dt;
+            STATE.nextVisitorTimer -= gameDt;
             if (STATE.nextVisitorTimer <= 0) {
                 triggerKnockEvent();
                 STATE.nextVisitorTimer = 60; // Resetar para 1 minuto
@@ -496,6 +540,10 @@
     }
 
     function triggerEndOfDay() {
+        // Resetar rádio para nova frequência
+        STATE.radio.target = (Math.random() * (107.0 - 89.0) + 89.0);
+        STATE.radio.locked = false;
+
         if (STATE.dailySurvivorsLetIn < STATE.survivorsQuota) {
             triggerGameOver(`COTA NÃO ATINGIDA (${STATE.dailySurvivorsLetIn}/${STATE.survivorsQuota}). O Comando Central isolou seu bunker.`);
             return;
@@ -547,8 +595,20 @@
         STATE.dayTime = 300;
         STATE.isNarrativeMode = false;
         STATE.dailySurvivorsLetIn = 0;
+        
+        // --- NOVA MECÂNICA: COTA VARIÁVEL ---
+        STATE.survivorsQuota = Math.random() < 0.5 ? 1 : 2;
+
         STATE.familyMood -= 10;
         STATE.energy -= 10;
+        
+        // --- DECAIMENTO DA SAÚDE DA FAMÍLIA ---
+        STATE.familyHealth -= 5; 
+        if(Math.random() < 0.2) {
+            STATE.familyHealth -= 15; // Evento de doença aleatória
+            logMessage("ALERTA: Membro da família adoeceu durante a noite.");
+        }
+
         checkState();
         if (!STATE.gameOver) {
             logMessage(`DIA ${STATE.day} INICIADO. COTA: 0/${STATE.survivorsQuota}`);
@@ -557,8 +617,6 @@
 
     function unlockTrophy(key) {
         if (!TROPHIES[key]) return;
-        
-        // Correção: Usar o ID interno do troféu para verificação e armazenamento
         const trophyId = TROPHIES[key].id;
         if (STATE.stats.unlockedTrophies.includes(trophyId)) return;
         
@@ -579,7 +637,7 @@
         document.getElementById('hud-energy').innerText = Math.floor(STATE.energy);
         updateBar('bar-sanity', STATE.sanity, 'row-sanity');
         updateBar('bar-door', STATE.doorHealth, 'row-door');
-        updateBar('bar-family', STATE.familyMood, 'row-family');
+        updateBar('bar-family', STATE.familyMood, 'row-family'); // Mantido visual simples, saúde checada internamente
         if (STATE.day >= 4) unlockTrophy('SURVIVOR');
         if (STATE.familyMood >= 100) unlockTrophy('FAMILY_FIRST');
     }
@@ -594,12 +652,9 @@
         document.getElementById('dialogue-box').style.display = 'block';
         txt.innerText = "Analisando...";
         
-        // MODO SEM API (FALLBACK ROBUSTO)
         if (!apiKey || apiKey === "") {
-            // Seleciona uma frase aleatória do tipo de visitante
             const lines = visitor.lines || [visitor.desc];
             const line = lines[Math.floor(Math.random() * lines.length)];
-            // Simula um pequeno atraso de "processamento"
             setTimeout(() => {
                 typeWriterEffect(`"${line}"\n\n(ANÁLISE: ${visitor.name}. ${visitor.desc})`, txt);
             }, 500);
@@ -618,7 +673,6 @@
             const aiText = data.candidates[0].content.parts[0].text;
             typeWriterEffect(aiText, txt);
         } catch (e) { 
-            // Fallback se a API falhar mesmo com chave
             const lines = visitor.lines || [visitor.desc];
             const line = lines[Math.floor(Math.random() * lines.length)];
             typeWriterEffect(`"${line}"`, txt);
@@ -627,7 +681,6 @@
 
     function typeWriterEffect(text, el) {
         el.innerText = ""; let i = 0;
-        // CHANGED speed from 50 to 15 for faster typing
         function type() { if (i < text.length) { el.innerText += text.charAt(i); i++; setTimeout(type, 15); } }
         type();
     }
@@ -689,17 +742,24 @@
         if (STATE.screenView === 'GAME_SNAKE') updateAndDrawSnake(ctx);
         else if (STATE.screenView === 'GAME_MEMORY') drawMemory(ctx);
         else if (STATE.screenView === 'GAME_PACMAN') updateAndDrawPacman(ctx);
+        else if (STATE.screenView === 'RADIO') drawRadio(ctx);
+        else if (STATE.screenView === 'ARCHIVES') drawArchives(ctx);
 
         // --- SCREENS ---
         else if (STATE.screenView === 'DESKTOP') {
             ctx.font = '28px monospace'; ctx.fillText(`PLURIBUS OS v9.0`, 40, 50);
             if (STATE.doorKnocking) { ctx.fillStyle = 'red'; ctx.shadowColor = 'red'; ctx.fillText("ALERTA DE SEGURANÇA", 120, 450); ctx.fillStyle = CRT_COLOR; ctx.shadowColor = CRT_COLOR; }
+            
             osButtons.push({ action: 'GO_MAP', ...drawButton(ctx, 40, 100, 430, 50, "EXPEDIÇÃO") });
-            osButtons.push({ action: 'GO_FAMILY', ...drawButton(ctx, 40, 170, 430, 50, "FAMÍLIA") });
+            osButtons.push({ action: 'GO_FAMILY', ...drawButton(ctx, 40, 170, 200, 50, "FAMÍLIA") });
+            osButtons.push({ action: 'GO_ARCHIVES', ...drawButton(ctx, 270, 170, 200, 50, "ARQUIVOS") });
+            
             osButtons.push({ action: 'GO_REPAIR', ...drawButton(ctx, 40, 240, 200, 50, "MANUTENÇÃO") });
-            osButtons.push({ action: 'GO_GAMES', ...drawButton(ctx, 270, 240, 200, 50, "JOGOS") }); // New Button
-            osButtons.push({ action: 'GO_TROPHIES', ...drawButton(ctx, 40, 310, 200, 50, "TROFÉUS") });
-            osButtons.push({ action: 'MAIL', ...drawButton(ctx, 270, 310, 200, 50, "DIÁRIO") });
+            osButtons.push({ action: 'GO_RADIO', ...drawButton(ctx, 270, 240, 200, 50, "RÁDIO") });
+            
+            osButtons.push({ action: 'GO_GAMES', ...drawButton(ctx, 40, 310, 200, 50, "JOGOS") }); 
+            osButtons.push({ action: 'GO_TROPHIES', ...drawButton(ctx, 270, 310, 200, 50, "TROFÉUS") });
+            osButtons.push({ action: 'MAIL', ...drawButton(ctx, 40, 380, 430, 50, "DIÁRIO") });
         }
         else if (STATE.screenView === 'GAMES_MENU') {
             ctx.fillText("JOGOS - RECUPERAR SANIDADE", 40, 50);
@@ -718,10 +778,19 @@
         }
         else if (STATE.screenView === 'FAMILY') {
             ctx.fillText("STATUS DA FAMÍLIA", 40, 50);
-            ctx.fillText(`HUMOR: ${STATE.familyMood}%`, 40, 90);
-            osButtons.push({ action: 'FAM_FEED', ...drawButton(ctx, 40, 200, 430, 50, "DAR RAÇÃO (20 EN)") });
-            osButtons.push({ action: 'FAM_TALK', ...drawButton(ctx, 40, 270, 430, 50, "CONVERSAR (10 EN)") });
-            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
+            
+            ctx.fillStyle = STATE.familyMood < 30 ? '#ff3333' : CRT_COLOR;
+            ctx.fillText(`HUMOR: ${Math.floor(STATE.familyMood)}%`, 40, 90);
+            
+            ctx.fillStyle = STATE.familyHealth < 30 ? '#ff3333' : CRT_COLOR;
+            ctx.fillText(`SAÚDE: ${Math.floor(STATE.familyHealth)}%`, 240, 90);
+
+            osButtons.push({ action: 'FAM_FEED', ...drawButton(ctx, 40, 130, 430, 40, "DAR RAÇÃO (20 EN)") });
+            osButtons.push({ action: 'FAM_TALK', ...drawButton(ctx, 40, 180, 430, 40, "CONVERSAR (10 EN)") });
+            osButtons.push({ action: 'FAM_MEDIC', ...drawButton(ctx, 40, 230, 430, 40, "MEDICAR (30 EN)") }); // New
+            osButtons.push({ action: 'FAM_PLAY', ...drawButton(ctx, 40, 280, 430, 40, "JOGAR JUNTOS (15 EN)") }); // New
+            
+            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 350, 100, 40, "VOLTAR") });
         }
         else if (STATE.screenView === 'REPAIR') {
             ctx.fillText("MANUTENÇÃO", 40, 50);
@@ -759,6 +828,83 @@
         monitorTexture.needsUpdate = true;
     }
     
+    // --- RADIO SCREEN ---
+    function drawRadio(ctx) {
+        ctx.fillText("SINTONIZADOR DE ONDAS CURTAS", 40, 50);
+        ctx.font = '18px monospace';
+        ctx.fillText("Use SETAS (Esq/Dir) para sintonizar.", 40, 80);
+        
+        // Bar
+        ctx.fillStyle = '#332200';
+        ctx.fillRect(40, 150, 430, 40);
+        
+        // Target (Invisible visually, logic only)
+        // Current Freq Marker
+        const pct = (STATE.radio.freq - 88.0) / (108.0 - 88.0);
+        const x = 40 + pct * 430;
+        
+        ctx.fillStyle = CRT_COLOR;
+        ctx.fillRect(x - 2, 140, 4, 60);
+        ctx.fillText(`${STATE.radio.freq.toFixed(1)} MHz`, 200, 220);
+        
+        // Signal Strength logic
+        const dist = Math.abs(STATE.radio.freq - STATE.radio.target);
+        let signal = 0;
+        if (dist < 2.0) signal = 1 - (dist / 2.0);
+        
+        const barW = signal * 200;
+        ctx.fillStyle = signal > 0.9 ? '#00ff00' : '#554400';
+        ctx.fillRect(156, 250, barW, 20);
+        ctx.strokeStyle = CRT_COLOR;
+        ctx.strokeRect(156, 250, 200, 20);
+        ctx.fillText("SINAL:", 80, 265);
+        
+        if (signal > 0.95 && !STATE.radio.locked) {
+            STATE.radio.locked = true;
+            playSound('click');
+            // Give Reward
+            STATE.sanity = Math.min(100, STATE.sanity + 20);
+            logMessage("SINAL INTERCEPTADO. SANIDADE +20.");
+        }
+        
+        if (STATE.radio.locked) {
+            ctx.fillStyle = '#00ff00';
+            ctx.fillText("TRANSMISSÃO SEGURA DETECTADA.", 40, 320);
+            ctx.fillStyle = CRT_COLOR;
+            ctx.fillText("DICA: Mantenha a família unida.", 40, 350); // Placeholder hint
+        } else {
+            ctx.fillStyle = '#ff3333';
+            ctx.fillText("CHIADO...", 40, 320);
+        }
+        
+        osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
+    }
+
+    // --- ARCHIVES SCREEN ---
+    function drawArchives(ctx) {
+        ctx.fillText("ARQUIVOS RECUPERADOS", 40, 50);
+        
+        let y = 100;
+        if (STATE.unlockedLore.length === 0) {
+            ctx.fillStyle = '#554400';
+            ctx.fillText("NENHUM DADO ENCONTRADO.", 40, 100);
+        } else {
+            STATE.unlockedLore.forEach(id => {
+                const log = LORE_DATABASE.find(l => l.id === id);
+                if (log) {
+                    ctx.fillStyle = CRT_COLOR;
+                    ctx.fillText(`[${log.title}]`, 40, y);
+                    ctx.font = '14px monospace';
+                    ctx.fillText(log.text, 40, y + 20);
+                    ctx.font = '18px monospace';
+                    y += 60;
+                }
+            });
+        }
+        
+        osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
+    }
+    
     // --- MINIGAME LOGIC ---
     
     function winMinigame() {
@@ -783,16 +929,9 @@
         if (s.tick > s.speed) {
             s.tick = 0;
             const head = { x: s.snake[0].x + s.dir.x, y: s.snake[0].y + s.dir.y };
-            
-            // Collision Wall
             if (head.x < 0 || head.x >= 25 || head.y < 0 || head.y >= 25) { playSound('shock'); initSnake(); return; }
-            
-            // Collision Self
             for(let p of s.snake) if(head.x===p.x && head.y===p.y) { playSound('shock'); initSnake(); return; }
-
             s.snake.unshift(head);
-            
-            // Eat Food
             if (head.x === s.food.x && head.y === s.food.y) {
                 s.score++;
                 s.food = { x: Math.floor(Math.random()*25), y: Math.floor(Math.random()*25) };
@@ -802,8 +941,6 @@
                 s.snake.pop();
             }
         }
-
-        // Draw
         const size = 18;
         ctx.fillStyle = CRT_COLOR;
         s.snake.forEach(p => ctx.fillRect(20 + p.x * size, 50 + p.y * size, size-2, size-2));
@@ -821,14 +958,11 @@
     function drawMemory(ctx) {
         ctx.fillText(`PARES: ${STATE.minigame.memory.matches}/6`, 20, 30);
         osButtons.push({ action: 'BACK_GAME', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") });
-        
         const cols = 4; const size = 80; const gap = 10;
         STATE.minigame.memory.cards.forEach((card, i) => {
             const c = i % cols; const r = Math.floor(i / cols);
             const x = 50 + c * (size + gap); const y = 60 + r * (size + gap);
-            
             osButtons.push({ action: `MEM_${i}`, x, y, w: size, h: size });
-            
             ctx.strokeStyle = CRT_COLOR; ctx.strokeRect(x, y, size, size);
             if (card.flipped || card.matched) {
                 ctx.fillStyle = card.matched ? '#00ff00' : CRT_COLOR;
@@ -843,16 +977,13 @@
     function handleMemoryClick(idx) {
         const m = STATE.minigame.memory;
         if (m.locked || m.cards[idx].flipped || m.cards[idx].matched) return;
-        
         m.cards[idx].flipped = true;
         m.flipped.push(idx);
         playSound('click');
-
         if (m.flipped.length === 2) {
             m.locked = true;
             const c1 = m.cards[m.flipped[0]];
             const c2 = m.cards[m.flipped[1]];
-            
             if (c1.val === c2.val) {
                 c1.matched = true; c2.matched = true;
                 m.flipped = []; m.locked = false; m.matches++;
@@ -868,9 +999,7 @@
         }
     }
 
-    function initPacman() {
-        // 0: empty, 1: wall, 2: dot
-        // Simple 15x15 maze
+    function initPacman(isRevival = false) {
         const map = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,2,2,2,2,1,2,2,2,2,2,2,2,1],
@@ -878,7 +1007,7 @@
             [1,2,1,2,2,2,2,2,2,2,2,1,2,2,1],
             [1,2,1,2,1,1,1,1,1,1,2,1,2,1,1],
             [1,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-            [1,2,1,1,2,1,1,0,1,1,2,1,1,2,1], // Center empty
+            [1,2,1,1,2,1,1,0,1,1,2,1,1,2,1],
             [1,2,2,2,2,1,0,0,0,1,2,2,2,2,1],
             [1,2,1,1,2,1,1,1,1,1,2,1,1,2,1],
             [1,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
@@ -890,9 +1019,11 @@
         ];
         let totalDots = 0;
         map.forEach(row => row.forEach(cell => { if(cell===2) totalDots++; }));
+        
+        STATE.minigame.isRevival = isRevival;
         STATE.minigame.pacman = { 
             player: {x:1, y:1}, 
-            ghost: {x:7, y:7, tick: 0, speed: 8}, // Fantasma
+            ghost: {x:7, y:7, tick: 0, speed: 8}, 
             score: 0, totalDots, map, width: 15, height: 15 
         };
         STATE.screenView = 'GAME_PACMAN';
@@ -902,8 +1033,16 @@
     
     function updateAndDrawPacman(ctx) {
         const p = STATE.minigame.pacman;
-        ctx.fillText(`DOTS: ${p.score}/${p.totalDots}`, 20, 30);
-        osButtons.push({ action: 'BACK_GAME', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") });
+        
+        // UI do Minigame
+        if (STATE.minigame.isRevival) {
+            ctx.fillStyle = '#ff0000';
+            ctx.font = '20px monospace';
+            ctx.fillText("PROTOCOLO DE EMERGÊNCIA", 120, 30);
+        } else {
+            ctx.fillText(`DOTS: ${p.score}/${p.totalDots}`, 20, 30);
+            osButtons.push({ action: 'BACK_GAME', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") });
+        }
 
         const size = 25;
         const offsetX = 60; const offsetY = 50;
@@ -913,18 +1052,14 @@
         if (p.ghost.tick > p.ghost.speed) {
             p.ghost.tick = 0;
             
-            // BFS para encontrar o próximo passo
             const startNode = {x: p.ghost.x, y: p.ghost.y};
             const targetNode = {x: p.player.x, y: p.player.y};
             
-            // Queue stores paths: [ {x,y}, {x,y}, ... ]
             let queue = [ [startNode] ];
             let visited = new Set();
             visited.add(`${startNode.x},${startNode.y}`);
             
             let nextMove = null;
-            
-            // Limite de iterações para não travar se não houver caminho (segurança)
             let iterations = 0;
             
             while (queue.length > 0 && iterations < 300) {
@@ -933,15 +1068,12 @@
                 let current = path[path.length - 1];
                 
                 if (current.x === targetNode.x && current.y === targetNode.y) {
-                    // Caminho encontrado! O próximo passo é o segundo elemento do caminho (índice 1)
-                    // Índice 0 é a posição atual do fantasma
                     if (path.length > 1) {
                         nextMove = path[1];
                     }
                     break;
                 }
                 
-                // Vizinhos: Cima, Baixo, Esquerda, Direita
                 const neighbors = [
                     {x: current.x, y: current.y - 1},
                     {x: current.x, y: current.y + 1},
@@ -950,7 +1082,6 @@
                 ];
                 
                 for (let neighbor of neighbors) {
-                    // Check bounds and walls
                     if (neighbor.x >= 0 && neighbor.x < p.width && 
                         neighbor.y >= 0 && neighbor.y < p.height &&
                         p.map[neighbor.y][neighbor.x] !== 1) {
@@ -970,10 +1101,14 @@
                 p.ghost.y = nextMove.y;
             }
             
-            // Colisão com Jogador (Game Over do Minigame)
+            // Collision check
             if (p.ghost.x === p.player.x && p.ghost.y === p.player.y) {
                 playSound('shock');
-                initPacman(); // Reinicia o jogo
+                if (STATE.minigame.isRevival) {
+                    triggerGameOver(STATE.revivalReason); // MORTE REAL
+                } else {
+                    initPacman(); // Reinicia normal
+                }
                 return;
             }
         }
@@ -993,13 +1128,11 @@
             }
         }
         
-        // Draw Ghost (Red)
         ctx.fillStyle = '#ff0000';
         ctx.beginPath();
         ctx.arc(offsetX + p.ghost.x * size + size/2, offsetY + p.ghost.y * size + size/2, size/2 - 2, 0, 2 * Math.PI);
         ctx.fill();
 
-        // Draw Player (Yellow)
         ctx.fillStyle = '#ffff00';
         ctx.beginPath();
         ctx.arc(offsetX + p.player.x * size + size/2, offsetY + p.player.y * size + size/2, size/2 - 2, 0.2 * Math.PI, 1.8 * Math.PI);
@@ -1020,6 +1153,18 @@
         const ok = idx === STATE.quiz.answer;
         if (ok) {
             STATE[STATE.quiz.rewardType] = Math.min(100, STATE[STATE.quiz.rewardType] + STATE.quiz.rewardAmount);
+            
+            // LORE DROP CHANCE (30%)
+            if (Math.random() < 0.3) {
+                // Find unlocked
+                const remaining = LORE_DATABASE.filter(l => !STATE.unlockedLore.includes(l.id));
+                if (remaining.length > 0) {
+                    const log = remaining[Math.floor(Math.random() * remaining.length)];
+                    STATE.unlockedLore.push(log.id);
+                    logMessage(`DADOS ENCONTRADOS: ${log.title}`);
+                }
+            }
+            
             playSound('click'); STATE.quiz.resultMsg = "SUCESSO!";
         } else {
             STATE.energy = Math.max(0, STATE.energy - 10); STATE.sanity = Math.max(0, STATE.sanity + STATE.quiz.failAmount);
@@ -1034,16 +1179,57 @@
         else if (STATE.sanity <= 0) triggerGameOver("Loucura Total.");
         else if (STATE.doorHealth <= 0) triggerGameOver("Porta Destruída.");
         else if (STATE.familyMood <= 0) triggerGameOver("Motim Familiar.");
+        else if (STATE.familyHealth <= 0) triggerGameOver("Família Pereceu."); // Game Over por saúde
     }
 
     function triggerGameOver(r) {
-        STATE.gameOver = true; playSound('jumpscare'); document.getElementById('vhs-overlay').style.background = 'red';
+        // --- SEGUNDA CHANCE (REVIVAL) ---
+        if (!STATE.revivalUsed) {
+            STATE.revivalUsed = true;
+            STATE.revivalReason = r;
+            
+            playSound('jumpscare');
+            
+            // Força o monitor e inicia o minigame
+            STATE.lookingAtPeephole = false;
+            document.exitPointerLock();
+            
+            initPacman(true);
+            
+            // Feedback visual de emergência
+            logMessage("ERRO CRÍTICO! INICIANDO PROTOCOLO DE EMERGÊNCIA...");
+            setTimeout(() => logMessage("VENÇA O JOGO PARA SOBREVIVER"), 1500);
+            return;
+        }
+
+        // Game Over Real
+        STATE.gameOver = true; 
+        playSound('jumpscare'); 
+        document.getElementById('vhs-overlay').style.background = 'red';
         setTimeout(() => document.body.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:red;font-family:monospace;text-align:center;"><h1>FIM DE JOGO</h1><p>${r}</p><button onclick="location.reload()">REINICIAR</button></div>`, 2000);
+    }
+
+    function revivePlayer() {
+        // Restaura stats para um nível seguro
+        STATE.sanity = Math.max(STATE.sanity, 50);
+        STATE.energy = Math.max(STATE.energy, 50);
+        STATE.doorHealth = Math.max(STATE.doorHealth, 50);
+        STATE.familyMood = Math.max(STATE.familyMood, 50);
+        STATE.familyHealth = Math.max(STATE.familyHealth, 50);
+        
+        STATE.doorKnocking = false; // Remove ameaça imediata
+        STATE.minigame.isRevival = false;
+        STATE.screenView = 'DESKTOP';
+        
+        playSound('trophy');
+        logMessage("SISTEMA RESTAURADO. SEGUNDA CHANCE ATIVADA.");
+        
+        // Opcional: Retornar controle do mouse
+        document.body.requestPointerLock();
     }
 
     function handleMonitorClick(uv) {
         const x = uv.x * CANVAS_W, y = (1 - uv.y) * CANVAS_H; 
-        // Only play click sound if not in game mode (prevent audio spam) or if pressing UI buttons
         let clickedUI = false;
 
         for (let btn of osButtons) {
@@ -1055,14 +1241,21 @@
                 else if (btn.action === 'GO_REPAIR') STATE.screenView = 'REPAIR';
                 else if (btn.action === 'GO_TROPHIES') STATE.screenView = 'TROPHIES';
                 else if (btn.action === 'GO_GAMES') STATE.screenView = 'GAMES_MENU';
+                else if (btn.action === 'GO_RADIO') STATE.screenView = 'RADIO';
+                else if (btn.action === 'GO_ARCHIVES') STATE.screenView = 'ARCHIVES';
                 else if (btn.action === 'START_SNAKE') initSnake();
                 else if (btn.action === 'START_MEMORY') initMemory();
                 else if (btn.action === 'START_PACMAN') initPacman();
                 else if (btn.action === 'BACK_GAME') STATE.screenView = 'GAMES_MENU';
                 else if (btn.action === 'MAIL') STATE.screenView = 'MAIL';
                 else if (btn.action === 'BACK') STATE.screenView = 'DESKTOP';
+                
+                // Family Actions
                 else if (btn.action === 'FAM_FEED' && STATE.energy >= 20) { STATE.energy -= 20; STATE.familyMood = Math.min(100, STATE.familyMood + 30); }
                 else if (btn.action === 'FAM_TALK' && STATE.energy >= 10) { STATE.energy -= 10; STATE.sanity = Math.min(100, STATE.sanity + 10); }
+                else if (btn.action === 'FAM_MEDIC' && STATE.energy >= 30) { STATE.energy -= 30; STATE.familyHealth = Math.min(100, STATE.familyHealth + 30); }
+                else if (btn.action === 'FAM_PLAY' && STATE.energy >= 15) { STATE.energy -= 15; STATE.familyMood = Math.min(100, STATE.familyMood + 20); }
+
                 else if (btn.action === 'REP_DOOR' && STATE.energy >= 30) { STATE.energy -= 30; STATE.doorHealth = Math.min(100, STATE.doorHealth + 40); unlockTrophy('MECHANIC'); }
                 else if (btn.action === 'GO_MARKET') startExpedition('MARKET');
                 else if (btn.action === 'GO_PHARMA') startExpedition('PHARMACY');
@@ -1166,8 +1359,6 @@
         updateTimer(dt);
         updateCameraSmooth();
         updateEnvironment3D(); updateHUD(); drawOS();
-        // REMOVED RANDOM KNOCK HERE (Handled in updateTimer)
-        // if(STATE.currentLocation === 'BUNKER' && !STATE.doorKnocking && !STATE.lookingAtPeephole && Math.random() < 0.001) triggerKnockEvent();
         renderer.render(scene, camera);
     }
 
