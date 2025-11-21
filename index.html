@@ -155,7 +155,7 @@
     <p>
         <b>OBJETIVO:</b> Sobreviva até o Dia 8.<br>
         <b>COTA:</b> Verifique a cota diária no monitor.<br>
-        <b>ALERTA:</b> A porta enfraquece se você demorar para atender.
+        <b>NOVOS MÉTODOS:</b> Resgate em expedições ou use o rádio.
     </p>
 </div>
 
@@ -353,7 +353,7 @@
         energy: 80,
         doorHealth: 100,
         familyMood: 100,
-        familyHealth: 100, // --- NOVA MECÂNICA ---
+        familyHealth: 100, 
         
         dailySurvivorsLetIn: 0,
         survivorsQuota: 2,
@@ -373,7 +373,7 @@
         isNarrativeMode: false,
         
         // LORE & RADIO
-        unlockedLore: [], // IDs dos fragmentos de lore desbloqueados
+        unlockedLore: [], 
         radio: { freq: 90.0, target: 0, locked: false },
         
         stats: { humansSaved: 0, monstersKilled: 0, unlockedTrophies: [] },
@@ -403,9 +403,18 @@
         STREETS: { color: 0xFF6600, fog: 0x331100, fogDens: 0.6 }
     };
     const QUIZ_DATA = {
-        MARKET: [{ q: "Lata sem rótulo.", opt: ["Comer", "Ignorar", "Guardar"], ans: 1, type: 'energy', val: 20, fail: -10 }],
-        PHARMACY: [{ q: "Soro experimental.", opt: ["Usar", "Estocar", "Destruir"], ans: 1, type: 'sanity', val: 30, fail: -20 }],
-        STREETS: [{ q: "Névoa ácida.", opt: ["Correr", "Sinalizador", "Abrigo"], ans: 2, type: 'sanity', val: 20, fail: -40 }]
+        MARKET: [
+            { q: "Lata sem rótulo.", opt: ["Comer", "Ignorar", "Guardar"], ans: 1, type: 'energy', val: 20, fail: -10 },
+            { q: "Pessoa presa.", opt: ["Soltar", "Roubar", "Matar"], ans: 0, type: 'survivor', val: 1, fail: -20 }
+        ],
+        PHARMACY: [
+            { q: "Soro experimental.", opt: ["Usar", "Estocar", "Destruir"], ans: 1, type: 'sanity', val: 30, fail: -20 },
+            { q: "Gritos no fundo.", opt: ["Investigar", "Fugir", "Chamar"], ans: 1, type: 'sanity', val: 10, fail: -30 }
+        ],
+        STREETS: [
+            { q: "Névoa ácida.", opt: ["Correr", "Sinalizador", "Abrigo"], ans: 2, type: 'sanity', val: 20, fail: -40 },
+            { q: "Criança sozinha.", opt: ["Resgatar", "Observar", "Ignorar"], ans: 0, type: 'survivor', val: 1, fail: -20 }
+        ]
     };
 
     window.gameActions = {
@@ -425,7 +434,6 @@
     // --- INPUTS ---
     function onMouseMove(e) {
         if (!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole || STATE.isNarrativeMode) return;
-        // Se for minigame de revival, bloqueia movimento da câmera
         if (STATE.screenView.startsWith('GAME_') && STATE.minigame.isRevival) return;
         
         targetYaw -= e.movementX * LOOK_SPEED;
@@ -870,8 +878,10 @@
         if (STATE.radio.locked) {
             ctx.fillStyle = '#00ff00';
             ctx.fillText("TRANSMISSÃO SEGURA DETECTADA.", 40, 320);
-            ctx.fillStyle = CRT_COLOR;
-            ctx.fillText("DICA: Mantenha a família unida.", 40, 350); // Placeholder hint
+            
+            // --- NEW MECHANIC: RADIO LURE ---
+            osButtons.push({ action: 'RADIO_LURE', ...drawButton(ctx, 40, 350, 430, 40, "EMITIR SINAL DE RESGATE (40 EN)") });
+            
         } else {
             ctx.fillStyle = '#ff3333';
             ctx.fillText("CHIADO...", 40, 320);
@@ -1152,7 +1162,16 @@
     function handleQuizAnswer(idx) {
         const ok = idx === STATE.quiz.answer;
         if (ok) {
-            STATE[STATE.quiz.rewardType] = Math.min(100, STATE[STATE.quiz.rewardType] + STATE.quiz.rewardAmount);
+            // --- LÓGICA DE RESGATE EM EXPEDIÇÃO ---
+            if (STATE.quiz.rewardType === 'survivor') {
+                STATE.dailySurvivorsLetIn++;
+                STATE.stats.humansSaved++;
+                unlockTrophy('SAVIOR');
+                STATE.quiz.resultMsg = "SOBREVIVENTE RESGATADO!";
+            } else {
+                STATE[STATE.quiz.rewardType] = Math.min(100, STATE[STATE.quiz.rewardType] + STATE.quiz.rewardAmount);
+                STATE.quiz.resultMsg = "SUCESSO!";
+            }
             
             // LORE DROP CHANCE (30%)
             if (Math.random() < 0.3) {
@@ -1165,7 +1184,7 @@
                 }
             }
             
-            playSound('click'); STATE.quiz.resultMsg = "SUCESSO!";
+            playSound('click');
         } else {
             STATE.energy = Math.max(0, STATE.energy - 10); STATE.sanity = Math.max(0, STATE.sanity + STATE.quiz.failAmount);
             playSound('shock'); STATE.quiz.resultMsg = "FALHA.";
@@ -1260,17 +1279,33 @@
                 else if (btn.action === 'GO_MARKET') startExpedition('MARKET');
                 else if (btn.action === 'GO_PHARMA') startExpedition('PHARMACY');
                 else if (btn.action === 'GO_STREET') startExpedition('STREETS');
+                
+                // --- NEW RADIO LURE ACTION ---
+                else if (btn.action === 'RADIO_LURE' && STATE.energy >= 40) {
+                     STATE.energy -= 40;
+                     triggerKnockEvent('good'); // Helper to force good visitor
+                     logMessage("Sinal enviado. Alguém se aproxima.");
+                }
+
                 else if (btn.action.startsWith('ANS_')) handleQuizAnswer(parseInt(btn.action.split('_')[1]));
                 else if (btn.action.startsWith('MEM_')) handleMemoryClick(parseInt(btn.action.split('_')[1]));
             }
         }
     }
 
-    function triggerKnockEvent() {
+    function triggerKnockEvent(forcedType = null) {
         if (STATE.doorKnocking || STATE.currentLocation !== 'BUNKER' || STATE.isNarrativeMode) return;
         STATE.doorKnocking = true;
-        STATE.visitor = VISITOR_TYPES[Math.floor(Math.random() * VISITOR_TYPES.length)];
-        STATE.interrogated = false; playSound('knock', {x: 3, y: 1, z: 0});
+        
+        // --- FORCED TYPE LOGIC ---
+        let pool = VISITOR_TYPES;
+        if (forcedType === 'good') pool = VISITOR_TYPES.filter(v => v.type === 'good');
+        if (forcedType === 'bad') pool = VISITOR_TYPES.filter(v => v.type === 'bad');
+        
+        STATE.visitor = pool[Math.floor(Math.random() * pool.length)];
+        
+        STATE.interrogated = false; 
+        playSound('knock', {x: 3, y: 1, z: 0});
         updateHUD();
         const b = setInterval(() => { if (!STATE.doorKnocking) { clearInterval(b); pointLightEmergency.intensity = 0; return; } pointLightEmergency.intensity = pointLightEmergency.intensity > 0 ? 0 : 3; }, 600);
         logMessage(`ALERTA NA PORTA.`);
