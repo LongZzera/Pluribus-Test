@@ -239,11 +239,10 @@
     let targetPitch = 0;
     let targetYaw = 0;
     const LOOK_SPEED = 0.002;
-    const SMOOTH_FACTOR = 0.15; // Quanto menor, mais pesado
-    const MAX_YAW = Math.PI / 1.5; // Limite lateral (120 graus)
-    const MAX_PITCH = Math.PI / 3; // Limite vertical (60 graus)
+    const SMOOTH_FACTOR = 0.15; 
+    const MAX_YAW = Math.PI / 1.5; 
+    const MAX_PITCH = Math.PI / 3; 
 
-    // --- LORE & EVENTOS NARRATIVOS (PLURIBUS) ---
     const NARRATIVE_EVENTS = [
         {
             title: "NOITE 1: O PROTOCOLO DE HERANÇA",
@@ -277,7 +276,6 @@
                 { text: "Reprimir a memória (Gasta Energia)", effect: { energy: -20 }, msg: "Você toma pílulas para dormir. O passado morre." }
             ]
         },
-        // Genéricos para dias extras
         {
             title: "NOITE SILENCIOSA",
             body: "A noite caiu e nada se ouve lá fora. Apenas o zumbido do monitor e a respiração da sua família. É um momento de paz ou o prelúdio do fim?",
@@ -311,14 +309,13 @@
         playing: false,
         day: 1,
         maxDays: 8,
-        dayTime: 300, // 5 minutos em segundos
+        dayTime: 300,
         
         sanity: 80,
         energy: 80,
         doorHealth: 100,
         familyMood: 100,
         
-        // NOVAS VARIÁVEIS DE COTA
         dailySurvivorsLetIn: 0,
         survivorsQuota: 2,
         
@@ -332,10 +329,17 @@
         isNarrativeMode: false,
         
         stats: { humansSaved: 0, monstersKilled: 0, unlockedTrophies: [] },
-        quiz: { question: "", options: [], answer: 0, rewardType: '', rewardAmount: 0 }
+        quiz: { question: "", options: [], answer: 0, rewardType: '', rewardAmount: 0 },
+        
+        // MINIGAMES STATE
+        minigame: {
+            active: null, // 'SNAKE', 'MEMORY', 'PACMAN'
+            snake: { snake: [{x:10, y:10}], dir: {x:0, y:0}, food: {x:15, y:15}, score: 0, speed: 10, tick: 0 },
+            memory: { cards: [], flipped: [], matches: 0, locked: false, grid: [4, 3] },
+            pacman: { player: {x:1, y:1}, score: 0, map: [], width: 15, height: 15 }
+        }
     };
 
-    // Locais e Quizzes
     const LOCATIONS = {
         BUNKER: { color: 0xffcc00, fog: 0x050505, fogDens: 0.15 },
         MARKET: { color: 0x00FFFF, fog: 0x001133, fogDens: 0.3 },
@@ -362,40 +366,70 @@
     let clock = new THREE.Clock();
     let audioCtx, masterGain;
 
-    // --- SISTEMA DE CÂMERA MELHORADO ---
+    // --- INPUTS ---
     function onMouseMove(e) {
         if (!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole || STATE.isNarrativeMode) return;
-        
-        // Atualiza o alvo da rotação (Target)
         targetYaw -= e.movementX * LOOK_SPEED;
         targetPitch -= e.movementY * LOOK_SPEED;
-
-        // Clamp (Limitar) a rotação do alvo
         targetPitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetPitch));
         targetYaw = Math.max(-MAX_YAW, Math.min(MAX_YAW, targetYaw));
     }
+    
+    // CONTROLE DOS MINIGAMES
+    document.addEventListener('keydown', (e) => {
+        if (!STATE.playing || STATE.screenView.startsWith('GAME_') === false) return;
+        
+        const key = e.key.toLowerCase();
+        
+        // Snake Controls
+        if (STATE.screenView === 'GAME_SNAKE') {
+            const s = STATE.minigame.snake;
+            if ((key === 'arrowup' || key === 'w') && s.dir.y === 0) s.dir = {x:0, y:-1};
+            if ((key === 'arrowdown' || key === 's') && s.dir.y === 0) s.dir = {x:0, y:1};
+            if ((key === 'arrowleft' || key === 'a') && s.dir.x === 0) s.dir = {x:-1, y:0};
+            if ((key === 'arrowright' || key === 'd') && s.dir.x === 0) s.dir = {x:1, y:0};
+        }
+        
+        // Pacman Controls
+        if (STATE.screenView === 'GAME_PACMAN') {
+            const p = STATE.minigame.pacman;
+            let dx = 0, dy = 0;
+            if (key === 'arrowup' || key === 'w') dy = -1;
+            if (key === 'arrowdown' || key === 's') dy = 1;
+            if (key === 'arrowleft' || key === 'a') dx = -1;
+            if (key === 'arrowright' || key === 'd') dx = 1;
+            
+            if (dx !== 0 || dy !== 0) {
+                const nx = p.player.x + dx;
+                const ny = p.player.y + dy;
+                // 1 is wall
+                if (p.map[ny] && p.map[ny][nx] !== 1) {
+                    p.player.x = nx;
+                    p.player.y = ny;
+                    if (p.map[ny][nx] === 2) { // Eat dot
+                        p.map[ny][nx] = 0;
+                        p.score++;
+                        playSound('click');
+                        if (checkPacmanWin()) winMinigame();
+                    }
+                }
+            }
+        }
+    });
 
     function updateCameraSmooth() {
         if (!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole) return;
-
-        // Interpolação Linear (Lerp) para suavizar movimento
-        // Move o valor atual em direção ao alvo por uma fração (SMOOTH_FACTOR)
         camPitch += (targetPitch - camPitch) * SMOOTH_FACTOR;
         camYaw += (targetYaw - camYaw) * SMOOTH_FACTOR;
-
-        // Aplica à câmera
         camera.rotation.set(camPitch, camYaw, 0, 'YXZ');
     }
 
-    // --- SISTEMA DE DIAS E NARRATIVA ---
     function updateTimer(dt) {
-        if (STATE.gameOver || STATE.isNarrativeMode || STATE.screenView === 'LOCATION_QUIZ') return;
+        if (STATE.gameOver || STATE.isNarrativeMode || STATE.screenView === 'LOCATION_QUIZ' || STATE.screenView.startsWith('GAME_')) return;
         
         STATE.dayTime -= dt;
         
-        // --- NOVA REGRA DE DECAY DA PORTA ---
         if (STATE.doorKnocking) {
-            // 2% de dano por segundo (ajustado pelo delta time)
             const decay = 2.0 * dt; 
             STATE.doorHealth -= decay;
             if (STATE.doorHealth <= 0) checkState();
@@ -406,41 +440,31 @@
             triggerEndOfDay();
         }
         
-        // Formatar tempo
         const min = Math.floor(STATE.dayTime / 60);
         const sec = Math.floor(STATE.dayTime % 60);
         document.getElementById('timer-display').innerText = `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
         
-        // Update barra de porta visualmente continuo
         if(STATE.doorKnocking) updateHUD();
     }
 
     function triggerEndOfDay() {
-        // --- NOVA REGRA DE COTA ---
         if (STATE.dailySurvivorsLetIn < STATE.survivorsQuota) {
             triggerGameOver(`COTA NÃO ATINGIDA (${STATE.dailySurvivorsLetIn}/${STATE.survivorsQuota}). O Comando Central isolou seu bunker.`);
             return;
         }
-
         STATE.isNarrativeMode = true;
         document.exitPointerLock();
-        
-        // Escolher evento
         const eventIdx = Math.min(STATE.day - 1, NARRATIVE_EVENTS.length - 1);
         const event = NARRATIVE_EVENTS[eventIdx] || NARRATIVE_EVENTS[NARRATIVE_EVENTS.length-1];
-        
-        // Setup UI
         const overlay = document.getElementById('narrative-overlay');
         const title = document.getElementById('narrative-title');
         const body = document.getElementById('narrative-body');
         const choicesDiv = document.getElementById('narrative-choices');
         const consq = document.getElementById('consequence-text');
-        
         title.innerText = event.title;
         body.innerText = event.body;
         consq.style.opacity = 0;
         choicesDiv.innerHTML = '';
-        
         event.choices.forEach(choice => {
             const btn = document.createElement('button');
             btn.className = 'choice-btn';
@@ -448,29 +472,22 @@
             btn.onclick = () => resolveNarrative(choice);
             choicesDiv.appendChild(btn);
         });
-        
         overlay.style.display = 'flex';
-        playSound('travel'); // Som dramático
+        playSound('travel');
     }
 
     function resolveNarrative(choice) {
-        // Aplicar efeitos
         if (choice.effect.sanity) STATE.sanity += choice.effect.sanity;
         if (choice.effect.energy) STATE.energy += choice.effect.energy;
         if (choice.effect.family) STATE.familyMood += choice.effect.family;
         if (choice.effect.door) STATE.doorHealth += choice.effect.door;
-        
-        // Limites
         STATE.sanity = Math.min(100, Math.max(0, STATE.sanity));
         STATE.energy = Math.min(100, Math.max(0, STATE.energy));
         STATE.familyMood = Math.min(100, Math.max(0, STATE.familyMood));
         STATE.doorHealth = Math.min(100, Math.max(0, STATE.doorHealth));
-
-        // Feedback
         const consq = document.getElementById('consequence-text');
         consq.innerText = choice.msg || "Sua família vai se lembrar disso.";
         consq.style.opacity = 1;
-        
         document.getElementById('narrative-choices').innerHTML = '<button class="choice-btn" id="next-day-btn">INICIAR PRÓXIMO DIA</button>';
         document.getElementById('next-day-btn').onclick = startNextDay;
     }
@@ -478,23 +495,18 @@
     function startNextDay() {
         document.getElementById('narrative-overlay').style.display = 'none';
         document.body.requestPointerLock();
-        
         STATE.day++;
-        STATE.dayTime = 300; // Reset timer 5 min
+        STATE.dayTime = 300;
         STATE.isNarrativeMode = false;
-        STATE.dailySurvivorsLetIn = 0; // Reset cota
-        
-        // Degradação passiva diária
+        STATE.dailySurvivorsLetIn = 0;
         STATE.familyMood -= 10;
         STATE.energy -= 10;
-
         checkState();
         if (!STATE.gameOver) {
             logMessage(`DIA ${STATE.day} INICIADO. COTA: 0/${STATE.survivorsQuota}`);
         }
     }
 
-    // --- FUNÇÕES BÁSICAS ---
     function unlockTrophy(key) {
         if (!TROPHIES[key] || STATE.stats.unlockedTrophies.includes(key)) return;
         STATE.stats.unlockedTrophies.push(key);
@@ -596,14 +608,28 @@
         ctx.shadowBlur = 4; ctx.shadowColor = CRT_COLOR; ctx.fillStyle = CRT_COLOR;
         osButtons = [];
 
-        if (STATE.screenView === 'DESKTOP') {
+        // --- MINIGAME LOOPS ---
+        if (STATE.screenView === 'GAME_SNAKE') updateAndDrawSnake(ctx);
+        else if (STATE.screenView === 'GAME_MEMORY') drawMemory(ctx);
+        else if (STATE.screenView === 'GAME_PACMAN') drawPacman(ctx);
+
+        // --- SCREENS ---
+        else if (STATE.screenView === 'DESKTOP') {
             ctx.font = '28px monospace'; ctx.fillText(`PLURIBUS OS v9.0`, 40, 50);
             if (STATE.doorKnocking) { ctx.fillStyle = 'red'; ctx.shadowColor = 'red'; ctx.fillText("ALERTA DE SEGURANÇA", 120, 450); ctx.fillStyle = CRT_COLOR; ctx.shadowColor = CRT_COLOR; }
             osButtons.push({ action: 'GO_MAP', ...drawButton(ctx, 40, 100, 430, 50, "EXPEDIÇÃO") });
             osButtons.push({ action: 'GO_FAMILY', ...drawButton(ctx, 40, 170, 430, 50, "FAMÍLIA") });
-            osButtons.push({ action: 'GO_REPAIR', ...drawButton(ctx, 40, 240, 430, 50, "MANUTENÇÃO") });
+            osButtons.push({ action: 'GO_REPAIR', ...drawButton(ctx, 40, 240, 200, 50, "MANUTENÇÃO") });
+            osButtons.push({ action: 'GO_GAMES', ...drawButton(ctx, 270, 240, 200, 50, "JOGOS") }); // New Button
             osButtons.push({ action: 'GO_TROPHIES', ...drawButton(ctx, 40, 310, 200, 50, "TROFÉUS") });
             osButtons.push({ action: 'MAIL', ...drawButton(ctx, 270, 310, 200, 50, "DIÁRIO") });
+        }
+        else if (STATE.screenView === 'GAMES_MENU') {
+            ctx.fillText("JOGOS - RECUPERAR SANIDADE", 40, 50);
+            osButtons.push({ action: 'START_SNAKE', ...drawButton(ctx, 40, 100, 430, 50, "COBRINHA") });
+            osButtons.push({ action: 'START_MEMORY', ...drawButton(ctx, 40, 170, 430, 50, "MEMÓRIA") });
+            osButtons.push({ action: 'START_PACMAN', ...drawButton(ctx, 40, 240, 430, 50, "LABIRINTO") });
+            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
         }
         else if (STATE.screenView === 'TROPHIES') {
             ctx.fillText("COLEÇÃO DE TROFÉUS", 40, 50); let y = 100;
@@ -655,6 +681,173 @@
         ctx.fillStyle = "rgba(255, 200, 0, 0.1)"; for (let i = 0; i < CANVAS_H; i += 4) ctx.fillRect(0, i, CANVAS_W, 2);
         monitorTexture.needsUpdate = true;
     }
+    
+    // --- MINIGAME LOGIC ---
+    
+    function winMinigame() {
+        STATE.sanity = Math.min(100, STATE.sanity + 15);
+        playSound('trophy');
+        STATE.quiz.resultMsg = "VITÓRIA! SANIDADE +15";
+        STATE.screenView = 'RESULT';
+        setTimeout(() => { STATE.screenView = 'GAMES_MENU'; }, 2000);
+    }
+
+    function initSnake() {
+        STATE.minigame.snake = { snake: [{x:10, y:10}], dir: {x:1, y:0}, food: {x:15, y:15}, score: 0, speed: 10, tick: 0 };
+        STATE.screenView = 'GAME_SNAKE';
+    }
+    function updateAndDrawSnake(ctx) {
+        const s = STATE.minigame.snake;
+        ctx.fillText(`SCORE: ${s.score}/5`, 20, 30);
+        ctx.fillStyle = CRT_COLOR;
+        osButtons.push({ action: 'BACK_GAME', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") });
+
+        s.tick++;
+        if (s.tick > s.speed) {
+            s.tick = 0;
+            const head = { x: s.snake[0].x + s.dir.x, y: s.snake[0].y + s.dir.y };
+            
+            // Collision Wall
+            if (head.x < 0 || head.x >= 25 || head.y < 0 || head.y >= 25) { playSound('shock'); initSnake(); return; }
+            
+            // Collision Self
+            for(let p of s.snake) if(head.x===p.x && head.y===p.y) { playSound('shock'); initSnake(); return; }
+
+            s.snake.unshift(head);
+            
+            // Eat Food
+            if (head.x === s.food.x && head.y === s.food.y) {
+                s.score++;
+                s.food = { x: Math.floor(Math.random()*25), y: Math.floor(Math.random()*25) };
+                playSound('click');
+                if (s.score >= 5) winMinigame();
+            } else {
+                s.snake.pop();
+            }
+        }
+
+        // Draw
+        const size = 18;
+        ctx.fillStyle = CRT_COLOR;
+        s.snake.forEach(p => ctx.fillRect(20 + p.x * size, 50 + p.y * size, size-2, size-2));
+        ctx.fillStyle = '#ff3333';
+        ctx.fillRect(20 + s.food.x * size, 50 + s.food.y * size, size-2, size-2);
+    }
+
+    function initMemory() {
+        const icons = ['A', 'B', 'C', 'D', 'E', 'F'];
+        let cards = [...icons, ...icons];
+        cards = cards.sort(() => Math.random() - 0.5).map((val, i) => ({ id: i, val, flipped: false, matched: false }));
+        STATE.minigame.memory = { cards, flipped: [], matches: 0, locked: false };
+        STATE.screenView = 'GAME_MEMORY';
+    }
+    function drawMemory(ctx) {
+        ctx.fillText(`PARES: ${STATE.minigame.memory.matches}/6`, 20, 30);
+        osButtons.push({ action: 'BACK_GAME', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") });
+        
+        const cols = 4; const size = 80; const gap = 10;
+        STATE.minigame.memory.cards.forEach((card, i) => {
+            const c = i % cols; const r = Math.floor(i / cols);
+            const x = 50 + c * (size + gap); const y = 60 + r * (size + gap);
+            
+            osButtons.push({ action: `MEM_${i}`, x, y, w: size, h: size });
+            
+            ctx.strokeStyle = CRT_COLOR; ctx.strokeRect(x, y, size, size);
+            if (card.flipped || card.matched) {
+                ctx.fillStyle = card.matched ? '#00ff00' : CRT_COLOR;
+                ctx.font = '40px monospace';
+                ctx.fillText(card.val, x + 25, y + 55);
+            } else {
+                ctx.fillStyle = '#333';
+                ctx.fillRect(x+5, y+5, size-10, size-10);
+            }
+        });
+    }
+    function handleMemoryClick(idx) {
+        const m = STATE.minigame.memory;
+        if (m.locked || m.cards[idx].flipped || m.cards[idx].matched) return;
+        
+        m.cards[idx].flipped = true;
+        m.flipped.push(idx);
+        playSound('click');
+
+        if (m.flipped.length === 2) {
+            m.locked = true;
+            const c1 = m.cards[m.flipped[0]];
+            const c2 = m.cards[m.flipped[1]];
+            
+            if (c1.val === c2.val) {
+                c1.matched = true; c2.matched = true;
+                m.flipped = []; m.locked = false; m.matches++;
+                playSound('click');
+                if (m.matches === 6) winMinigame();
+            } else {
+                setTimeout(() => {
+                    c1.flipped = false; c2.flipped = false;
+                    m.flipped = []; m.locked = false;
+                    playSound('shock');
+                }, 800);
+            }
+        }
+    }
+
+    function initPacman() {
+        // 0: empty, 1: wall, 2: dot
+        // Simple 15x15 maze
+        const map = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,2,2,2,2,1,2,2,2,2,2,2,2,1],
+            [1,2,1,1,1,2,1,2,1,1,1,1,1,2,1],
+            [1,2,1,2,2,2,2,2,2,2,2,1,2,2,1],
+            [1,2,1,2,1,1,1,1,1,1,2,1,2,1,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,2,1,1,2,1,1,0,1,1,2,1,1,2,1], // Center empty
+            [1,2,2,2,2,1,0,0,0,1,2,2,2,2,1],
+            [1,2,1,1,2,1,1,1,1,1,2,1,1,2,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,2,1,1,1,2,1,1,1,2,1,1,1,2,1],
+            [1,2,2,2,1,2,2,1,2,2,1,2,2,2,1],
+            [1,1,1,2,1,1,2,1,2,1,1,2,1,1,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+        let totalDots = 0;
+        map.forEach(row => row.forEach(cell => { if(cell===2) totalDots++; }));
+        STATE.minigame.pacman = { player: {x:1, y:1}, score: 0, totalDots, map, width: 15, height: 15 };
+        STATE.screenView = 'GAME_PACMAN';
+    }
+    function checkPacmanWin() { return STATE.minigame.pacman.score >= STATE.minigame.pacman.totalDots; }
+    function drawPacman(ctx) {
+        const p = STATE.minigame.pacman;
+        ctx.fillText(`DOTS: ${p.score}/${p.totalDots}`, 20, 30);
+        osButtons.push({ action: 'BACK_GAME', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") });
+
+        const size = 25;
+        const offsetX = 60; const offsetY = 50;
+
+        for(let y=0; y<p.height; y++) {
+            for(let x=0; x<p.width; x++) {
+                const type = p.map[y][x];
+                const px = offsetX + x * size;
+                const py = offsetY + y * size;
+                if (type === 1) { // Wall
+                    ctx.fillStyle = '#3333cc';
+                    ctx.fillRect(px, py, size, size);
+                } else if (type === 2) { // Dot
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.fillRect(px + 10, py + 10, 5, 5);
+                }
+            }
+        }
+        // Player
+        ctx.fillStyle = '#ffff00';
+        ctx.beginPath();
+        ctx.arc(offsetX + p.player.x * size + size/2, offsetY + p.player.y * size + size/2, size/2 - 2, 0.2 * Math.PI, 1.8 * Math.PI);
+        ctx.lineTo(offsetX + p.player.x * size + size/2, offsetY + p.player.y * size + size/2);
+        ctx.fill();
+    }
+
+    // --- END MINIGAME LOGIC ---
 
     function startExpedition(loc) {
         STATE.currentLocation = loc; playSound('travel');
@@ -689,13 +882,23 @@
     }
 
     function handleMonitorClick(uv) {
-        const x = uv.x * CANVAS_W, y = (1 - uv.y) * CANVAS_H; playSound('click');
+        const x = uv.x * CANVAS_W, y = (1 - uv.y) * CANVAS_H; 
+        // Only play click sound if not in game mode (prevent audio spam) or if pressing UI buttons
+        let clickedUI = false;
+
         for (let btn of osButtons) {
             if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+                clickedUI = true;
+                playSound('click');
                 if (btn.action === 'GO_MAP') STATE.screenView = 'MAP';
                 else if (btn.action === 'GO_FAMILY') STATE.screenView = 'FAMILY';
                 else if (btn.action === 'GO_REPAIR') STATE.screenView = 'REPAIR';
                 else if (btn.action === 'GO_TROPHIES') STATE.screenView = 'TROPHIES';
+                else if (btn.action === 'GO_GAMES') STATE.screenView = 'GAMES_MENU';
+                else if (btn.action === 'START_SNAKE') initSnake();
+                else if (btn.action === 'START_MEMORY') initMemory();
+                else if (btn.action === 'START_PACMAN') initPacman();
+                else if (btn.action === 'BACK_GAME') STATE.screenView = 'GAMES_MENU';
                 else if (btn.action === 'MAIL') STATE.screenView = 'MAIL';
                 else if (btn.action === 'BACK') STATE.screenView = 'DESKTOP';
                 else if (btn.action === 'FAM_FEED' && STATE.energy >= 20) { STATE.energy -= 20; STATE.familyMood = Math.min(100, STATE.familyMood + 30); }
@@ -705,6 +908,7 @@
                 else if (btn.action === 'GO_PHARMA') startExpedition('PHARMACY');
                 else if (btn.action === 'GO_STREET') startExpedition('STREETS');
                 else if (btn.action.startsWith('ANS_')) handleQuizAnswer(parseInt(btn.action.split('_')[1]));
+                else if (btn.action.startsWith('MEM_')) handleMemoryClick(parseInt(btn.action.split('_')[1]));
             }
         }
     }
@@ -714,7 +918,6 @@
         STATE.doorKnocking = true;
         STATE.visitor = VISITOR_TYPES[Math.floor(Math.random() * VISITOR_TYPES.length)];
         STATE.interrogated = false; playSound('knock', {x: 3, y: 1, z: 0});
-        // STATE.doorHealth -= 5; // Removido dano instantâneo, agora é continuo
         updateHUD();
         const b = setInterval(() => { if (!STATE.doorKnocking) { clearInterval(b); pointLightEmergency.intensity = 0; return; } pointLightEmergency.intensity = pointLightEmergency.intensity > 0 ? 0 : 3; }, 600);
         logMessage(`ALERTA NA PORTA.`);
@@ -727,10 +930,7 @@
                 if (STATE.visitor.reward.energy) STATE.energy += STATE.visitor.reward.energy;
                 if (STATE.visitor.reward.sanity) STATE.sanity += STATE.visitor.reward.sanity;
                 if (STATE.visitor.reward.door) STATE.doorHealth += STATE.visitor.reward.door;
-                
-                // --- NOVA CONTAGEM DE COTA ---
                 STATE.dailySurvivorsLetIn++;
-                
                 STATE.stats.humansSaved++; if (STATE.stats.humansSaved >= 3) unlockTrophy('SAVIOR');
                 playSound('click'); logMessage("Acesso permitido.");
             } else {
@@ -742,7 +942,6 @@
             if (STATE.visitor.type === 'good') { STATE.sanity -= 20; logMessage("Inocente eletrocutado."); }
             else { STATE.sanity += 10; STATE.stats.monstersKilled++; if (STATE.stats.monstersKilled >= 3) unlockTrophy('SLAYER'); logMessage("Ameaça eliminada."); }
         }
-        // Clamp stats
         STATE.energy = Math.min(100, STATE.energy); STATE.sanity = Math.min(100, STATE.sanity);
         STATE.doorHealth = Math.min(100, STATE.doorHealth);
         checkState();
@@ -759,8 +958,6 @@
     function exitPeepholeMode() {
         STATE.lookingAtPeephole = false; document.getElementById('peephole-ui').style.display = 'none';
         document.body.requestPointerLock(); 
-        
-        // Reset camera rotation to look forward
         camPitch = 0; camYaw = 0; targetPitch = 0; targetYaw = 0;
         camera.position.set(0, 1.2, 2); camera.lookAt(0, 1.2, 0);
     }
@@ -787,10 +984,7 @@
         pointLightPC = new THREE.PointLight(0xffcc00, 1, 4); pointLightPC.position.set(0,1.2,0.5); scene.add(pointLightPC);
         pointLightEmergency = new THREE.PointLight(0xff0000, 0, 15); pointLightEmergency.position.set(2.5,2.8,0); scene.add(pointLightEmergency);
         window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
-        
-        // NOVO: Uso da função melhorada onMouseMove
         document.addEventListener('mousemove', onMouseMove);
-        
         document.addEventListener('click', () => {
             if(!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole) return;
             raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
@@ -810,10 +1004,7 @@
         requestAnimationFrame(animate); if(!STATE.playing || STATE.gameOver) return;
         const dt = clock.getDelta();
         updateTimer(dt);
-        
-        // NOVO: Atualização suave da câmera
         updateCameraSmooth();
-        
         updateEnvironment3D(); updateHUD(); drawOS();
         if(STATE.currentLocation === 'BUNKER' && !STATE.doorKnocking && !STATE.lookingAtPeephole && Math.random() < 0.001) triggerKnockEvent();
         renderer.render(scene, camera);
