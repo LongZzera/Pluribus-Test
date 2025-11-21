@@ -297,12 +297,42 @@
     };
 
     const VISITOR_TYPES = [
-        { id: 'survivor', type: 'good', name: 'Sobrevivente', visual: `___\n(o o)\n| - |\n-----`, prompt: "Humano desesperado. Fale 10 palavras pedindo abrigo.", reward: { energy: 10, sanity: 5 }, desc: "Apenas alguém tentando viver." },
-        { id: 'medic', type: 'good', name: 'Médico', visual: `___\n(o o)\n| + |\n-----`, prompt: "Médico militar calmo.", reward: { energy: 10, sanity: 30 }, desc: "Traz remédios." },
-        { id: 'mechanic', type: 'good', name: 'Mecânico', visual: `___\n[o o]\n| # |\n-----`, prompt: "Mecânico prático.", reward: { energy: 10, door: 40 }, desc: "Pode reparar a porta." },
-        { id: 'mimic', type: 'bad', name: 'Mímico', visual: `___\n(o o)\n| O |\n-----`, prompt: "Monstro Mímico. Tente falar como humano, mas falhe.", damage: { door: 30, sanity: 30 }, desc: "Finge ser gente." },
-        { id: 'brute', type: 'bad', name: 'Brutamontes', visual: `/ \\\n(X X)\n(###)\n\\___/`, prompt: "Monstro violento.", damage: { door: 60, sanity: 10 }, desc: "Dano massivo na porta." },
-        { id: 'cultist', type: 'bad', name: 'Cultista', visual: ` / \\\n(o o)\n |^| \n-----`, prompt: "Fanático religioso.", damage: { door: 10, sanity: 50 }, desc: "Drena sua sanidade." }
+        { 
+            id: 'survivor', type: 'good', name: 'Sobrevivente', visual: `___\n(o o)\n| - |\n-----`, 
+            prompt: "Humano desesperado. Fale 10 palavras pedindo abrigo.", reward: { energy: 10, sanity: 5 }, 
+            desc: "Apenas alguém tentando viver.",
+            lines: ["Por favor, abram! Eles estão vindo!", "Tenho comida... troco por abrigo.", "Não sou um deles, juro!", "Minha perna está sangrando..."]
+        },
+        { 
+            id: 'medic', type: 'good', name: 'Médico', visual: `___\n(o o)\n| + |\n-----`, 
+            prompt: "Médico militar calmo.", reward: { energy: 10, sanity: 30 }, 
+            desc: "Traz remédios.",
+            lines: ["Sou médico da Divisão 4. Tenho penicilina.", "Posso tratar seus feridos.", "Preciso de um local seguro para operar.", "A infecção está se espalhando lá fora."]
+        },
+        { 
+            id: 'mechanic', type: 'good', name: 'Mecânico', visual: `___\n[o o]\n| # |\n-----`, 
+            prompt: "Mecânico prático.", reward: { energy: 10, door: 40 }, 
+            desc: "Pode reparar a porta.",
+            lines: ["Essa porta vai ceder logo. Posso consertar.", "Tenho ferramentas e sucata.", "O filtro de ar de vocês está falhando.", "Engenheiro Nível 3 solicitando acesso."]
+        },
+        { 
+            id: 'mimic', type: 'bad', name: 'Mímico', visual: `___\n(o o)\n| O |\n-----`, 
+            prompt: "Monstro Mímico. Tente falar como humano, mas falhe.", damage: { door: 30, sanity: 30 }, 
+            desc: "Finge ser gente.",
+            lines: ["Abra... a... porta... amigos.", "Eu sou... humano... como... vocês...", "Carne... fresca... digo... abrigo.", "Mãe? Pai? Sou eu..."]
+        },
+        { 
+            id: 'brute', type: 'bad', name: 'Brutamontes', visual: `/ \\\n(X X)\n(###)\n\\___/`, 
+            prompt: "Monstro violento.", damage: { door: 60, sanity: 10 }, 
+            desc: "Dano massivo na porta.",
+            lines: ["GRRAAAAAH!", "ESMAGAR!", "FOME!", "(Sons de metal sendo amassado)"]
+        },
+        { 
+            id: 'cultist', type: 'bad', name: 'Cultista', visual: ` / \\\n(o o)\n |^| \n-----`, 
+            prompt: "Fanático religioso.", damage: { door: 10, sanity: 50 }, 
+            desc: "Drena sua sanidade.",
+            lines: ["A Junção nos fará um só.", "Abram para a glória do Novo Amanhecer.", "Seus genes são impuros.", "O silêncio é a única salvação."]
+        }
     ];
 
     const STATE = {
@@ -319,6 +349,8 @@
         dailySurvivorsLetIn: 0,
         survivorsQuota: 2,
         
+        // CONTROLE DE VISITA
+        nextVisitorTimer: 60, // 60 segundos
         doorKnocking: false,
         visitor: null,
         lookingAtPeephole: false,
@@ -336,7 +368,14 @@
             active: null, // 'SNAKE', 'MEMORY', 'PACMAN'
             snake: { snake: [{x:10, y:10}], dir: {x:0, y:0}, food: {x:15, y:15}, score: 0, speed: 10, tick: 0 },
             memory: { cards: [], flipped: [], matches: 0, locked: false, grid: [4, 3] },
-            pacman: { player: {x:1, y:1}, score: 0, map: [], width: 15, height: 15 }
+            pacman: { 
+                player: {x:1, y:1}, 
+                ghost: {x:7, y:7, tick: 0, speed: 8}, // Velocidade ajustada
+                score: 0, 
+                map: [], 
+                width: 15, 
+                height: 15 
+            }
         }
     };
 
@@ -429,6 +468,15 @@
         
         STATE.dayTime -= dt;
         
+        // --- MECÂNICA DE VISITA AGENDADA (1 MINUTO) ---
+        if (STATE.currentLocation === 'BUNKER' && !STATE.doorKnocking && !STATE.isNarrativeMode) {
+            STATE.nextVisitorTimer -= dt;
+            if (STATE.nextVisitorTimer <= 0) {
+                triggerKnockEvent();
+                STATE.nextVisitorTimer = 60; // Resetar para 1 minuto
+            }
+        }
+
         if (STATE.doorKnocking) {
             const decay = 2.0 * dt; 
             STATE.doorHealth -= decay;
@@ -508,14 +556,20 @@
     }
 
     function unlockTrophy(key) {
-        if (!TROPHIES[key] || STATE.stats.unlockedTrophies.includes(key)) return;
-        STATE.stats.unlockedTrophies.push(key);
+        if (!TROPHIES[key]) return;
+        
+        // Correção: Usar o ID interno do troféu para verificação e armazenamento
+        const trophyId = TROPHIES[key].id;
+        if (STATE.stats.unlockedTrophies.includes(trophyId)) return;
+        
+        STATE.stats.unlockedTrophies.push(trophyId);
+        
         const popup = document.getElementById('trophy-popup');
         document.getElementById('trophy-icon').innerText = TROPHIES[key].icon;
         document.getElementById('trophy-name').innerText = TROPHIES[key].title;
         popup.style.top = '20px'; setTimeout(() => popup.style.top = '-100px', 4000);
         playSound('trophy');
-        if (STATE.stats.unlockedTrophies.length === Object.keys(TROPHIES).length - 1 && !STATE.stats.unlockedTrophies.includes('PLATINUM')) setTimeout(() => unlockTrophy('PLATINUM'), 2000);
+        if (STATE.stats.unlockedTrophies.length === Object.keys(TROPHIES).length - 1 && !STATE.stats.unlockedTrophies.includes('plat')) setTimeout(() => unlockTrophy('PLATINUM'), 2000);
     }
 
     function updateHUD() {
@@ -539,19 +593,42 @@
         const txt = document.getElementById('dialogue-text');
         document.getElementById('dialogue-box').style.display = 'block';
         txt.innerText = "Analisando...";
+        
+        // MODO SEM API (FALLBACK ROBUSTO)
+        if (!apiKey || apiKey === "") {
+            // Seleciona uma frase aleatória do tipo de visitante
+            const lines = visitor.lines || [visitor.desc];
+            const line = lines[Math.floor(Math.random() * lines.length)];
+            // Simula um pequeno atraso de "processamento"
+            setTimeout(() => {
+                typeWriterEffect(`"${line}"\n\n(ANÁLISE: ${visitor.name}. ${visitor.desc})`, txt);
+            }, 500);
+            return;
+        }
+
         try {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: visitor.prompt + " Max 12 palavras." }] }] })
+                body: JSON.stringify({ 
+                    contents: [{ parts: [{ text: visitor.prompt + " Max 12 palavras." }] }],
+                    generationConfig: { maxOutputTokens: 50 } 
+                })
             });
             const data = await res.json();
-            typeWriterEffect(data.candidates[0].content.parts[0].text, txt);
-        } catch (e) { typeWriterEffect("...estática...", txt); }
+            const aiText = data.candidates[0].content.parts[0].text;
+            typeWriterEffect(aiText, txt);
+        } catch (e) { 
+            // Fallback se a API falhar mesmo com chave
+            const lines = visitor.lines || [visitor.desc];
+            const line = lines[Math.floor(Math.random() * lines.length)];
+            typeWriterEffect(`"${line}"`, txt);
+        }
     }
 
     function typeWriterEffect(text, el) {
         el.innerText = ""; let i = 0;
-        function type() { if (i < text.length) { el.innerText += text.charAt(i); i++; setTimeout(type, 50); } }
+        // CHANGED speed from 50 to 15 for faster typing
+        function type() { if (i < text.length) { el.innerText += text.charAt(i); i++; setTimeout(type, 15); } }
         type();
     }
 
@@ -611,7 +688,7 @@
         // --- MINIGAME LOOPS ---
         if (STATE.screenView === 'GAME_SNAKE') updateAndDrawSnake(ctx);
         else if (STATE.screenView === 'GAME_MEMORY') drawMemory(ctx);
-        else if (STATE.screenView === 'GAME_PACMAN') drawPacman(ctx);
+        else if (STATE.screenView === 'GAME_PACMAN') updateAndDrawPacman(ctx);
 
         // --- SCREENS ---
         else if (STATE.screenView === 'DESKTOP') {
@@ -813,17 +890,93 @@
         ];
         let totalDots = 0;
         map.forEach(row => row.forEach(cell => { if(cell===2) totalDots++; }));
-        STATE.minigame.pacman = { player: {x:1, y:1}, score: 0, totalDots, map, width: 15, height: 15 };
+        STATE.minigame.pacman = { 
+            player: {x:1, y:1}, 
+            ghost: {x:7, y:7, tick: 0, speed: 8}, // Fantasma
+            score: 0, totalDots, map, width: 15, height: 15 
+        };
         STATE.screenView = 'GAME_PACMAN';
     }
+    
     function checkPacmanWin() { return STATE.minigame.pacman.score >= STATE.minigame.pacman.totalDots; }
-    function drawPacman(ctx) {
+    
+    function updateAndDrawPacman(ctx) {
         const p = STATE.minigame.pacman;
         ctx.fillText(`DOTS: ${p.score}/${p.totalDots}`, 20, 30);
         osButtons.push({ action: 'BACK_GAME', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") });
 
         const size = 25;
         const offsetX = 60; const offsetY = 50;
+
+        // --- LÓGICA DO FANTASMA (BFS) ---
+        p.ghost.tick++;
+        if (p.ghost.tick > p.ghost.speed) {
+            p.ghost.tick = 0;
+            
+            // BFS para encontrar o próximo passo
+            const startNode = {x: p.ghost.x, y: p.ghost.y};
+            const targetNode = {x: p.player.x, y: p.player.y};
+            
+            // Queue stores paths: [ {x,y}, {x,y}, ... ]
+            let queue = [ [startNode] ];
+            let visited = new Set();
+            visited.add(`${startNode.x},${startNode.y}`);
+            
+            let nextMove = null;
+            
+            // Limite de iterações para não travar se não houver caminho (segurança)
+            let iterations = 0;
+            
+            while (queue.length > 0 && iterations < 300) {
+                iterations++;
+                let path = queue.shift();
+                let current = path[path.length - 1];
+                
+                if (current.x === targetNode.x && current.y === targetNode.y) {
+                    // Caminho encontrado! O próximo passo é o segundo elemento do caminho (índice 1)
+                    // Índice 0 é a posição atual do fantasma
+                    if (path.length > 1) {
+                        nextMove = path[1];
+                    }
+                    break;
+                }
+                
+                // Vizinhos: Cima, Baixo, Esquerda, Direita
+                const neighbors = [
+                    {x: current.x, y: current.y - 1},
+                    {x: current.x, y: current.y + 1},
+                    {x: current.x - 1, y: current.y},
+                    {x: current.x + 1, y: current.y}
+                ];
+                
+                for (let neighbor of neighbors) {
+                    // Check bounds and walls
+                    if (neighbor.x >= 0 && neighbor.x < p.width && 
+                        neighbor.y >= 0 && neighbor.y < p.height &&
+                        p.map[neighbor.y][neighbor.x] !== 1) {
+                            
+                        const key = `${neighbor.x},${neighbor.y}`;
+                        if (!visited.has(key)) {
+                            visited.add(key);
+                            let newPath = [...path, neighbor];
+                            queue.push(newPath);
+                        }
+                    }
+                }
+            }
+            
+            if (nextMove) {
+                p.ghost.x = nextMove.x;
+                p.ghost.y = nextMove.y;
+            }
+            
+            // Colisão com Jogador (Game Over do Minigame)
+            if (p.ghost.x === p.player.x && p.ghost.y === p.player.y) {
+                playSound('shock');
+                initPacman(); // Reinicia o jogo
+                return;
+            }
+        }
 
         for(let y=0; y<p.height; y++) {
             for(let x=0; x<p.width; x++) {
@@ -839,7 +992,14 @@
                 }
             }
         }
-        // Player
+        
+        // Draw Ghost (Red)
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(offsetX + p.ghost.x * size + size/2, offsetY + p.ghost.y * size + size/2, size/2 - 2, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Draw Player (Yellow)
         ctx.fillStyle = '#ffff00';
         ctx.beginPath();
         ctx.arc(offsetX + p.player.x * size + size/2, offsetY + p.player.y * size + size/2, size/2 - 2, 0.2 * Math.PI, 1.8 * Math.PI);
@@ -1006,7 +1166,8 @@
         updateTimer(dt);
         updateCameraSmooth();
         updateEnvironment3D(); updateHUD(); drawOS();
-        if(STATE.currentLocation === 'BUNKER' && !STATE.doorKnocking && !STATE.lookingAtPeephole && Math.random() < 0.001) triggerKnockEvent();
+        // REMOVED RANDOM KNOCK HERE (Handled in updateTimer)
+        // if(STATE.currentLocation === 'BUNKER' && !STATE.doorKnocking && !STATE.lookingAtPeephole && Math.random() < 0.001) triggerKnockEvent();
         renderer.render(scene, camera);
     }
 
