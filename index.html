@@ -155,7 +155,7 @@
     <p>
         <b>OBJETIVO:</b> Sobreviva até o Dia 8.<br>
         <b>COTA:</b> Verifique a cota diária no monitor.<br>
-        <b>NOVOS MÉTODOS:</b> Resgate em expedições ou use o rádio.
+        <b>NOVOS MÉTODOS:</b> Resgate em expedições, rádio ou decodifique arquivos.
     </p>
 </div>
 
@@ -300,15 +300,8 @@
                 { text: "Sobrecarrregar gerador (Gasta Energia, Aumenta Porta)", effect: { energy: -50, door: 50 }, msg: "As luzes piscam, mas as travas magnéticas estão no máximo." },
                 { text: "Racionar para fuga (Recupera Energia, Perde Porta)", effect: { energy: 30, door: -20 }, msg: "Energia guardada para os exosuites. A porta fica por conta própria." }
             ]
-        },
-        {
-            title: "DIA 8: A HORA DA VERDADE",
-            body: "O dia amanheceu vermelho. O resgate prometido pela resistência está a caminho, mas eles precisam de um sinal claro de que há humanos vivos aqui, ou bombardearão o setor.",
-            choices: [
-                { text: "Disparar sinalizador (Atrai Monstros)", effect: { door: -40 }, msg: "O céu se ilumina. Eles nos viram. Mas os monstros também." },
-                { text: "Rádio na frequência máxima (Gasta Sanidade)", effect: { sanity: -30 }, msg: "O ruído branco é ensurdecedor, mas o código foi enviado." }
-            ]
         }
+        // DIA 8 AGORA É GERADO DINAMICAMENTE
     ];
 
     // --- TROFÉUS EXPANDIDOS ---
@@ -323,15 +316,19 @@
         RADIO_OP: { id: 'radio_op', title: "Operador de Rádio", desc: "Sincronizou 3 sinais.", icon: "📡" },
         VETERAN: { id: 'veteran', title: "Veterano", desc: "Chegou ao Dia 8.", icon: "🎖️" },
         DOCTOR: { id: 'doctor', title: "Médico de Campo", desc: "Curou a família 3 vezes.", icon: "💊" },
+        TRUTH_SEEKER: { id: 'truth', title: "Verdade Oculta", desc: "Descobriu a verdade sobre o bunker.", icon: "👁️" },
         PLATINUM: { id: 'plat', title: "A JUNÇÃO PERFEITA", desc: "Coletou todos os troféus.", icon: "🏆" }
     };
 
     const LORE_DATABASE = [
-        { id: 1, title: "PROTOCOLO 0", text: "A Junção não é salvação. É um filtro. Apenas o DNA puro deve restar. O bunker é uma gaiola." },
-        { id: 2, title: "MÍMICOS", text: "Eles não conseguem piscar corretamente. Observe os olhos. Eles repetem a última palavra." },
-        { id: 3, title: "FREQUÊNCIA 98.5", text: "Ouve-se música clássica na 98.5. Dizem que acalma os brutamontes. Vale a pena tentar." },
-        { id: 4, title: "BUNKER 7", text: "Nós somos o grupo de controle. Não há resgate vindo. A comida tem sedativos." },
-        { id: 5, title: "CULTISTAS", text: "Eles usam mantos para esconder as mutações. Não olhe para a luz que eles carregam." }
+        { id: 1, title: "PROTOCOLO 0", text: "A Junção não é salvação. É um filtro. Apenas o DNA puro deve restar. O bunker é uma gaiola.", encrypted: false },
+        { id: 2, title: "MÍMICOS", text: "Eles não conseguem piscar corretamente. Observe os olhos. Eles repetem a última palavra.", encrypted: false },
+        { id: 3, title: "FREQUÊNCIA 98.5", text: "Ouve-se música clássica na 98.5. Dizem que acalma os brutamontes. Vale a pena tentar.", encrypted: false },
+        { id: 4, title: "BUNKER 7", text: "Nós somos o grupo de controle. Não há resgate vindo. A comida tem sedativos.", encrypted: false },
+        { id: 5, title: "CULTISTAS", text: "Eles usam mantos para esconder as mutações. Não olhe para a luz que eles carregam.", encrypted: false },
+        // NOVOS ARQUIVOS CRIPTOGRAFADOS PARA FINAIS
+        { id: 6, title: "MAPA DOS TÚNEIS", text: "HÁ UMA SAÍDA DE EMERGÊNCIA NOS DUTOS DO SETOR 4. O RESGATE DA CORPORAÇÃO É UMA ARMADILHA DE LIMPEZA.", encrypted: true, scrambled: "X7A U#A S@!DA D3 EM3RG... [DADOS CORROMPIDOS]" },
+        { id: 7, title: "PROJETO GÊNESE", text: "VOCÊ NÃO É UM SOBREVIVENTE. VOCÊ É O ADMINISTRADOR DE TESTE 09. A FAMÍLIA SÃO BIODROIDS DE TESTE DE ESTRESSE.", encrypted: true, scrambled: "V0C# N@0 E U% S0BR3V... [ACESSO NEGADO]" }
     ];
 
     const VISITOR_TYPES = [
@@ -403,7 +400,8 @@
         isNarrativeMode: false,
         
         // LORE & RADIO PUZZLE
-        unlockedLore: [], 
+        unlockedLore: [], // Lista de IDs desbloqueados
+        decodedLore: [], // Lista de IDs decodificados
         radio: { 
             target: { freq: 5, amp: 50 }, 
             current: { freq: 2, amp: 20 }, 
@@ -445,15 +443,18 @@
     const QUIZ_DATA = {
         MARKET: [
             { q: "Lata sem rótulo.", opt: ["Comer", "Ignorar", "Guardar"], ans: 1, type: 'energy', val: 20, fail: -10 },
-            { q: "Pessoa presa.", opt: ["Soltar", "Roubar", "Matar"], ans: 0, type: 'survivor', val: 1, fail: -20 }
+            { q: "Pessoa presa.", opt: ["Soltar", "Roubar", "Matar"], ans: 0, type: 'survivor', val: 1, fail: -20 },
+            { q: "Terminal de dados.", opt: ["Hackear", "Destruir", "Ignorar"], ans: 0, type: 'lore', val: 1, fail: -20 } // Chance de Lore Criptografada
         ],
         PHARMACY: [
             { q: "Soro experimental.", opt: ["Usar", "Estocar", "Destruir"], ans: 1, type: 'sanity', val: 30, fail: -20 },
-            { q: "Gritos no fundo.", opt: ["Investigar", "Fugir", "Chamar"], ans: 1, type: 'sanity', val: 10, fail: -30 }
+            { q: "Gritos no fundo.", opt: ["Investigar", "Fugir", "Chamar"], ans: 1, type: 'sanity', val: 10, fail: -30 },
+            { q: "Pasta confidencial.", opt: ["Ler", "Queimar", "Levar"], ans: 2, type: 'lore', val: 1, fail: -10 }
         ],
         STREETS: [
             { q: "Névoa ácida.", opt: ["Correr", "Sinalizador", "Abrigo"], ans: 2, type: 'sanity', val: 20, fail: -40 },
-            { q: "Criança sozinha.", opt: ["Resgatar", "Observar", "Ignorar"], ans: 0, type: 'survivor', val: 1, fail: -20 }
+            { q: "Criança sozinha.", opt: ["Resgatar", "Observar", "Ignorar"], ans: 0, type: 'survivor', val: 1, fail: -20 },
+            { q: "Drone caído.", opt: ["Sucatear", "Analisar Dados", "Chutar"], ans: 1, type: 'lore', val: 1, fail: -10 }
         ]
     };
 
@@ -489,13 +490,10 @@
         
         const key = e.key.toLowerCase();
         
-        // RADIO PUZZLE CONTROL (Waveform alignment)
+        // RADIO PUZZLE CONTROL
         if (STATE.screenView === 'RADIO') {
-            // Control Frequency (Width)
             if (key === 'arrowleft' || key === 'a') STATE.radio.current.freq = Math.max(1, STATE.radio.current.freq - 0.2);
             if (key === 'arrowright' || key === 'd') STATE.radio.current.freq = Math.min(15, STATE.radio.current.freq + 0.2);
-            
-            // Control Amplitude (Height)
             if (key === 'arrowdown' || key === 's') STATE.radio.current.amp = Math.max(10, STATE.radio.current.amp - 2);
             if (key === 'arrowup' || key === 'w') STATE.radio.current.amp = Math.min(100, STATE.radio.current.amp + 2);
             return;
@@ -524,7 +522,6 @@
             if (dx !== 0 || dy !== 0) {
                 const nx = p.player.x + dx;
                 const ny = p.player.y + dy;
-                // 1 is wall
                 if (p.map[ny] && p.map[ny][nx] !== 1) {
                     p.player.x = nx;
                     p.player.y = ny;
@@ -544,34 +541,28 @@
 
     function updateCameraSmooth() {
         if (!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole) return;
-        
-        // Em modo Revival, trava a câmera no monitor (0, 1.2, 0) mas deixa um pouco de "drift"
         if (STATE.minigame.isRevival) {
-            camera.lookAt(0, 1.2, 0.31); // Olha pro monitor
+            camera.lookAt(0, 1.2, 0.31); 
             return;
         }
-
         camPitch += (targetPitch - camPitch) * SMOOTH_FACTOR;
         camYaw += (targetYaw - camYaw) * SMOOTH_FACTOR;
         camera.rotation.set(camPitch, camYaw, 0, 'YXZ');
     }
 
     function updateTimer(dt) {
-        // PAUSA O TEMPO SE ESTIVER NO REVIVAL
         if (STATE.gameOver || STATE.isNarrativeMode || STATE.screenView === 'LOCATION_QUIZ' || STATE.screenView.startsWith('GAME_')) return;
         
-        // --- VELOCIDADE DO TEMPO AJUSTADA (2.5x) ---
         const TIME_SCALE = 2.5; 
         const gameDt = dt * TIME_SCALE;
         
         STATE.dayTime -= gameDt;
         
-        // --- MECÂNICA DE VISITA AGENDADA (1 MINUTO DO CRONÔMETRO) ---
         if (STATE.currentLocation === 'BUNKER' && !STATE.doorKnocking && !STATE.isNarrativeMode) {
             STATE.nextVisitorTimer -= gameDt;
             if (STATE.nextVisitorTimer <= 0) {
                 triggerKnockEvent();
-                STATE.nextVisitorTimer = 60; // Resetar para 1 minuto
+                STATE.nextVisitorTimer = 60; 
             }
         }
 
@@ -594,7 +585,6 @@
     }
 
     function triggerEndOfDay() {
-        // Resetar rádio para nova frequência
         STATE.radio.target = (Math.random() * (107.0 - 89.0) + 89.0);
         STATE.radio.locked = false;
 
@@ -602,6 +592,68 @@
             triggerGameOver(`COTA NÃO ATINGIDA (${STATE.dailySurvivorsLetIn}/${STATE.survivorsQuota}). O Comando Central isolou seu bunker.`);
             return;
         }
+        
+        // --- LOGICA DE FINAL MÚLTIPLO NO DIA 8 ---
+        if (STATE.day >= 8) {
+            STATE.isNarrativeMode = true;
+            document.exitPointerLock();
+            
+            const overlay = document.getElementById('narrative-overlay');
+            const title = document.getElementById('narrative-title');
+            const body = document.getElementById('narrative-body');
+            const choicesDiv = document.getElementById('narrative-choices');
+            const consq = document.getElementById('consequence-text');
+            
+            title.innerText = "DIA 8: A HORA DA VERDADE";
+            body.innerText = "O prazo acabou. O 'Resgate' está aqui. Drones de transporte cercam o bunker. Mas o silêncio é perturbador.";
+            consq.style.opacity = 0;
+            choicesDiv.innerHTML = '';
+
+            // FINAL A: PADRÃO (RESGATE)
+            const btnA = document.createElement('button');
+            btnA.className = 'choice-btn';
+            btnA.innerText = "Aceitar Resgate (Final Padrão)";
+            btnA.onclick = () => triggerEnding("RESGATE", "Você e sua família embarcaram nas naves da Pluribus. Dizem que o novo mundo é seguro... mas por que todos usam máscaras?");
+            choicesDiv.appendChild(btnA);
+
+            // FINAL B: FUGA (REQUER MAPA DOS TÚNEIS DECODIFICADO)
+            if (STATE.decodedLore.includes(6)) {
+                const btnB = document.createElement('button');
+                btnB.className = 'choice-btn';
+                btnB.innerText = "Fugir pelos Túneis (A Verdade)";
+                btnB.style.borderColor = "#00ffaa";
+                btnB.style.color = "#00ffaa";
+                btnB.onclick = () => { unlockTrophy('TRUTH_SEEKER'); triggerEnding("FUGA", "Você sabia que o resgate era uma armadilha. O mapa levou vocês para longe da cidade. A liberdade é fria e perigosa, mas é real."); };
+                choicesDiv.appendChild(btnB);
+            }
+
+            // FINAL C: O ARQUITETO (REQUER PROJETO GÊNESE + SANIDADE ALTA)
+            if (STATE.decodedLore.includes(7) && STATE.sanity > 80) {
+                const btnC = document.createElement('button');
+                btnC.className = 'choice-btn';
+                btnC.innerText = "Reiniciar Simulação (O Arquiteto)";
+                btnC.style.borderColor = "#ff00ff";
+                btnC.style.color = "#ff00ff";
+                btnC.onclick = () => triggerEnding("ARQUITETO", "Você acessou o terminal mestre. 'Encerrar Iteração 404'. O mundo lá fora sumiu. Você acorda em um laboratório limpo. 'Teste concluído com sucesso, Administrador'.");
+                choicesDiv.appendChild(btnC);
+            }
+
+            // FINAL D: ASSIMILAÇÃO (SANIDADE BAIXA)
+            if (STATE.sanity < 20) {
+                const btnD = document.createElement('button');
+                btnD.className = 'choice-btn';
+                btnD.innerText = "Aceitar a Junção (Render-se)";
+                btnD.style.borderColor = "#ff0000";
+                btnD.style.color = "#ff0000";
+                btnD.onclick = () => triggerEnding("ASSIMILAÇÃO", "Por que lutar? A voz deles é tão doce. Você abre a porta e deixa a luz entrar. Não há mais dor. Somos todos um agora.");
+                choicesDiv.appendChild(btnD);
+            }
+
+            overlay.style.display = 'flex';
+            playSound('travel');
+            return;
+        }
+
         STATE.isNarrativeMode = true;
         document.exitPointerLock();
         const eventIdx = Math.min(STATE.day - 1, NARRATIVE_EVENTS.length - 1);
@@ -626,12 +678,23 @@
         playSound('travel');
     }
 
+    function triggerEnding(type, msg) {
+        unlockTrophy('VETERAN');
+        document.body.innerHTML = `
+            <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:#ffcc00;font-family:monospace;padding:40px;text-align:center;">
+                <h1 style="font-size:40px;margin-bottom:20px;">FINAL: ${type}</h1>
+                <p style="font-size:20px;line-height:1.6;max-width:800px;">${msg}</p>
+                <br><br>
+                <button style="background:transparent;border:2px solid #ffcc00;color:#ffcc00;padding:15px 30px;font-family:monospace;cursor:pointer;" onclick="location.reload()">REINICIAR SISTEMA</button>
+            </div>
+        `;
+    }
+
     function resolveNarrative(choice) {
         if (choice.effect.sanity) STATE.sanity += choice.effect.sanity;
         if (choice.effect.energy) STATE.energy += choice.effect.energy;
         if (choice.effect.family) STATE.familyMood += choice.effect.family;
         if (choice.effect.door) STATE.doorHealth += choice.effect.door;
-        // Special effects for familyHealth not in generic logic before
         if (choice.effect.familyHealth) STATE.familyHealth += choice.effect.familyHealth;
 
         STATE.sanity = Math.min(100, Math.max(0, STATE.sanity));
@@ -654,20 +717,14 @@
         STATE.dayTime = 300;
         STATE.isNarrativeMode = false;
         STATE.dailySurvivorsLetIn = 0;
-        
-        // --- NOVA MECÂNICA: COTA VARIÁVEL ---
         STATE.survivorsQuota = Math.random() < 0.5 ? 1 : 2;
-
         STATE.familyMood -= 10;
         STATE.energy -= 10;
-        
-        // --- DECAIMENTO DA SAÚDE DA FAMÍLIA ---
         STATE.familyHealth -= 5; 
         if(Math.random() < 0.2) {
-            STATE.familyHealth -= 15; // Evento de doença aleatória
+            STATE.familyHealth -= 15; 
             logMessage("ALERTA: Membro da família adoeceu durante a noite.");
         }
-
         checkState();
         if (!STATE.gameOver) {
             logMessage(`DIA ${STATE.day} INICIADO. COTA: 0/${STATE.survivorsQuota}`);
@@ -678,9 +735,7 @@
         if (!TROPHIES[key]) return;
         const trophyId = TROPHIES[key].id;
         if (STATE.stats.unlockedTrophies.includes(trophyId)) return;
-        
         STATE.stats.unlockedTrophies.push(trophyId);
-        
         const popup = document.getElementById('trophy-popup');
         document.getElementById('trophy-icon').innerText = TROPHIES[key].icon;
         document.getElementById('trophy-name').innerText = TROPHIES[key].title;
@@ -696,7 +751,7 @@
         document.getElementById('hud-energy').innerText = Math.floor(STATE.energy);
         updateBar('bar-sanity', STATE.sanity, 'row-sanity');
         updateBar('bar-door', STATE.doorHealth, 'row-door');
-        updateBar('bar-family', STATE.familyMood, 'row-family'); // Mantido visual simples, saúde checada internamente
+        updateBar('bar-family', STATE.familyMood, 'row-family'); 
         if (STATE.day >= 8) unlockTrophy('VETERAN');
         if (STATE.familyMood >= 100) unlockTrophy('FAMILY_FIRST');
         if (STATE.unlockedLore.length >= 3) unlockTrophy('LORE_MASTER');
@@ -713,23 +768,16 @@
         const txt = document.getElementById('dialogue-text');
         document.getElementById('dialogue-box').style.display = 'block';
         txt.innerText = "Analisando...";
-        
         if (!apiKey || apiKey === "") {
             const lines = visitor.lines || [visitor.desc];
             const line = lines[Math.floor(Math.random() * lines.length)];
-            setTimeout(() => {
-                typeWriterEffect(`"${line}"\n\n(ANÁLISE: ${visitor.name}. ${visitor.desc})`, txt);
-            }, 500);
+            setTimeout(() => { typeWriterEffect(`"${line}"\n\n(ANÁLISE: ${visitor.name}. ${visitor.desc})`, txt); }, 500);
             return;
         }
-
         try {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    contents: [{ parts: [{ text: visitor.prompt + " Max 12 palavras." }] }],
-                    generationConfig: { maxOutputTokens: 50 } 
-                })
+                body: JSON.stringify({ contents: [{ parts: [{ text: visitor.prompt + " Max 12 palavras." }] }], generationConfig: { maxOutputTokens: 50 } })
             });
             const data = await res.json();
             const aiText = data.candidates[0].content.parts[0].text;
@@ -794,11 +842,10 @@
         return { x, y, w, h };
     }
 
-    // --- NEW FUNCTION: INIT RADIO PUZZLE ---
     function initRadio() {
         STATE.screenView = 'RADIO';
-        STATE.radio.target.freq = 2 + Math.random() * 10; // Range 2-12 roughly
-        STATE.radio.target.amp = 20 + Math.random() * 60; // Range 20-80
+        STATE.radio.target.freq = 2 + Math.random() * 10; 
+        STATE.radio.target.amp = 20 + Math.random() * 60; 
         STATE.radio.current.freq = 5;
         STATE.radio.current.amp = 50;
         STATE.radio.locked = false;
@@ -810,14 +857,13 @@
         ctx.shadowBlur = 4; ctx.shadowColor = CRT_COLOR; ctx.fillStyle = CRT_COLOR;
         osButtons = [];
 
-        // --- MINIGAME LOOPS ---
         if (STATE.screenView === 'GAME_SNAKE') updateAndDrawSnake(ctx);
         else if (STATE.screenView === 'GAME_MEMORY') drawMemory(ctx);
         else if (STATE.screenView === 'GAME_PACMAN') updateAndDrawPacman(ctx);
         else if (STATE.screenView === 'RADIO') drawRadio(ctx);
         else if (STATE.screenView === 'ARCHIVES') drawArchives(ctx);
+        else if (STATE.screenView === 'DECODER') drawDecoder(ctx); // NOVA TELA
 
-        // --- SCREENS ---
         else if (STATE.screenView === 'DESKTOP') {
             ctx.font = '28px monospace'; ctx.fillText(`PLURIBUS OS v9.0`, 40, 50);
             if (STATE.doorKnocking) { ctx.fillStyle = 'red'; ctx.shadowColor = 'red'; ctx.fillText("ALERTA DE SEGURANÇA", 120, 450); ctx.fillStyle = CRT_COLOR; ctx.shadowColor = CRT_COLOR; }
@@ -827,11 +873,12 @@
             osButtons.push({ action: 'GO_ARCHIVES', ...drawButton(ctx, 270, 170, 200, 50, "ARQUIVOS") });
             
             osButtons.push({ action: 'GO_REPAIR', ...drawButton(ctx, 40, 240, 200, 50, "MANUTENÇÃO") });
-            osButtons.push({ action: 'GO_RADIO', ...drawButton(ctx, 270, 240, 200, 50, "RÁDIO") }); // calls initRadio now via handleMonitorClick
+            osButtons.push({ action: 'GO_RADIO', ...drawButton(ctx, 270, 240, 200, 50, "RÁDIO") });
             
             osButtons.push({ action: 'GO_GAMES', ...drawButton(ctx, 40, 310, 200, 50, "JOGOS") }); 
             osButtons.push({ action: 'GO_TROPHIES', ...drawButton(ctx, 270, 310, 200, 50, "TROFÉUS") });
-            osButtons.push({ action: 'MAIL', ...drawButton(ctx, 40, 380, 430, 50, "DIÁRIO") });
+            osButtons.push({ action: 'GO_DECODER', ...drawButton(ctx, 40, 380, 200, 50, "DECODER") }); // Novo Botão
+            osButtons.push({ action: 'MAIL', ...drawButton(ctx, 270, 380, 200, 50, "DIÁRIO") });
         }
         else if (STATE.screenView === 'GAMES_MENU') {
             ctx.fillText("JOGOS - RECUPERAR SANIDADE", 40, 50);
@@ -850,18 +897,14 @@
         }
         else if (STATE.screenView === 'FAMILY') {
             ctx.fillText("STATUS DA FAMÍLIA", 40, 50);
-            
             ctx.fillStyle = STATE.familyMood < 30 ? '#ff3333' : CRT_COLOR;
             ctx.fillText(`HUMOR: ${Math.floor(STATE.familyMood)}%`, 40, 90);
-            
             ctx.fillStyle = STATE.familyHealth < 30 ? '#ff3333' : CRT_COLOR;
             ctx.fillText(`SAÚDE: ${Math.floor(STATE.familyHealth)}%`, 240, 90);
-
             osButtons.push({ action: 'FAM_FEED', ...drawButton(ctx, 40, 130, 430, 40, "DAR RAÇÃO (20 EN)") });
             osButtons.push({ action: 'FAM_TALK', ...drawButton(ctx, 40, 180, 430, 40, "CONVERSAR (10 EN)") });
             osButtons.push({ action: 'FAM_MEDIC', ...drawButton(ctx, 40, 230, 430, 40, "MEDICAR (30 EN)") }); 
             osButtons.push({ action: 'FAM_PLAY', ...drawButton(ctx, 40, 280, 430, 40, "JOGAR JUNTOS (15 EN)") });
-            
             osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 350, 100, 40, "VOLTAR") });
         }
         else if (STATE.screenView === 'REPAIR') {
@@ -906,8 +949,6 @@
         ctx.font = '14px monospace';
         ctx.fillText("Use SETAS para alinhar as ondas.", 40, 50);
         ctx.fillText("ESQ/DIR: Frequência | CIMA/BAIXO: Amplitude", 40, 70);
-        
-        // Draw Oscilloscope Background
         ctx.fillStyle = '#001100';
         ctx.fillRect(40, 100, 430, 200);
         ctx.strokeStyle = '#004400';
@@ -916,16 +957,12 @@
         for(let i=40; i<470; i+=20) { ctx.moveTo(i, 100); ctx.lineTo(i, 300); }
         for(let i=100; i<300; i+=20) { ctx.moveTo(40, i); ctx.lineTo(470, i); }
         ctx.stroke();
-
-        // Function to draw a wave
         function drawWave(freq, amp, color, opacity) {
             ctx.beginPath();
             ctx.strokeStyle = color;
             ctx.lineWidth = 2;
             ctx.globalAlpha = opacity;
             for (let x = 0; x < 430; x++) {
-                // x goes from 0 to 430. 
-                // Sine: y = Amp * sin(Freq * x + phase)
                 const y = amp * Math.sin((x * freq * 0.05) + (Date.now() * 0.005));
                 if (x === 0) ctx.moveTo(40 + x, 200 + y);
                 else ctx.lineTo(40 + x, 200 + y);
@@ -933,25 +970,15 @@
             ctx.stroke();
             ctx.globalAlpha = 1.0;
         }
-
-        // Draw Target (Red, Static params)
         drawWave(STATE.radio.target.freq, STATE.radio.target.amp, '#ff3333', 0.5);
-
-        // Draw Player (Green, Controlled)
         drawWave(STATE.radio.current.freq, STATE.radio.current.amp, '#00ff00', 1.0);
-
-        // Check Match
         const diffFreq = Math.abs(STATE.radio.target.freq - STATE.radio.current.freq);
         const diffAmp = Math.abs(STATE.radio.target.amp - STATE.radio.current.amp);
-        
-        // Calculate match percentage roughly
         const matchQuality = 100 - (diffFreq * 10 + diffAmp * 0.5);
         const isMatched = diffFreq < 0.5 && diffAmp < 5;
-
         ctx.font = '18px monospace';
         ctx.fillStyle = CRT_COLOR;
         ctx.fillText(`SINCRONIA: ${Math.max(0, Math.floor(matchQuality))}%`, 40, 330);
-
         if (isMatched && !STATE.radio.locked) {
             STATE.radio.locked = true;
             playSound('click');
@@ -959,21 +986,17 @@
             STATE.stats.radioSignals++;
             logMessage("SINAL DECODIFICADO. SANIDADE +20.");
         }
-
         if (STATE.radio.locked) {
             ctx.fillStyle = '#00ff00';
             ctx.fillText("CONEXÃO ESTABELECIDA.", 250, 330);
-            // Only show rescue button if connected
             osButtons.push({ action: 'RADIO_LURE', ...drawButton(ctx, 40, 350, 430, 40, "EMITIR SINAL DE RESGATE (40 EN)") });
         }
-
         osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
     }
 
     // --- ARCHIVES SCREEN ---
     function drawArchives(ctx) {
         ctx.fillText("ARQUIVOS RECUPERADOS", 40, 50);
-        
         let y = 100;
         if (STATE.unlockedLore.length === 0) {
             ctx.fillStyle = '#554400';
@@ -983,20 +1006,57 @@
                 const log = LORE_DATABASE.find(l => l.id === id);
                 if (log) {
                     ctx.fillStyle = CRT_COLOR;
-                    ctx.fillText(`[${log.title}]`, 40, y);
+                    const isDecoded = STATE.decodedLore.includes(id);
+                    const displayText = (log.encrypted && !isDecoded) ? log.scrambled : log.text;
+                    const title = (log.encrypted && !isDecoded) ? "DADOS CORROMPIDOS" : log.title;
+                    const color = (log.encrypted && !isDecoded) ? "#ff3333" : CRT_COLOR;
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillText(`[${title}]`, 40, y);
                     ctx.font = '14px monospace';
-                    ctx.fillText(log.text, 40, y + 20);
+                    ctx.fillText(displayText, 40, y + 20);
                     ctx.font = '18px monospace';
                     y += 60;
                 }
             });
         }
+        osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
+    }
+
+    // --- DECODER SCREEN (NEW) ---
+    function drawDecoder(ctx) {
+        ctx.fillText("DECODIFICADOR DE DADOS", 40, 50);
         
+        // Find locked encrypted files
+        const encryptedFiles = LORE_DATABASE.filter(l => STATE.unlockedLore.includes(l.id) && l.encrypted && !STATE.decodedLore.includes(l.id));
+        
+        let y = 100;
+        if (encryptedFiles.length === 0) {
+            ctx.fillText("NENHUM ARQUIVO CRIPTOGRAFADO.", 40, 100);
+        } else {
+            encryptedFiles.forEach(file => {
+                ctx.fillStyle = '#ff3333';
+                ctx.fillText(`ARQUIVO: ID-${file.id}`, 40, y + 25);
+                osButtons.push({ action: `DECRYPT_${file.id}`, ...drawButton(ctx, 250, y, 220, 40, "DECODIFICAR (20 SAN)") });
+                y += 60;
+            });
+        }
         osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
     }
     
+    function handleDecrypt(id) {
+        if (STATE.sanity >= 20) {
+            STATE.sanity -= 20;
+            STATE.decodedLore.push(id);
+            playSound('click');
+            logMessage("ARQUIVO DECODIFICADO. A VERDADE DÓI.");
+        } else {
+            playSound('shock');
+            logMessage("SANIDADE INSUFICIENTE.");
+        }
+    }
+
     // --- MINIGAME LOGIC ---
-    
     function winMinigame() {
         STATE.sanity = Math.min(100, STATE.sanity + 15);
         playSound('trophy');
@@ -1109,14 +1169,8 @@
         ];
         let totalDots = 0;
         map.forEach(row => row.forEach(cell => { if(cell===2) totalDots++; }));
-        
         STATE.minigame.isRevival = isRevival;
-        STATE.minigame.pacman = { 
-            player: {x:1, y:1}, 
-            // AUMENTADO DE 8 PARA 16 (Quanto maior, mais lento)
-            ghost: {x:7, y:7, tick: 0, speed: 16}, 
-            score: 0, totalDots, map, width: 15, height: 15 
-        };
+        STATE.minigame.pacman = { player: {x:1, y:1}, ghost: {x:7, y:7, tick: 0, speed: 16}, score: 0, totalDots, map, width: 15, height: 15 };
         STATE.screenView = 'GAME_PACMAN';
     }
     
@@ -1124,8 +1178,6 @@
     
     function updateAndDrawPacman(ctx) {
         const p = STATE.minigame.pacman;
-        
-        // UI do Minigame
         if (STATE.minigame.isRevival) {
             ctx.fillStyle = '#ff0000';
             ctx.font = '20px monospace';
@@ -1134,104 +1186,52 @@
             ctx.fillText(`DOTS: ${p.score}/${p.totalDots}`, 20, 30);
             osButtons.push({ action: 'BACK_GAME', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") });
         }
-
         const size = 25;
         const offsetX = 60; const offsetY = 50;
-
-        // --- LÓGICA DO FANTASMA (BFS) ---
         p.ghost.tick++;
         if (p.ghost.tick > p.ghost.speed) {
             p.ghost.tick = 0;
-            
             const startNode = {x: p.ghost.x, y: p.ghost.y};
             const targetNode = {x: p.player.x, y: p.player.y};
-            
             let queue = [ [startNode] ];
             let visited = new Set();
             visited.add(`${startNode.x},${startNode.y}`);
-            
             let nextMove = null;
             let iterations = 0;
-            
             while (queue.length > 0 && iterations < 300) {
                 iterations++;
                 let path = queue.shift();
                 let current = path[path.length - 1];
-                
                 if (current.x === targetNode.x && current.y === targetNode.y) {
-                    if (path.length > 1) {
-                        nextMove = path[1];
-                    }
+                    if (path.length > 1) { nextMove = path[1]; }
                     break;
                 }
-                
-                const neighbors = [
-                    {x: current.x, y: current.y - 1},
-                    {x: current.x, y: current.y + 1},
-                    {x: current.x - 1, y: current.y},
-                    {x: current.x + 1, y: current.y}
-                ];
-                
+                const neighbors = [{x: current.x, y: current.y - 1}, {x: current.x, y: current.y + 1}, {x: current.x - 1, y: current.y}, {x: current.x + 1, y: current.y}];
                 for (let neighbor of neighbors) {
-                    if (neighbor.x >= 0 && neighbor.x < p.width && 
-                        neighbor.y >= 0 && neighbor.y < p.height &&
-                        p.map[neighbor.y][neighbor.x] !== 1) {
-                            
+                    if (neighbor.x >= 0 && neighbor.x < p.width && neighbor.y >= 0 && neighbor.y < p.height && p.map[neighbor.y][neighbor.x] !== 1) {
                         const key = `${neighbor.x},${neighbor.y}`;
-                        if (!visited.has(key)) {
-                            visited.add(key);
-                            let newPath = [...path, neighbor];
-                            queue.push(newPath);
-                        }
+                        if (!visited.has(key)) { visited.add(key); let newPath = [...path, neighbor]; queue.push(newPath); }
                     }
                 }
             }
-            
-            if (nextMove) {
-                p.ghost.x = nextMove.x;
-                p.ghost.y = nextMove.y;
-            }
-            
-            // Collision check
+            if (nextMove) { p.ghost.x = nextMove.x; p.ghost.y = nextMove.y; }
             if (p.ghost.x === p.player.x && p.ghost.y === p.player.y) {
                 playSound('shock');
-                if (STATE.minigame.isRevival) {
-                    triggerGameOver(STATE.revivalReason); // MORTE REAL
-                } else {
-                    initPacman(); // Reinicia normal
-                }
+                if (STATE.minigame.isRevival) { triggerGameOver(STATE.revivalReason); } else { initPacman(); }
                 return;
             }
         }
-
         for(let y=0; y<p.height; y++) {
             for(let x=0; x<p.width; x++) {
                 const type = p.map[y][x];
                 const px = offsetX + x * size;
                 const py = offsetY + y * size;
-                if (type === 1) { // Wall
-                    ctx.fillStyle = '#3333cc';
-                    ctx.fillRect(px, py, size, size);
-                } else if (type === 2) { // Dot
-                    ctx.fillStyle = '#ffcc00';
-                    ctx.fillRect(px + 10, py + 10, 5, 5);
-                }
+                if (type === 1) { ctx.fillStyle = '#3333cc'; ctx.fillRect(px, py, size, size); } else if (type === 2) { ctx.fillStyle = '#ffcc00'; ctx.fillRect(px + 10, py + 10, 5, 5); }
             }
         }
-        
-        ctx.fillStyle = '#ff0000';
-        ctx.beginPath();
-        ctx.arc(offsetX + p.ghost.x * size + size/2, offsetY + p.ghost.y * size + size/2, size/2 - 2, 0, 2 * Math.PI);
-        ctx.fill();
-
-        ctx.fillStyle = '#ffff00';
-        ctx.beginPath();
-        ctx.arc(offsetX + p.player.x * size + size/2, offsetY + p.player.y * size + size/2, size/2 - 2, 0.2 * Math.PI, 1.8 * Math.PI);
-        ctx.lineTo(offsetX + p.player.x * size + size/2, offsetY + p.player.y * size + size/2);
-        ctx.fill();
+        ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(offsetX + p.ghost.x * size + size/2, offsetY + p.ghost.y * size + size/2, size/2 - 2, 0, 2 * Math.PI); ctx.fill();
+        ctx.fillStyle = '#ffff00'; ctx.beginPath(); ctx.arc(offsetX + p.player.x * size + size/2, offsetY + p.player.y * size + size/2, size/2 - 2, 0.2 * Math.PI, 1.8 * Math.PI); ctx.lineTo(offsetX + p.player.x * size + size/2, offsetY + p.player.y * size + size/2); ctx.fill();
     }
-
-    // --- END MINIGAME LOGIC ---
 
     function startExpedition(loc) {
         STATE.currentLocation = loc; playSound('travel');
@@ -1243,20 +1243,25 @@
     function handleQuizAnswer(idx) {
         const ok = idx === STATE.quiz.answer;
         if (ok) {
-            // --- LÓGICA DE RESGATE EM EXPEDIÇÃO ---
             if (STATE.quiz.rewardType === 'survivor') {
                 STATE.dailySurvivorsLetIn++;
                 STATE.stats.humansSaved++;
                 unlockTrophy('SAVIOR');
                 STATE.quiz.resultMsg = "SOBREVIVENTE RESGATADO!";
+            } else if (STATE.quiz.rewardType === 'lore') {
+                const remaining = LORE_DATABASE.filter(l => !STATE.unlockedLore.includes(l.id));
+                if (remaining.length > 0) {
+                    const log = remaining[Math.floor(Math.random() * remaining.length)];
+                    STATE.unlockedLore.push(log.id);
+                    STATE.quiz.resultMsg = "DADOS CRIPTOGRAFADOS!";
+                } else {
+                    STATE.quiz.resultMsg = "DADOS JÁ OBTIDOS.";
+                }
             } else {
                 STATE[STATE.quiz.rewardType] = Math.min(100, STATE[STATE.quiz.rewardType] + STATE.quiz.rewardAmount);
                 STATE.quiz.resultMsg = "SUCESSO!";
             }
-            
-            // LORE DROP CHANCE (30%)
-            if (Math.random() < 0.3) {
-                // Find unlocked
+            if (Math.random() < 0.3 && STATE.quiz.rewardType !== 'lore') {
                 const remaining = LORE_DATABASE.filter(l => !STATE.unlockedLore.includes(l.id));
                 if (remaining.length > 0) {
                     const log = remaining[Math.floor(Math.random() * remaining.length)];
@@ -1264,7 +1269,6 @@
                     logMessage(`DADOS ENCONTRADOS: ${log.title}`);
                 }
             }
-            
             playSound('click');
         } else {
             STATE.energy = Math.max(0, STATE.energy - 10); STATE.sanity = Math.max(0, STATE.sanity + STATE.quiz.failAmount);
@@ -1279,30 +1283,21 @@
         else if (STATE.sanity <= 0) triggerGameOver("Loucura Total.");
         else if (STATE.doorHealth <= 0) triggerGameOver("Porta Destruída.");
         else if (STATE.familyMood <= 0) triggerGameOver("Motim Familiar.");
-        else if (STATE.familyHealth <= 0) triggerGameOver("Família Pereceu."); // Game Over por saúde
+        else if (STATE.familyHealth <= 0) triggerGameOver("Família Pereceu."); 
     }
 
     function triggerGameOver(r) {
-        // --- SEGUNDA CHANCE (REVIVAL) ---
         if (!STATE.revivalUsed) {
             STATE.revivalUsed = true;
             STATE.revivalReason = r;
-            
             playSound('jumpscare');
-            
-            // Força o monitor e inicia o minigame
             STATE.lookingAtPeephole = false;
             document.exitPointerLock();
-            
             initPacman(true);
-            
-            // Feedback visual de emergência
             logMessage("ERRO CRÍTICO! INICIANDO PROTOCOLO DE EMERGÊNCIA...");
             setTimeout(() => logMessage("VENÇA O JOGO PARA SOBREVIVER"), 1500);
             return;
         }
-
-        // Game Over Real
         STATE.gameOver = true; 
         playSound('jumpscare'); 
         document.getElementById('vhs-overlay').style.background = 'red';
@@ -1310,28 +1305,22 @@
     }
 
     function revivePlayer() {
-        // Restaura stats para um nível seguro
         STATE.sanity = Math.max(STATE.sanity, 50);
         STATE.energy = Math.max(STATE.energy, 50);
         STATE.doorHealth = Math.max(STATE.doorHealth, 50);
         STATE.familyMood = Math.max(STATE.familyMood, 50);
         STATE.familyHealth = Math.max(STATE.familyHealth, 50);
-        
-        STATE.doorKnocking = false; // Remove ameaça imediata
+        STATE.doorKnocking = false; 
         STATE.minigame.isRevival = false;
         STATE.screenView = 'DESKTOP';
-        
         playSound('trophy');
         logMessage("SISTEMA RESTAURADO. SEGUNDA CHANCE ATIVADA.");
-        
-        // Opcional: Retornar controle do mouse
         document.body.requestPointerLock();
     }
 
     function handleMonitorClick(uv) {
         const x = uv.x * CANVAS_W, y = (1 - uv.y) * CANVAS_H; 
         let clickedUI = false;
-
         for (let btn of osButtons) {
             if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
                 clickedUI = true;
@@ -1341,35 +1330,27 @@
                 else if (btn.action === 'GO_REPAIR') STATE.screenView = 'REPAIR';
                 else if (btn.action === 'GO_TROPHIES') STATE.screenView = 'TROPHIES';
                 else if (btn.action === 'GO_GAMES') STATE.screenView = 'GAMES_MENU';
-                else if (btn.action === 'GO_RADIO') initRadio(); // Use new function
+                else if (btn.action === 'GO_RADIO') initRadio(); 
                 else if (btn.action === 'GO_ARCHIVES') STATE.screenView = 'ARCHIVES';
+                else if (btn.action === 'GO_DECODER') STATE.screenView = 'DECODER'; 
                 else if (btn.action === 'START_SNAKE') initSnake();
                 else if (btn.action === 'START_MEMORY') initMemory();
                 else if (btn.action === 'START_PACMAN') initPacman();
                 else if (btn.action === 'BACK_GAME') STATE.screenView = 'GAMES_MENU';
                 else if (btn.action === 'MAIL') STATE.screenView = 'MAIL';
                 else if (btn.action === 'BACK') STATE.screenView = 'DESKTOP';
-                
-                // Family Actions
                 else if (btn.action === 'FAM_FEED' && STATE.energy >= 20) { STATE.energy -= 20; STATE.familyMood = Math.min(100, STATE.familyMood + 30); }
                 else if (btn.action === 'FAM_TALK' && STATE.energy >= 10) { STATE.energy -= 10; STATE.sanity = Math.min(100, STATE.sanity + 10); }
                 else if (btn.action === 'FAM_MEDIC' && STATE.energy >= 30) { STATE.energy -= 30; STATE.familyHealth = Math.min(100, STATE.familyHealth + 30); STATE.stats.familyHeals++; }
                 else if (btn.action === 'FAM_PLAY' && STATE.energy >= 15) { STATE.energy -= 15; STATE.familyMood = Math.min(100, STATE.familyMood + 20); }
-
                 else if (btn.action === 'REP_DOOR' && STATE.energy >= 30) { STATE.energy -= 30; STATE.doorHealth = Math.min(100, STATE.doorHealth + 40); unlockTrophy('MECHANIC'); }
                 else if (btn.action === 'GO_MARKET') startExpedition('MARKET');
                 else if (btn.action === 'GO_PHARMA') startExpedition('PHARMACY');
                 else if (btn.action === 'GO_STREET') startExpedition('STREETS');
-                
-                // --- NEW RADIO LURE ACTION ---
-                else if (btn.action === 'RADIO_LURE' && STATE.energy >= 40) {
-                     STATE.energy -= 40;
-                     triggerKnockEvent('good'); // Helper to force good visitor
-                     logMessage("Sinal enviado. Alguém se aproxima.");
-                }
-
+                else if (btn.action === 'RADIO_LURE' && STATE.energy >= 40) { STATE.energy -= 40; triggerKnockEvent('good'); logMessage("Sinal enviado. Alguém se aproxima."); }
                 else if (btn.action.startsWith('ANS_')) handleQuizAnswer(parseInt(btn.action.split('_')[1]));
                 else if (btn.action.startsWith('MEM_')) handleMemoryClick(parseInt(btn.action.split('_')[1]));
+                else if (btn.action.startsWith('DECRYPT_')) handleDecrypt(parseInt(btn.action.split('_')[1]));
             }
         }
     }
@@ -1377,14 +1358,10 @@
     function triggerKnockEvent(forcedType = null) {
         if (STATE.doorKnocking || STATE.currentLocation !== 'BUNKER' || STATE.isNarrativeMode) return;
         STATE.doorKnocking = true;
-        
-        // --- FORCED TYPE LOGIC ---
         let pool = VISITOR_TYPES;
         if (forcedType === 'good') pool = VISITOR_TYPES.filter(v => v.type === 'good');
         if (forcedType === 'bad') pool = VISITOR_TYPES.filter(v => v.type === 'bad');
-        
         STATE.visitor = pool[Math.floor(Math.random() * pool.length)];
-        
         STATE.interrogated = false; 
         playSound('knock', {x: 3, y: 1, z: 0});
         updateHUD();
