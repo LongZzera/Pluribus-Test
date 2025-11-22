@@ -243,6 +243,7 @@
     const MAX_YAW = Math.PI / 1.5; 
     const MAX_PITCH = Math.PI / 3; 
 
+    // --- NARRATIVAS EXPANDIDAS (ATÉ DIA 8) ---
     const NARRATIVE_EVENTS = [
         {
             title: "NOITE 1: O PROTOCOLO DE HERANÇA",
@@ -277,15 +278,40 @@
             ]
         },
         {
-            title: "NOITE SILENCIOSA",
-            body: "A noite caiu e nada se ouve lá fora. Apenas o zumbido do monitor e a respiração da sua família. É um momento de paz ou o prelúdio do fim?",
+            title: "NOITE 5: A FALHA NO FILTRO",
+            body: "O sistema de filtragem de ar está emitindo um som agudo. O ar está ficando pesado. Se não consertarmos, a família vai adoecer, mas sair para consertar o duto externo é suicídio.",
             choices: [
-                { text: "Dormir (Recupera Energia)", effect: { energy: 20 }, msg: "Um descanso merecido." },
-                { text: "Vigiar (Recupera Porta)", effect: { door: 20 }, msg: "Você reforça as trancas enquanto eles dormem." }
+                { text: "Consertar externamente (Risco de Saúde)", effect: { familyHealth: -20, door: -10 }, msg: "Você inalou esporos, mas o ar limpou." },
+                { text: "Improvisar com peças da porta (Dano na Porta)", effect: { door: -30 }, msg: "A porta ficou mais fraca, mas respiramos bem." }
+            ]
+        },
+        {
+            title: "NOITE 6: O VIZINHO",
+            body: "Você vê o Sr. Alencar, seu antigo vizinho, pela câmera. Ele não é mais humano... ele tem múltiplos braços e chora com a voz de uma criança. Ele está arranhando a parede, não a porta.",
+            choices: [
+                { text: "Atirar para acabar com o sofrimento (Perde Sanidade)", effect: { sanity: -20 }, msg: "O tiro ecoou. O choro parou. O silêncio é pior." },
+                { text: "Ignorar e aumentar o volume da TV (Perde Humor)", effect: { familyMood: -20 }, msg: "Sua família ouviu tudo. Eles sabem que você o deixou lá." }
+            ]
+        },
+        {
+            title: "NOITE 7: O ULTIMATO",
+            body: "A Rádio Pluribus anuncia a 'Limpeza Final' para o amanhecer. Drones de extermínio varrerão a área. Precisamos de energia para os escudos ou reforçar a estrutura física.",
+            choices: [
+                { text: "Sobrecarrregar gerador (Gasta Energia, Aumenta Porta)", effect: { energy: -50, door: 50 }, msg: "As luzes piscam, mas as travas magnéticas estão no máximo." },
+                { text: "Racionar para fuga (Recupera Energia, Perde Porta)", effect: { energy: 30, door: -20 }, msg: "Energia guardada para os exosuites. A porta fica por conta própria." }
+            ]
+        },
+        {
+            title: "DIA 8: A HORA DA VERDADE",
+            body: "O dia amanheceu vermelho. O resgate prometido pela resistência está a caminho, mas eles precisam de um sinal claro de que há humanos vivos aqui, ou bombardearão o setor.",
+            choices: [
+                { text: "Disparar sinalizador (Atrai Monstros)", effect: { door: -40 }, msg: "O céu se ilumina. Eles nos viram. Mas os monstros também." },
+                { text: "Rádio na frequência máxima (Gasta Sanidade)", effect: { sanity: -30 }, msg: "O ruído branco é ensurdecedor, mas o código foi enviado." }
             ]
         }
     ];
 
+    // --- TROFÉUS EXPANDIDOS ---
     const TROPHIES = {
         FIRST_BLOOD: { id: 'first_blood', title: "Primeiro Sangue", desc: "Eletrocutou um visitante.", icon: "⚡" },
         SAVIOR: { id: 'savior', title: "O Salvador", desc: "Salvou 3 humanos.", icon: "🤝" },
@@ -293,6 +319,10 @@
         SURVIVOR: { id: 'survivor', title: "Meio Caminho", desc: "Chegou ao Dia 4.", icon: "📅" },
         MECHANIC: { id: 'mechanic', title: "Engenheiro", desc: "Reparou a porta ao máximo.", icon: "🔧" },
         FAMILY_FIRST: { id: 'family', title: "Pai de Família", desc: "Manteve o humor da família em 100%.", icon: "❤️" },
+        LORE_MASTER: { id: 'lore_master', title: "Arquivista", desc: "Coletou 3 arquivos de lore.", icon: "📂" },
+        RADIO_OP: { id: 'radio_op', title: "Operador de Rádio", desc: "Sincronizou 3 sinais.", icon: "📡" },
+        VETERAN: { id: 'veteran', title: "Veterano", desc: "Chegou ao Dia 8.", icon: "🎖️" },
+        DOCTOR: { id: 'doctor', title: "Médico de Campo", desc: "Curou a família 3 vezes.", icon: "💊" },
         PLATINUM: { id: 'plat', title: "A JUNÇÃO PERFEITA", desc: "Coletou todos os troféus.", icon: "🏆" }
     };
 
@@ -372,11 +402,21 @@
         interrogated: false,
         isNarrativeMode: false,
         
-        // LORE & RADIO
+        // LORE & RADIO PUZZLE
         unlockedLore: [], 
-        radio: { freq: 90.0, target: 0, locked: false },
+        radio: { 
+            target: { freq: 5, amp: 50 }, 
+            current: { freq: 2, amp: 20 }, 
+            locked: false 
+        },
         
-        stats: { humansSaved: 0, monstersKilled: 0, unlockedTrophies: [] },
+        stats: { 
+            humansSaved: 0, 
+            monstersKilled: 0, 
+            unlockedTrophies: [],
+            radioSignals: 0,
+            familyHeals: 0
+        },
         quiz: { question: "", options: [], answer: 0, rewardType: '', rewardAmount: 0 },
         
         // MINIGAMES STATE
@@ -387,7 +427,7 @@
             memory: { cards: [], flipped: [], matches: 0, locked: false, grid: [4, 3] },
             pacman: { 
                 player: {x:1, y:1}, 
-                ghost: {x:7, y:7, tick: 0, speed: 8}, 
+                ghost: {x:7, y:7, tick: 0, speed: 16}, 
                 score: 0, 
                 map: [], 
                 width: 15, 
@@ -434,6 +474,7 @@
     // --- INPUTS ---
     function onMouseMove(e) {
         if (!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole || STATE.isNarrativeMode) return;
+        // Se for minigame de revival, bloqueia movimento da câmera
         if (STATE.screenView.startsWith('GAME_') && STATE.minigame.isRevival) return;
         
         targetYaw -= e.movementX * LOOK_SPEED;
@@ -448,10 +489,15 @@
         
         const key = e.key.toLowerCase();
         
-        // RADIO CONTROL
+        // RADIO PUZZLE CONTROL (Waveform alignment)
         if (STATE.screenView === 'RADIO') {
-            if (key === 'arrowleft' || key === 'a') STATE.radio.freq = Math.max(88.0, STATE.radio.freq - 0.1);
-            if (key === 'arrowright' || key === 'd') STATE.radio.freq = Math.min(108.0, STATE.radio.freq + 0.1);
+            // Control Frequency (Width)
+            if (key === 'arrowleft' || key === 'a') STATE.radio.current.freq = Math.max(1, STATE.radio.current.freq - 0.2);
+            if (key === 'arrowright' || key === 'd') STATE.radio.current.freq = Math.min(15, STATE.radio.current.freq + 0.2);
+            
+            // Control Amplitude (Height)
+            if (key === 'arrowdown' || key === 's') STATE.radio.current.amp = Math.max(10, STATE.radio.current.amp - 2);
+            if (key === 'arrowup' || key === 'w') STATE.radio.current.amp = Math.min(100, STATE.radio.current.amp + 2);
             return;
         }
 
@@ -585,10 +631,15 @@
         if (choice.effect.energy) STATE.energy += choice.effect.energy;
         if (choice.effect.family) STATE.familyMood += choice.effect.family;
         if (choice.effect.door) STATE.doorHealth += choice.effect.door;
+        // Special effects for familyHealth not in generic logic before
+        if (choice.effect.familyHealth) STATE.familyHealth += choice.effect.familyHealth;
+
         STATE.sanity = Math.min(100, Math.max(0, STATE.sanity));
         STATE.energy = Math.min(100, Math.max(0, STATE.energy));
         STATE.familyMood = Math.min(100, Math.max(0, STATE.familyMood));
         STATE.doorHealth = Math.min(100, Math.max(0, STATE.doorHealth));
+        STATE.familyHealth = Math.min(100, Math.max(0, STATE.familyHealth));
+
         const consq = document.getElementById('consequence-text');
         consq.innerText = choice.msg || "Sua família vai se lembrar disso.";
         consq.style.opacity = 1;
@@ -646,8 +697,11 @@
         updateBar('bar-sanity', STATE.sanity, 'row-sanity');
         updateBar('bar-door', STATE.doorHealth, 'row-door');
         updateBar('bar-family', STATE.familyMood, 'row-family'); // Mantido visual simples, saúde checada internamente
-        if (STATE.day >= 4) unlockTrophy('SURVIVOR');
+        if (STATE.day >= 8) unlockTrophy('VETERAN');
         if (STATE.familyMood >= 100) unlockTrophy('FAMILY_FIRST');
+        if (STATE.unlockedLore.length >= 3) unlockTrophy('LORE_MASTER');
+        if (STATE.stats.radioSignals >= 3) unlockTrophy('RADIO_OP');
+        if (STATE.stats.familyHeals >= 3) unlockTrophy('DOCTOR');
     }
 
     function updateBar(id, val, rowId) {
@@ -740,6 +794,16 @@
         return { x, y, w, h };
     }
 
+    // --- NEW FUNCTION: INIT RADIO PUZZLE ---
+    function initRadio() {
+        STATE.screenView = 'RADIO';
+        STATE.radio.target.freq = 2 + Math.random() * 10; // Range 2-12 roughly
+        STATE.radio.target.amp = 20 + Math.random() * 60; // Range 20-80
+        STATE.radio.current.freq = 5;
+        STATE.radio.current.amp = 50;
+        STATE.radio.locked = false;
+    }
+
     function drawOS() {
         const ctx = monitorContext; if (!ctx) return;
         ctx.fillStyle = '#110d00'; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
@@ -763,7 +827,7 @@
             osButtons.push({ action: 'GO_ARCHIVES', ...drawButton(ctx, 270, 170, 200, 50, "ARQUIVOS") });
             
             osButtons.push({ action: 'GO_REPAIR', ...drawButton(ctx, 40, 240, 200, 50, "MANUTENÇÃO") });
-            osButtons.push({ action: 'GO_RADIO', ...drawButton(ctx, 270, 240, 200, 50, "RÁDIO") });
+            osButtons.push({ action: 'GO_RADIO', ...drawButton(ctx, 270, 240, 200, 50, "RÁDIO") }); // calls initRadio now via handleMonitorClick
             
             osButtons.push({ action: 'GO_GAMES', ...drawButton(ctx, 40, 310, 200, 50, "JOGOS") }); 
             osButtons.push({ action: 'GO_TROPHIES', ...drawButton(ctx, 270, 310, 200, 50, "TROFÉUS") });
@@ -795,8 +859,8 @@
 
             osButtons.push({ action: 'FAM_FEED', ...drawButton(ctx, 40, 130, 430, 40, "DAR RAÇÃO (20 EN)") });
             osButtons.push({ action: 'FAM_TALK', ...drawButton(ctx, 40, 180, 430, 40, "CONVERSAR (10 EN)") });
-            osButtons.push({ action: 'FAM_MEDIC', ...drawButton(ctx, 40, 230, 430, 40, "MEDICAR (30 EN)") }); // New
-            osButtons.push({ action: 'FAM_PLAY', ...drawButton(ctx, 40, 280, 430, 40, "JOGAR JUNTOS (15 EN)") }); // New
+            osButtons.push({ action: 'FAM_MEDIC', ...drawButton(ctx, 40, 230, 430, 40, "MEDICAR (30 EN)") }); 
+            osButtons.push({ action: 'FAM_PLAY', ...drawButton(ctx, 40, 280, 430, 40, "JOGAR JUNTOS (15 EN)") });
             
             osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 350, 100, 40, "VOLTAR") });
         }
@@ -836,57 +900,73 @@
         monitorTexture.needsUpdate = true;
     }
     
-    // --- RADIO SCREEN ---
+    // --- RADIO PUZZLE SCREEN ---
     function drawRadio(ctx) {
-        ctx.fillText("SINTONIZADOR DE ONDAS CURTAS", 40, 50);
+        ctx.fillText("SINTONIZADOR DE ONDAS CURTAS", 40, 30);
+        ctx.font = '14px monospace';
+        ctx.fillText("Use SETAS para alinhar as ondas.", 40, 50);
+        ctx.fillText("ESQ/DIR: Frequência | CIMA/BAIXO: Amplitude", 40, 70);
+        
+        // Draw Oscilloscope Background
+        ctx.fillStyle = '#001100';
+        ctx.fillRect(40, 100, 430, 200);
+        ctx.strokeStyle = '#004400';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for(let i=40; i<470; i+=20) { ctx.moveTo(i, 100); ctx.lineTo(i, 300); }
+        for(let i=100; i<300; i+=20) { ctx.moveTo(40, i); ctx.lineTo(470, i); }
+        ctx.stroke();
+
+        // Function to draw a wave
+        function drawWave(freq, amp, color, opacity) {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = opacity;
+            for (let x = 0; x < 430; x++) {
+                // x goes from 0 to 430. 
+                // Sine: y = Amp * sin(Freq * x + phase)
+                const y = amp * Math.sin((x * freq * 0.05) + (Date.now() * 0.005));
+                if (x === 0) ctx.moveTo(40 + x, 200 + y);
+                else ctx.lineTo(40 + x, 200 + y);
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Draw Target (Red, Static params)
+        drawWave(STATE.radio.target.freq, STATE.radio.target.amp, '#ff3333', 0.5);
+
+        // Draw Player (Green, Controlled)
+        drawWave(STATE.radio.current.freq, STATE.radio.current.amp, '#00ff00', 1.0);
+
+        // Check Match
+        const diffFreq = Math.abs(STATE.radio.target.freq - STATE.radio.current.freq);
+        const diffAmp = Math.abs(STATE.radio.target.amp - STATE.radio.current.amp);
+        
+        // Calculate match percentage roughly
+        const matchQuality = 100 - (diffFreq * 10 + diffAmp * 0.5);
+        const isMatched = diffFreq < 0.5 && diffAmp < 5;
+
         ctx.font = '18px monospace';
-        ctx.fillText("Use SETAS (Esq/Dir) para sintonizar.", 40, 80);
-        
-        // Bar
-        ctx.fillStyle = '#332200';
-        ctx.fillRect(40, 150, 430, 40);
-        
-        // Target (Invisible visually, logic only)
-        // Current Freq Marker
-        const pct = (STATE.radio.freq - 88.0) / (108.0 - 88.0);
-        const x = 40 + pct * 430;
-        
         ctx.fillStyle = CRT_COLOR;
-        ctx.fillRect(x - 2, 140, 4, 60);
-        ctx.fillText(`${STATE.radio.freq.toFixed(1)} MHz`, 200, 220);
-        
-        // Signal Strength logic
-        const dist = Math.abs(STATE.radio.freq - STATE.radio.target);
-        let signal = 0;
-        if (dist < 2.0) signal = 1 - (dist / 2.0);
-        
-        const barW = signal * 200;
-        ctx.fillStyle = signal > 0.9 ? '#00ff00' : '#554400';
-        ctx.fillRect(156, 250, barW, 20);
-        ctx.strokeStyle = CRT_COLOR;
-        ctx.strokeRect(156, 250, 200, 20);
-        ctx.fillText("SINAL:", 80, 265);
-        
-        if (signal > 0.95 && !STATE.radio.locked) {
+        ctx.fillText(`SINCRONIA: ${Math.max(0, Math.floor(matchQuality))}%`, 40, 330);
+
+        if (isMatched && !STATE.radio.locked) {
             STATE.radio.locked = true;
             playSound('click');
-            // Give Reward
             STATE.sanity = Math.min(100, STATE.sanity + 20);
-            logMessage("SINAL INTERCEPTADO. SANIDADE +20.");
+            STATE.stats.radioSignals++;
+            logMessage("SINAL DECODIFICADO. SANIDADE +20.");
         }
-        
+
         if (STATE.radio.locked) {
             ctx.fillStyle = '#00ff00';
-            ctx.fillText("TRANSMISSÃO SEGURA DETECTADA.", 40, 320);
-            
-            // --- NEW MECHANIC: RADIO LURE ---
+            ctx.fillText("CONEXÃO ESTABELECIDA.", 250, 330);
+            // Only show rescue button if connected
             osButtons.push({ action: 'RADIO_LURE', ...drawButton(ctx, 40, 350, 430, 40, "EMITIR SINAL DE RESGATE (40 EN)") });
-            
-        } else {
-            ctx.fillStyle = '#ff3333';
-            ctx.fillText("CHIADO...", 40, 320);
         }
-        
+
         osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
     }
 
@@ -1033,7 +1113,8 @@
         STATE.minigame.isRevival = isRevival;
         STATE.minigame.pacman = { 
             player: {x:1, y:1}, 
-            ghost: {x:7, y:7, tick: 0, speed: 8}, 
+            // AUMENTADO DE 8 PARA 16 (Quanto maior, mais lento)
+            ghost: {x:7, y:7, tick: 0, speed: 16}, 
             score: 0, totalDots, map, width: 15, height: 15 
         };
         STATE.screenView = 'GAME_PACMAN';
@@ -1260,7 +1341,7 @@
                 else if (btn.action === 'GO_REPAIR') STATE.screenView = 'REPAIR';
                 else if (btn.action === 'GO_TROPHIES') STATE.screenView = 'TROPHIES';
                 else if (btn.action === 'GO_GAMES') STATE.screenView = 'GAMES_MENU';
-                else if (btn.action === 'GO_RADIO') STATE.screenView = 'RADIO';
+                else if (btn.action === 'GO_RADIO') initRadio(); // Use new function
                 else if (btn.action === 'GO_ARCHIVES') STATE.screenView = 'ARCHIVES';
                 else if (btn.action === 'START_SNAKE') initSnake();
                 else if (btn.action === 'START_MEMORY') initMemory();
@@ -1272,7 +1353,7 @@
                 // Family Actions
                 else if (btn.action === 'FAM_FEED' && STATE.energy >= 20) { STATE.energy -= 20; STATE.familyMood = Math.min(100, STATE.familyMood + 30); }
                 else if (btn.action === 'FAM_TALK' && STATE.energy >= 10) { STATE.energy -= 10; STATE.sanity = Math.min(100, STATE.sanity + 10); }
-                else if (btn.action === 'FAM_MEDIC' && STATE.energy >= 30) { STATE.energy -= 30; STATE.familyHealth = Math.min(100, STATE.familyHealth + 30); }
+                else if (btn.action === 'FAM_MEDIC' && STATE.energy >= 30) { STATE.energy -= 30; STATE.familyHealth = Math.min(100, STATE.familyHealth + 30); STATE.stats.familyHeals++; }
                 else if (btn.action === 'FAM_PLAY' && STATE.energy >= 15) { STATE.energy -= 15; STATE.familyMood = Math.min(100, STATE.familyMood + 20); }
 
                 else if (btn.action === 'REP_DOOR' && STATE.energy >= 30) { STATE.energy -= 30; STATE.doorHealth = Math.min(100, STATE.doorHealth + 40); unlockTrophy('MECHANIC'); }
