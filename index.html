@@ -8,7 +8,6 @@
         body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Courier New', monospace; user-select: none; }
         #game-container { position: relative; width: 100vw; height: 100vh; }
         
-        /* --- UI GERAL --- */
         #overlay, #narrative-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; color: #ffcc00; display: flex; flex-direction: column;
@@ -20,7 +19,6 @@
         #overlay h1 { text-shadow: 0 0 10px #ffcc00; margin-bottom: 10px; }
         #overlay p { opacity: 0.8; max-width: 600px; line-height: 1.5; }
 
-        /* Estilo Telltale */
         .narrative-title { font-size: 32px; margin-bottom: 20px; color: #fff; text-transform: uppercase; letter-spacing: 4px; border-bottom: 2px solid #ffcc00; padding-bottom: 10px; }
         .narrative-body { font-size: 18px; max-width: 700px; color: #ddd; margin-bottom: 40px; line-height: 1.6; }
         .narrative-choices { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
@@ -39,7 +37,6 @@
             mix-blend-mode: difference;
         }
 
-        /* --- NOTIFICAÇÃO DE TROFÉU --- */
         #trophy-popup {
             position: absolute; top: -100px; left: 50px; 
             width: 300px; height: 60px;
@@ -60,7 +57,6 @@
         #trophy-text h4 { margin: 0; color: #fff; font-size: 14px; font-family: sans-serif; }
         #trophy-text p { margin: 0; color: #aaa; font-size: 12px; font-family: sans-serif; }
 
-        /* --- HUD DE STATUS --- */
         #hud-overlay {
             position: absolute; top: 20px; right: 20px; width: 250px;
             padding: 15px; background: rgba(20, 20, 0, 0.1);
@@ -78,21 +74,6 @@
         #timer-display { font-size: 20px; font-weight: bold; text-align: center; margin-bottom: 10px; color: #fff; text-shadow: 0 0 5px #ffcc00; }
         .hud-quota-val { color: #fff; font-weight: bold; }
 
-        /* --- EFEITOS VHS/CRT --- */
-        #vhs-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 90;
-            background: linear-gradient(rgba(18, 16, 0, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 200, 0, 0.06), rgba(255, 200, 0, 0.02), rgba(255, 200, 0, 0.06));
-            background-size: 100% 2px, 3px 100%;
-            box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
-        }
-        #scanline {
-            width: 100%; height: 10px; background: rgba(255,200,0,0.05); opacity: 0.1;
-            position: absolute; z-index: 91; pointer-events: none;
-            animation: scanline 6s linear infinite;
-        }
-        @keyframes scanline { 0% { top: -10%; } 100% { top: 110%; } }
-        
         #message-log {
             position: absolute; bottom: 20px; left: 20px; color: #ffcc00;
             font-size: 14px; opacity: 0.8; pointer-events: none; z-index: 80;
@@ -153,7 +134,24 @@
             color: #aaa; font-size: 12px;
             z-index: 95;
         }
+        #device-hint {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #ffcc00; font-size: 24px; display: none; pointer-events: none; text-shadow: 1px 1px 2px black;
+        }
 
+        #vhs-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 90;
+            background: linear-gradient(rgba(18, 16, 0, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 200, 0, 0.06), rgba(255, 200, 0, 0.02), rgba(255, 200, 0, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
+        }
+        #scanline {
+            width: 100%; height: 10px; background: rgba(255,200,0,0.05); opacity: 0.1;
+            position: absolute; z-index: 91; pointer-events: none;
+            animation: scanline 6s linear infinite;
+        }
+        @keyframes scanline { 0% { top: -10%; } 100% { top: 110%; } }
     </style>
 </head>
 <body>
@@ -167,22 +165,15 @@
     <p>
         <b>OBJETIVO:</b> Sobreviva até o Dia 8.<br>
         <b>CONTROLES:</b> [Q] e [E] para trocar de cômodo.<br>
-        <b>NOVOS MÉTODOS:</b> Use os móveis e objetos para sobreviver.
+        <b>INTERAÇÃO:</b> Clique nos aparelhos para usar.
     </p>
 </div>
 
-<!-- NARRATIVE OVERLAY (TELLTALE STYLE) -->
 <div id="narrative-overlay">
     <div class="narrative-title" id="narrative-title">NOITE 1: O SINAL</div>
-    <div class="narrative-body" id="narrative-body">
-        O sistema de rádio captou uma transmissão antiga da Iniciativa Pluribus. 
-        Parece ser um código de ativação para as unidades robóticas da cidade.
-        Sua família acha que isso pode nos salvar, mas ativar o sinal pode revelar nossa posição.
-    </div>
-    <div class="narrative-choices" id="narrative-choices">
-        <!-- Buttons injected via JS -->
-    </div>
-    <div class="consequence-text" id="consequence-text">Sua família vai se lembrar disso.</div>
+    <div class="narrative-body" id="narrative-body">...</div>
+    <div class="narrative-choices" id="narrative-choices"></div>
+    <div class="consequence-text" id="consequence-text"></div>
 </div>
 
 <div id="game-container">
@@ -191,6 +182,7 @@
     <div id="crosshair"></div>
     <div id="room-indicator">BUNKER</div>
     <div id="room-controls-hint">[Q] ANTERIOR | [E] PRÓXIMO</div>
+    <div id="device-hint">CLIQUE PARA USAR</div>
     
     <div id="trophy-popup">
         <div id="trophy-icon">🏆</div>
@@ -202,30 +194,12 @@
 
     <div id="hud-overlay">
         <div id="timer-display">05:00</div>
-        <div class="hud-row">
-            <span class="hud-label">DIA:</span>
-            <span id="hud-day">1/8</span>
-        </div>
-        <!-- NOVA LINHA DE COTA -->
-        <div class="hud-row">
-            <span class="hud-label">COTA DIÁRIA:</span>
-            <span id="hud-quota" class="hud-quota-val">0/2</span>
-        </div>
-        <div class="hud-row" id="row-sanity">
-            <span class="hud-label">SANIDADE:</span>
-            <div class="hud-bar-container"><div id="bar-sanity" class="hud-bar-fill" style="width: 80%"></div></div>
-        </div>
-        <div class="hud-row" id="row-door">
-            <span class="hud-label">PORTA:</span>
-            <div class="hud-bar-container"><div id="bar-door" class="hud-bar-fill" style="width: 100%"></div></div>
-        </div>
-        <div class="hud-row" id="row-family">
-            <span class="hud-label">FAMÍLIA:</span>
-            <div class="hud-bar-container"><div id="bar-family" class="hud-bar-fill" style="width: 100%"></div></div>
-        </div>
-        <div class="hud-row">
-             <span class="hud-label" style="font-size:10px; color:#aa8800; margin-top:5px;">RECURSOS (ENERGIA): <span id="hud-energy">80</span>%</span>
-        </div>
+        <div class="hud-row"><span class="hud-label">DIA:</span><span id="hud-day">1/8</span></div>
+        <div class="hud-row"><span class="hud-label">COTA:</span><span id="hud-quota" class="hud-quota-val">0/2</span></div>
+        <div class="hud-row" id="row-sanity"><span class="hud-label">SANIDADE:</span><div class="hud-bar-container"><div id="bar-sanity" class="hud-bar-fill" style="width: 80%"></div></div></div>
+        <div class="hud-row" id="row-door"><span class="hud-label">PORTA:</span><div class="hud-bar-container"><div id="bar-door" class="hud-bar-fill" style="width: 100%"></div></div></div>
+        <div class="hud-row" id="row-family"><span class="hud-label">FAMÍLIA:</span><div class="hud-bar-container"><div id="bar-family" class="hud-bar-fill" style="width: 100%"></div></div></div>
+        <div class="hud-row"><span class="hud-label" style="font-size:10px; color:#aa8800;">RECURSOS (ENERGIA): <span id="hud-energy">80</span>%</span></div>
     </div>
 
     <div id="message-log"></div>
@@ -251,8 +225,64 @@
     const CRT_COLOR = '#ffcc00';
     let osButtons = [];
     let audioCtx, masterGain;
+    let camera, scene, renderer, monitorTexture, monitorContext, pointLightPC, pointLightEmergency;
+    let raycaster = new THREE.Raycaster();
+    let clock = new THREE.Clock();
 
-    // --- SISTEMA DE ÁUDIO ---
+    // --- CONSTANTES DE CONFIGURAÇÃO ---
+    const ROOM_OFFSET = 20;
+    const ROOMS = [{ id: 'BUNKER', name: 'BUNKER (QG)', x: 0 }, { id: 'BATHROOM', name: 'BANHEIRO', x: ROOM_OFFSET }, { id: 'LIVING', name: 'SALA DE ESTAR', x: ROOM_OFFSET * 2 }];
+    const LOCATIONS = { BUNKER: { color: 0xffcc00, fog: 0x050505, fogDens: 0.15 }, BATHROOM: { color: 0xeeeeee, fog: 0xaaaaaa, fogDens: 0.1 }, LIVING: { color: 0x553322, fog: 0x221100, fogDens: 0.15 }, MARKET: { color: 0x00FFFF, fog: 0x001133, fogDens: 0.3 }, PHARMACY: { color: 0xFFFFFF, fog: 0xEEEEEE, fogDens: 0.4 }, STREETS: { color: 0xFF6600, fog: 0x331100, fogDens: 0.6 } };
+    const TROPHIES = { FIRST_BLOOD: { id: 'first_blood', icon: "⚡", title: "Primeiro Sangue" }, SAVIOR: { id: 'savior', icon: "🤝", title: "O Salvador" }, SLAYER: { id: 'slayer', icon: "💀", title: "Exterminador" }, MECHANIC: { id: 'mechanic', icon: "🔧", title: "Engenheiro" }, VETERAN: { id: 'veteran', icon: "🎖️", title: "Veterano" }, FAMILY_FIRST: { id: 'family', icon: "❤️", title: "Pai de Família" }, LORE_MASTER: { id: 'lore_master', icon: "📂", title: "Arquivista" }, RADIO_OP: { id: 'radio_op', icon: "📡", title: "Operador de Rádio" }, DOCTOR: { id: 'doctor', icon: "💊", title: "Médico de Campo" }, TRUTH_SEEKER: { id: 'truth', icon: "👁️", title: "Verdade Oculta" }, PLATINUM: { id: 'plat', icon: "🏆", title: "A JUNÇÃO PERFEITA" } };
+    const VISITOR_TYPES = [
+        { id: 'survivor', type: 'good', name: 'Sobrevivente', visual: `___\n(o o)\n| - |\n-----`, prompt: "Humano.", reward: { energy: 10, sanity: 5 }, desc: "Humano." },
+        { id: 'medic', type: 'good', name: 'Médico', visual: `___\n(o o)\n| + |\n-----`, prompt: "Médico.", reward: { energy: 10, sanity: 30 }, desc: "Traz remédios." },
+        { id: 'mechanic', type: 'good', name: 'Mecânico', visual: `___\n[o o]\n| # |\n-----`, prompt: "Mecânico.", reward: { energy: 10, door: 40 }, desc: "Pode reparar a porta." },
+        { id: 'mimic', type: 'bad', name: 'Mímico', visual: `___\n(o o)\n| O |\n-----`, prompt: "Monstro.", damage: { door: 30, sanity: 30 }, desc: "Finge ser gente." },
+        { id: 'brute', type: 'bad', name: 'Brutamontes', visual: `/ \\\n(X X)\n(###)\n\\___/`, prompt: "Monstro.", damage: { door: 60, sanity: 10 }, desc: "Dano massivo." },
+        { id: 'cultist', type: 'bad', name: 'Cultista', visual: ` / \\\n(o o)\n |^| \n-----`, prompt: "Fanático.", damage: { door: 10, sanity: 50 }, desc: "Drena sanidade." }
+    ];
+    const LORE_DATABASE = [
+        { id: 1, title: "PROTOCOLO 0", text: "A Junção é um filtro.", encrypted: false },
+        { id: 2, title: "MÍMICOS", text: "Eles não piscam corretamente.", encrypted: false },
+        { id: 3, title: "FREQUÊNCIA 98.5", text: "Música clássica acalma.", encrypted: false },
+        { id: 4, title: "BUNKER 7", text: "Somos controle.", encrypted: false },
+        { id: 5, title: "CULTISTAS", text: "Cuidado com a luz.", encrypted: false },
+        { id: 6, title: "MAPA DOS TÚNEIS", text: "Saída nos dutos Setor 4.", encrypted: true, scrambled: "X7A U#A S@!DA..." },
+        { id: 7, title: "PROJETO GÊNESE", text: "Você é o Administrador 09.", encrypted: true, scrambled: "V0C# N@0 E..." }
+    ];
+    const NARRATIVE_EVENTS = [
+        { title: "NOITE 1: O PROTOCOLO DE HERANÇA", body: "Arquivo criptografado encontrado.", choices: [{ text: "Contar a verdade", effect: { sanity: 20, family: -20 } }, { text: "Mentir", effect: { sanity: -10, family: 10 } }] },
+        { title: "NOITE 2: O RÁDIO AMADOR", body: "Sinal de rádio detectado.", choices: [{ text: "Responder", effect: { energy: -20, door: -20 } }, { text: "Destruir rádio", effect: { family: -30 } }] },
+        { title: "NOITE 3: A OFERTA DA CORPORAÇÃO", body: "Drone da Pluribus na ventilação.", choices: [{ text: "Aceitar troca", effect: { energy: 100, family: -40 } }, { text: "Recusar", effect: { energy: -30, sanity: 10 } }] },
+        { title: "NOITE 4: O PASSADO", body: "Memórias antigas ressurgem.", choices: [{ text: "Aceitar", effect: { sanity: -30 } }, { text: "Reprimir", effect: { energy: -20 } }] },
+        { title: "NOITE 5: FALHA NO FILTRO", body: "Ar pesado.", choices: [{ text: "Consertar fora", effect: { familyHealth: -20, door: -10 } }, { text: "Improvisar", effect: { door: -30 } }] },
+        { title: "NOITE 6: O VIZINHO", body: "Mutante na porta.", choices: [{ text: "Atirar", effect: { sanity: -20 } }, { text: "Ignorar", effect: { familyMood: -20 } }] },
+        { title: "NOITE 7: O ULTIMATO", body: "Limpeza Final.", choices: [{ text: "Sobrecarrregar", effect: { energy: -50, door: 50 } }, { text: "Racionar", effect: { energy: 30, door: -20 } }] }
+    ];
+    // CORREÇÃO: Estrutura de dados normalizada para 'question', 'options', 'answer'
+    const QUIZ_DATA = { 
+        MARKET: [{ question: "Lata sem rótulo.", options: ["Comer", "Ignorar", "Guardar"], answer: 1, rewardType: 'energy', rewardAmount: 20, failAmount: -10 }], 
+        PHARMACY: [{ question: "Soro experimental.", options: ["Usar", "Estocar", "Destruir"], answer: 1, rewardType: 'sanity', rewardAmount: 30, failAmount: -20 }], 
+        STREETS: [{ question: "Névoa ácida.", options: ["Correr", "Sinalizador", "Abrigo"], answer: 2, rewardType: 'sanity', rewardAmount: 20, failAmount: -40 }] 
+    };
+
+    const STATE = {
+        playing: false, day: 1, maxDays: 8, dayTime: 300,
+        sanity: 80, energy: 80, doorHealth: 100, familyMood: 100, familyHealth: 100, 
+        dailySurvivorsLetIn: 0, survivorsQuota: 2, nextVisitorTimer: 60, revivalUsed: false, 
+        currentRoomIndex: 0, cameraTargetX: 0, activeDevice: 'MONITOR', 
+        doorKnocking: false, visitor: null, lookingAtPeephole: false, screenView: 'BOOT', currentLocation: 'BUNKER', gameOver: false, interrogated: false, isNarrativeMode: false,
+        unlockedLore: [], decodedLore: [], radio: { target: { freq: 5, amp: 50 }, current: { freq: 2, amp: 20 }, locked: false },
+        stats: { humansSaved: 0, monstersKilled: 0, unlockedTrophies: [], radioSignals: 0, familyHeals: 0 },
+        quiz: { question: "", options: [], answer: 0, rewardType: '', rewardAmount: 0 },
+        minigame: { active: null, isRevival: false, snake: { snake: [{x:10, y:10}], dir: {x:0, y:0}, food: {x:15, y:15}, score: 0, speed: 10, tick: 0 }, memory: { cards: [], flipped: [], matches: 0, locked: false, grid: [4, 3] }, pacman: { player: {x:1, y:1}, ghost: {x:7, y:7, tick: 0, speed: 16}, score: 0, totalDots: 100, map: [], width: 15, height: 15 } },
+        interactedObjects: {}
+    };
+
+    window.gameActions = { interrogate: () => interrogateVisitor(), openDoor: () => resolveDoor(true), shockDoor: () => resolveDoor(false), exitPeephole: () => exitPeepholeMode() };
+
+    // --- AUDIO ---
     function initAudio() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         audioCtx = new AudioContext(); 
@@ -266,17 +296,11 @@
         const osc = audioCtx.createOscillator(); 
         const gain = audioCtx.createGain();
         if (pos) {
-            const p = audioCtx.createPanner(); 
-            p.panningModel = 'HRTF';
-            p.positionX.value = pos.x; 
-            p.positionY.value = pos.y; 
-            p.positionZ.value = pos.z;
+            const p = audioCtx.createPanner(); p.panningModel = 'HRTF'; p.positionX.value = pos.x; p.positionY.value = pos.y; p.positionZ.value = pos.z;
             osc.connect(gain).connect(p).connect(masterGain);
-        } else {
-            osc.connect(gain).connect(masterGain);
-        }
+        } else { osc.connect(gain).connect(masterGain); }
         const now = audioCtx.currentTime;
-        if (type === 'click') { osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now+0.1); osc.start(now); osc.stop(now+0.1); }
+        if (type === 'click') { osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.1); gain.gain.setValueAtTime(0.1, now); osc.start(now); osc.stop(now+0.1); }
         else if (type === 'trophy') { osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(800, now+0.2); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+1); osc.start(now); osc.stop(now+1); }
         else if (type === 'travel') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now+2); gain.gain.value = 0.1; osc.start(now); osc.stop(now+2); }
         else if (type === 'hum') { osc.type = 'sine'; osc.frequency.value = 60; gain.gain.value = 0.05; osc.start(now); }
@@ -284,242 +308,128 @@
         else if (type === 'shock') { osc.type = 'sawtooth'; osc.frequency.linearRampToValueAtTime(1000, now+0.5); gain.gain.setValueAtTime(0.5, now); osc.start(now); osc.stop(now+0.5); }
         else if (type === 'jumpscare') { osc.type = 'sawtooth'; osc.frequency.value = 50; gain.gain.value = 1; osc.start(now); osc.stop(now+2); }
     }
-    
+
     // --- CONFIGURAÇÃO 3D ---
-    let camPitch = 0;
-    let camYaw = 0;
-    let targetPitch = 0;
-    let targetYaw = 0;
-    const LOOK_SPEED = 0.002;
-    const SMOOTH_FACTOR = 0.15; 
-    const MAX_YAW = Math.PI / 1.5; 
-    const MAX_PITCH = Math.PI / 3; 
+    let camPitch = 0, camYaw = 0, targetPitch = 0, targetYaw = 0;
+    const LOOK_SPEED = 0.002; const SMOOTH_FACTOR = 0.15; const MAX_YAW = Math.PI / 1.5; const MAX_PITCH = Math.PI / 3; 
 
-    const ROOM_OFFSET = 20;
-    const ROOMS = [
-        { id: 'BUNKER', name: 'BUNKER (QG)', x: 0 },
-        { id: 'BATHROOM', name: 'BANHEIRO', x: ROOM_OFFSET },
-        { id: 'LIVING', name: 'SALA DE ESTAR', x: ROOM_OFFSET * 2 }
-    ];
-    
-    const NARRATIVE_EVENTS = [
-        { title: "NOITE 1: O PROTOCOLO DE HERANÇA", body: "Arquivo criptografado encontrado.", choices: [{ text: "Contar a verdade", effect: { sanity: 20, family: -20 } }, { text: "Mentir", effect: { sanity: -10, family: 10 } }] },
-        { title: "NOITE 2: O RÁDIO AMADOR", body: "Sinal de rádio detectado.", choices: [{ text: "Responder", effect: { energy: -20, door: -20 } }, { text: "Destruir rádio", effect: { family: -30 } }] },
-        { title: "NOITE 3: A OFERTA DA CORPORAÇÃO", body: "Drone da Pluribus na ventilação.", choices: [{ text: "Aceitar troca", effect: { energy: 100, family: -40 } }, { text: "Recusar", effect: { energy: -30, sanity: 10 } }] },
-        { title: "NOITE 4: O PASSADO ESQUECIDO", body: "Memórias antigas ressurgem.", choices: [{ text: "Aceitar", effect: { sanity: -30 } }, { text: "Reprimir", effect: { energy: -20 } }] },
-        { title: "NOITE 5: A FALHA NO FILTRO", body: "Sistema de ar comprometido.", choices: [{ text: "Consertar fora", effect: { familyHealth: -20, door: -10 } }, { text: "Improvisar", effect: { door: -30 } }] },
-        { title: "NOITE 6: O VIZINHO", body: "Vizinho mutante na porta.", choices: [{ text: "Atirar", effect: { sanity: -20 } }, { text: "Ignorar", effect: { familyMood: -20 } }] },
-        { title: "NOITE 7: O ULTIMATO", body: "Aviso final da Pluribus.", choices: [{ text: "Sobrecarrregar gerador", effect: { energy: -50, door: 50 } }, { text: "Racionar", effect: { energy: 30, door: -20 } }] }
-    ];
-
-    const TROPHIES = {
-        FIRST_BLOOD: { id: 'first_blood', title: "Primeiro Sangue", desc: "Eletrocutou um visitante.", icon: "⚡" },
-        SAVIOR: { id: 'savior', title: "O Salvador", desc: "Salvou 3 humanos.", icon: "🤝" },
-        SLAYER: { id: 'slayer', title: "Exterminador", desc: "Matou 3 monstros.", icon: "💀" },
-        SURVIVOR: { id: 'survivor', title: "Meio Caminho", desc: "Chegou ao Dia 4.", icon: "📅" },
-        MECHANIC: { id: 'mechanic', title: "Engenheiro", desc: "Reparou a porta.", icon: "🔧" },
-        FAMILY_FIRST: { id: 'family', title: "Pai de Família", desc: "Humor 100%.", icon: "❤️" },
-        LORE_MASTER: { id: 'lore_master', title: "Arquivista", desc: "Coletou 3 arquivos.", icon: "📂" },
-        RADIO_OP: { id: 'radio_op', title: "Operador de Rádio", desc: "Sincronizou 3 sinais.", icon: "📡" },
-        VETERAN: { id: 'veteran', title: "Veterano", desc: "Dia 8.", icon: "🎖️" },
-        DOCTOR: { id: 'doctor', title: "Médico", desc: "Curou 3 vezes.", icon: "💊" },
-        TRUTH_SEEKER: { id: 'truth', title: "Verdade", desc: "Descobriu o segredo.", icon: "👁️" },
-        PLATINUM: { id: 'plat', title: "PLATINA", desc: "Todos os troféus.", icon: "🏆" }
-    };
-
-    const LORE_DATABASE = [
-        { id: 1, title: "PROTOCOLO 0", text: "A Junção é um filtro.", encrypted: false },
-        { id: 2, title: "MÍMICOS", text: "Eles não piscam corretamente.", encrypted: false },
-        { id: 3, title: "FREQUÊNCIA 98.5", text: "Música clássica acalma.", encrypted: false },
-        { id: 4, title: "BUNKER 7", text: "Somos controle.", encrypted: false },
-        { id: 5, title: "CULTISTAS", text: "Cuidado com a luz.", encrypted: false },
-        { id: 6, title: "MAPA DOS TÚNEIS", text: "Saída nos dutos Setor 4.", encrypted: true, scrambled: "X7A U#A S@!DA..." },
-        { id: 7, title: "PROJETO GÊNESE", text: "Você é o Administrador 09.", encrypted: true, scrambled: "V0C# N@0 E..." }
-    ];
-
-    const VISITOR_TYPES = [
-        { id: 'survivor', type: 'good', name: 'Sobrevivente', visual: `___\n(o o)\n| - |\n-----`, prompt: "Humano.", reward: { energy: 10, sanity: 5 }, desc: "Humano." },
-        { id: 'medic', type: 'good', name: 'Médico', visual: `___\n(o o)\n| + |\n-----`, prompt: "Médico.", reward: { energy: 10, sanity: 30 }, desc: "Traz remédios." },
-        { id: 'mechanic', type: 'good', name: 'Mecânico', visual: `___\n[o o]\n| # |\n-----`, prompt: "Mecânico.", reward: { energy: 10, door: 40 }, desc: "Pode reparar a porta." },
-        { id: 'mimic', type: 'bad', name: 'Mímico', visual: `___\n(o o)\n| O |\n-----`, prompt: "Monstro.", damage: { door: 30, sanity: 30 }, desc: "Finge ser gente." },
-        { id: 'brute', type: 'bad', name: 'Brutamontes', visual: `/ \\\n(X X)\n(###)\n\\___/`, prompt: "Monstro.", damage: { door: 60, sanity: 10 }, desc: "Dano massivo." },
-        { id: 'cultist', type: 'bad', name: 'Cultista', visual: ` / \\\n(o o)\n |^| \n-----`, prompt: "Fanático.", damage: { door: 10, sanity: 50 }, desc: "Drena sanidade." }
-    ];
-
-    const STATE = {
-        playing: false,
-        day: 1, maxDays: 8, dayTime: 300,
-        sanity: 80, energy: 80, doorHealth: 100, familyMood: 100, familyHealth: 100, 
-        dailySurvivorsLetIn: 0, survivorsQuota: 2,
-        nextVisitorTimer: 60, revivalUsed: false, revivalReason: '',
-        currentRoomIndex: 0, cameraTargetX: 0,
-        doorKnocking: false, visitor: null, lookingAtPeephole: false,
-        screenView: 'BOOT', currentLocation: 'BUNKER', gameOver: false, interrogated: false, isNarrativeMode: false,
-        unlockedLore: [], decodedLore: [],
-        radio: { target: { freq: 5, amp: 50 }, current: { freq: 2, amp: 20 }, locked: false },
-        stats: { humansSaved: 0, monstersKilled: 0, unlockedTrophies: [], radioSignals: 0, familyHeals: 0 },
-        quiz: { question: "", options: [], answer: 0, rewardType: '', rewardAmount: 0 },
-        minigame: { active: null, isRevival: false, snake: { snake: [{x:10, y:10}], dir: {x:0, y:0}, food: {x:15, y:15}, score: 0, speed: 10, tick: 0 }, memory: { cards: [], flipped: [], matches: 0, locked: false, grid: [4, 3] }, pacman: { player: {x:1, y:1}, ghost: {x:7, y:7, tick: 0, speed: 16}, score: 0, totalDots: 100, map: [], width: 15, height: 15 } },
-        interactedObjects: {}
-    };
-
-    const LOCATIONS = {
-        BUNKER: { color: 0xffcc00, fog: 0x050505, fogDens: 0.15 },
-        MARKET: { color: 0x00FFFF, fog: 0x001133, fogDens: 0.3 },
-        PHARMACY: { color: 0xFFFFFF, fog: 0xEEEEEE, fogDens: 0.4 },
-        STREETS: { color: 0xFF6600, fog: 0x331100, fogDens: 0.6 },
-        BATHROOM: { color: 0xeeeeee, fog: 0xaaaaaa, fogDens: 0.1 },
-        LIVING: { color: 0x553322, fog: 0x221100, fogDens: 0.15 }
-    };
-    
-    const QUIZ_DATA = {
-        MARKET: [{ q: "Lata.", opt: ["Comer", "Ignorar", "Guardar"], ans: 1, type: 'energy', val: 20, fail: -10 }],
-        PHARMACY: [{ q: "Soro.", opt: ["Usar", "Estocar", "Destruir"], ans: 1, type: 'sanity', val: 30, fail: -20 }],
-        STREETS: [{ q: "Névoa.", opt: ["Correr", "Sinalizador", "Abrigo"], ans: 2, type: 'sanity', val: 20, fail: -40 }]
-    };
-
-    window.gameActions = {
-        interrogate: () => interrogateVisitor(),
-        openDoor: () => resolveDoor(true),
-        shockDoor: () => resolveDoor(false),
-        exitPeephole: () => exitPeepholeMode()
-    };
-
-    let camera, scene, renderer;
-    let monitorTexture, monitorContext, monitorMesh;
-    let pointLightPC, pointLightEmergency;
-    let raycaster = new THREE.Raycaster();
-    let clock = new THREE.Clock();
-
-    // --- UI & UTILS FUNCTIONS ---
-    
-    function updateBar(id, val, rowId) {
-        const el = document.getElementById(id);
-        if(el) el.style.width = `${Math.max(0, Math.min(100, val))}%`;
-        const row = document.getElementById(rowId);
-        if(row) row.classList.toggle('danger', val <= 30);
+    // --- INPUT HANDLERS ---
+    function onMouseMove(e) {
+        if (!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole || STATE.isNarrativeMode) return;
+        if (STATE.screenView.startsWith('GAME_') && STATE.minigame.isRevival) return;
+        targetYaw -= e.movementX * LOOK_SPEED; targetPitch -= e.movementY * LOOK_SPEED;
+        targetPitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetPitch));
+        targetYaw = Math.max(-MAX_YAW, Math.min(MAX_YAW, targetYaw));
     }
 
-    function unlockTrophy(key) {
-        if (!TROPHIES[key]) return;
-        const trophyId = TROPHIES[key].id;
-        if (STATE.stats.unlockedTrophies.includes(trophyId)) return;
-        STATE.stats.unlockedTrophies.push(trophyId);
-        const popup = document.getElementById('trophy-popup');
-        document.getElementById('trophy-icon').innerText = TROPHIES[key].icon;
-        document.getElementById('trophy-name').innerText = TROPHIES[key].title;
-        popup.style.top = '20px'; setTimeout(() => popup.style.top = '-100px', 4000);
-        playSound('trophy');
-        if (STATE.stats.unlockedTrophies.length === Object.keys(TROPHIES).length - 1 && !STATE.stats.unlockedTrophies.includes('plat')) setTimeout(() => unlockTrophy('PLATINUM'), 2000);
+    document.addEventListener('keydown', handleKeyDown);
+    function handleKeyDown(e) {
+        if (!STATE.playing) return;
+        const key = e.key.toLowerCase();
+        
+        if (!STATE.lookingAtPeephole && !STATE.isNarrativeMode && !STATE.gameOver && !STATE.screenView.startsWith('GAME_') && STATE.screenView !== 'RADIO') {
+            if (key === 'e' && STATE.currentRoomIndex < ROOMS.length - 1) { STATE.currentRoomIndex++; STATE.cameraTargetX = ROOMS[STATE.currentRoomIndex].x; STATE.currentLocation = ROOMS[STATE.currentRoomIndex].id; playSound('click'); logNarrative(`Você foi para: ${ROOMS[STATE.currentRoomIndex].name}`); }
+            if (key === 'q' && STATE.currentRoomIndex > 0) { STATE.currentRoomIndex--; STATE.cameraTargetX = ROOMS[STATE.currentRoomIndex].x; STATE.currentLocation = ROOMS[STATE.currentRoomIndex].id; playSound('click'); logNarrative(`Você foi para: ${ROOMS[STATE.currentRoomIndex].name}`); }
+        }
+        if (STATE.screenView === 'RADIO') {
+            if (key === 'arrowleft') STATE.radio.current.freq = Math.max(1, STATE.radio.current.freq - 0.2);
+            if (key === 'arrowright') STATE.radio.current.freq = Math.min(15, STATE.radio.current.freq + 0.2);
+            if (key === 'arrowdown') STATE.radio.current.amp = Math.max(10, STATE.radio.current.amp - 2);
+            if (key === 'arrowup') STATE.radio.current.amp = Math.min(100, STATE.radio.current.amp + 2);
+        }
+        if (STATE.screenView === 'GAME_SNAKE') {
+             const s = STATE.minigame.snake;
+             if (key === 'arrowup' && s.dir.y===0) s.dir={x:0,y:-1}; if(key==='arrowdown' && s.dir.y===0) s.dir={x:0,y:1}; if(key==='arrowleft' && s.dir.x===0) s.dir={x:-1,y:0}; if(key==='arrowright' && s.dir.x===0) s.dir={x:1,y:0};
+        }
     }
 
+    function handleWorldClick(obj) {
+        if (STATE.interactedObjects[obj.name]) return;
+        if (obj.name === "BED" && STATE.energy < 50) { STATE.energy = Math.min(100, STATE.energy + 30); STATE.dayTime -= 60; logNarrative("Cochilo."); playSound('hum'); }
+        else if (obj.name === "SINK") { STATE.sanity += 5; logNarrative("Água fria."); playSound('click'); }
+        else if (obj.name === "DOOR") enterPeepholeMode();
+        else if (['MONITOR', 'PHONE', 'TV', 'NOTEBOOK'].includes(obj.name)) {
+            STATE.activeDevice = obj.name;
+            if (obj.name === 'MONITOR') STATE.screenView = 'DESKTOP';
+            if (obj.name === 'PHONE') STATE.screenView = 'PHONE_HOME';
+            if (obj.name === 'TV') STATE.screenView = 'TV_HOME';
+            if (obj.name === 'NOTEBOOK') STATE.screenView = 'NOTEBOOK_HOME';
+            logNarrative(`Usando: ${obj.name}`);
+        }
+        STATE.interactedObjects[obj.name] = true; setTimeout(() => STATE.interactedObjects[obj.name] = false, 2000);
+    }
+
+    function handleMonitorClick(uv) {
+        const x = uv.x * CANVAS_W, y = (1 - uv.y) * CANVAS_H; 
+        for (let btn of osButtons) {
+             if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+                 playSound('click');
+                 if (btn.action === 'BACK') {
+                    if (STATE.activeDevice === 'MONITOR') STATE.screenView = 'DESKTOP';
+                    else if (STATE.activeDevice === 'PHONE') STATE.screenView = 'PHONE_HOME';
+                    else if (STATE.activeDevice === 'TV') STATE.screenView = 'TV_HOME';
+                    else if (STATE.activeDevice === 'NOTEBOOK') STATE.screenView = 'NOTEBOOK_HOME';
+                 }
+                 else if (btn.action === 'BACK_GAME') {
+                     if (STATE.activeDevice === 'PHONE') STATE.screenView = 'PHONE_HOME';
+                     else if (STATE.activeDevice === 'TV') STATE.screenView = 'TV_HOME';
+                     else STATE.screenView = 'DESKTOP';
+                 }
+                 else if (btn.action === 'GO_MAP') STATE.screenView = 'MAP';
+                 else if (btn.action === 'GO_FAMILY') STATE.screenView = 'FAMILY';
+                 else if (btn.action === 'GO_REPAIR') STATE.screenView = 'REPAIR';
+                 else if (btn.action === 'GO_TROPHIES') STATE.screenView = 'TROPHIES';
+                 else if (btn.action === 'GO_GAMES') STATE.screenView = 'GAMES_MENU';
+                 else if (btn.action === 'GO_RADIO') initRadio();
+                 else if (btn.action === 'GO_ARCHIVES') STATE.screenView = 'ARCHIVES';
+                 else if (btn.action === 'GO_DECODER') STATE.screenView = 'DECODER';
+                 else if (btn.action === 'START_SNAKE') { STATE.minigame.snake = { snake: [{x:10, y:10}], dir: {x:0, y:0}, food: {x:15, y:15}, score: 0, speed: 10, tick: 0 }; STATE.screenView = 'GAME_SNAKE'; }
+                 else if (btn.action === 'START_PACMAN') { STATE.screenView = 'GAME_PACMAN'; }
+                 else if(btn.action === 'REP_DOOR' && STATE.energy >= 30) { STATE.energy -= 30; STATE.doorHealth += 40; }
+                 else if(btn.action === 'GO_MARKET') startExpedition('MARKET');
+                 else if(btn.action === 'GO_PHARMA') startExpedition('PHARMACY');
+                 else if(btn.action === 'GO_STREET') startExpedition('STREETS');
+                 else if(btn.action === 'RADIO_LURE' && STATE.energy >= 40) { STATE.energy -= 40; triggerKnockEvent('good'); }
+                 else if (btn.action.startsWith('ANS_')) handleQuizAnswer(parseInt(btn.action.split('_')[1]));
+                 else if (btn.action.startsWith('MEM_')) handleMemoryClick(parseInt(btn.action.split('_')[1]));
+                 else if (btn.action.startsWith('DECRYPT_')) handleDecrypt(parseInt(btn.action.split('_')[1]));
+             }
+        }
+    }
+
+    // --- UTILS & HELPERS ---
+    function updateBar(id, val, rowId) { const el = document.getElementById(id); if(el) el.style.width = `${Math.max(0, Math.min(100, val))}%`; const row = document.getElementById(rowId); if(row) row.classList.toggle('danger', val <= 30); }
+    function unlockTrophy(key) { 
+        if (!TROPHIES[key]) return; 
+        const id = TROPHIES[key].id; 
+        if (!STATE.stats.unlockedTrophies.includes(id)) { 
+            STATE.stats.unlockedTrophies.push(id); 
+            const p = document.getElementById('trophy-popup'); 
+            document.getElementById('trophy-icon').innerText = TROPHIES[key].icon;
+            document.getElementById('trophy-name').innerText = TROPHIES[key].title;
+            p.style.top = '20px'; 
+            setTimeout(() => p.style.top = '-100px', 4000); 
+            playSound('trophy'); 
+        } 
+    }
     function updateHUD() {
         if (!STATE.playing) return;
         document.getElementById('hud-day').innerText = `${STATE.day}/${STATE.maxDays}`;
         document.getElementById('hud-quota').innerText = `${STATE.dailySurvivorsLetIn}/${STATE.survivorsQuota}`;
         document.getElementById('hud-energy').innerText = Math.floor(STATE.energy);
-        updateBar('bar-sanity', STATE.sanity, 'row-sanity');
-        updateBar('bar-door', STATE.doorHealth, 'row-door');
-        updateBar('bar-family', STATE.familyMood, 'row-family'); 
+        updateBar('bar-sanity', STATE.sanity, 'row-sanity'); 
+        updateBar('bar-door', STATE.doorHealth, 'row-door'); 
+        updateBar('bar-family', STATE.familyMood, 'row-family');
+        document.getElementById('room-indicator').innerText = ROOMS[STATE.currentRoomIndex].name;
+        
         if (STATE.day >= 8) unlockTrophy('VETERAN');
         if (STATE.familyMood >= 100) unlockTrophy('FAMILY_FIRST');
         if (STATE.unlockedLore.length >= 3) unlockTrophy('LORE_MASTER');
         if (STATE.stats.radioSignals >= 3) unlockTrophy('RADIO_OP');
         if (STATE.stats.familyHeals >= 3) unlockTrophy('DOCTOR');
     }
-
-    function logNarrative(msg) {
-        const el = document.getElementById('message-log'); 
-        el.innerText = `> ${msg}`; 
-        el.style.opacity = 1; 
-        if(el.fadeTimeout) clearTimeout(el.fadeTimeout);
-        el.fadeTimeout = setTimeout(() => el.style.opacity = 0, 4000);
-    }
-
-    function typeWriterEffect(text, el) {
-        el.innerText = ""; let i = 0;
-        function type() { if (i < text.length) { el.innerText += text.charAt(i); i++; setTimeout(type, 15); } }
-        type();
-    }
-
-    // --- MAIN LOOP & INPUT ---
-
-    function onMouseMove(e) {
-        if (!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole || STATE.isNarrativeMode) return;
-        if (STATE.screenView.startsWith('GAME_') && STATE.minigame.isRevival) return;
-        
-        targetYaw -= e.movementX * LOOK_SPEED;
-        targetPitch -= e.movementY * LOOK_SPEED;
-        targetPitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, targetPitch));
-        targetYaw = Math.max(-MAX_YAW, Math.min(MAX_YAW, targetYaw));
-    }
-    
-    document.addEventListener('keydown', (e) => {
-        if (!STATE.playing) return;
-        const key = e.key.toLowerCase();
-        
-        if (!STATE.lookingAtPeephole && !STATE.isNarrativeMode && !STATE.gameOver && !STATE.screenView.startsWith('GAME_') && STATE.screenView !== 'RADIO') {
-            if (key === 'e') {
-                if (STATE.currentRoomIndex < ROOMS.length - 1) {
-                    STATE.currentRoomIndex++;
-                    STATE.cameraTargetX = ROOMS[STATE.currentRoomIndex].x;
-                    STATE.currentLocation = ROOMS[STATE.currentRoomIndex].id;
-                    playSound('click'); 
-                    logNarrative(`Você foi para: ${ROOMS[STATE.currentRoomIndex].name}`);
-                }
-            }
-            if (key === 'q') {
-                if (STATE.currentRoomIndex > 0) {
-                    STATE.currentRoomIndex--;
-                    STATE.cameraTargetX = ROOMS[STATE.currentRoomIndex].x;
-                    STATE.currentLocation = ROOMS[STATE.currentRoomIndex].id;
-                    playSound('click');
-                    logNarrative(`Você foi para: ${ROOMS[STATE.currentRoomIndex].name}`);
-                }
-            }
-        }
-        if (STATE.screenView === 'RADIO') {
-            if (key === 'arrowleft' || key === 'a') STATE.radio.current.freq = Math.max(1, STATE.radio.current.freq - 0.2);
-            if (key === 'arrowright' || key === 'd') STATE.radio.current.freq = Math.min(15, STATE.radio.current.freq + 0.2);
-            if (key === 'arrowdown' || key === 's') STATE.radio.current.amp = Math.max(10, STATE.radio.current.amp - 2);
-            if (key === 'arrowup' || key === 'w') STATE.radio.current.amp = Math.min(100, STATE.radio.current.amp + 2);
-            return;
-        }
-        if (STATE.screenView.startsWith('GAME_') === false) return;
-        if (STATE.screenView === 'GAME_SNAKE') {
-            const s = STATE.minigame.snake;
-            if ((key === 'arrowup' || key === 'w') && s.dir.y === 0) s.dir = {x:0, y:-1};
-            if ((key === 'arrowdown' || key === 's') && s.dir.y === 0) s.dir = {x:0, y:1};
-            if ((key === 'arrowleft' || key === 'a') && s.dir.x === 0) s.dir = {x:-1, y:0};
-            if ((key === 'arrowright' || key === 'd') && s.dir.x === 0) s.dir = {x:1, y:0};
-        }
-        if (STATE.screenView === 'GAME_PACMAN') {
-            const p = STATE.minigame.pacman;
-            let dx = 0, dy = 0;
-            if (key === 'arrowup' || key === 'w') dy = -1;
-            if (key === 'arrowdown' || key === 's') dy = 1;
-            if (key === 'arrowleft' || key === 'a') dx = -1;
-            if (key === 'arrowright' || key === 'd') dx = 1;
-            if (dx !== 0 || dy !== 0) {
-                const nx = p.player.x + dx;
-                const ny = p.player.y + dy;
-                if (p.map[ny] && p.map[ny][nx] !== 1) {
-                    p.player.x = nx;
-                    p.player.y = ny;
-                    if (p.map[ny][nx] === 2) { 
-                        p.map[ny][nx] = 0;
-                        p.score++;
-                        playSound('click');
-                        if (checkPacmanWin()) {
-                            if (STATE.minigame.isRevival) revivePlayer();
-                            else winMinigame();
-                        }
-                    }
-                }
-            }
-        }
-    });
-
+    function logNarrative(msg) { const el = document.getElementById('message-log'); el.innerText = `> ${msg}`; el.style.opacity = 1; if(el.fadeTimeout) clearTimeout(el.fadeTimeout); el.fadeTimeout = setTimeout(() => el.style.opacity = 0, 4000); }
+    function typeWriterEffect(text, el) { el.innerText = ""; let i = 0; function type() { if (i < text.length) { el.innerText += text.charAt(i); i++; setTimeout(type, 15); } } type(); }
     function updateCameraSmooth() {
         if (!STATE.playing || STATE.gameOver) return;
         if (STATE.lookingAtPeephole) {
@@ -537,127 +447,244 @@
         camYaw += (targetYaw - camYaw) * SMOOTH_FACTOR;
         camera.rotation.set(camPitch, camYaw, 0, 'YXZ');
     }
-
-    function handleWorldClick(object) {
-        const name = object.name;
-        if (STATE.interactedObjects[name]) return; 
-
-        if (name === "BED") {
-            if (STATE.energy < 50) {
-                STATE.energy = Math.min(100, STATE.energy + 30);
-                STATE.dayTime = Math.max(0, STATE.dayTime - 60); 
-                logNarrative("Você tirou um cochilo. Energia recuperada, mas o tempo passou.");
-                playSound('hum');
-            } else {
-                logNarrative("Sem sono agora. O pesadelo não deixa.");
-            }
+    function updateTimer(dt) {
+        if (STATE.gameOver || STATE.isNarrativeMode || STATE.screenView === 'LOCATION_QUIZ' || STATE.screenView.startsWith('GAME_')) return;
+        const TIME_SCALE = 2.5; 
+        const gameDt = dt * TIME_SCALE;
+        STATE.dayTime -= gameDt;
+        if (!STATE.doorKnocking && !STATE.isNarrativeMode) {
+            STATE.nextVisitorTimer -= gameDt;
+            if (STATE.nextVisitorTimer <= 0) { triggerKnockEvent(); STATE.nextVisitorTimer = 60; }
         }
-        else if (name === "SINK") {
-            STATE.sanity = Math.min(100, STATE.sanity + 5);
-            logNarrative("Você lavou o rosto. A água fria acalma os nervos. (+Sanidade)");
-            playSound('click'); 
-        }
-        else if (name === "CABINET") {
-            if (Math.random() > 0.7) {
-                STATE.familyHealth = Math.min(100, STATE.familyHealth + 10);
-                logNarrative("Achou vitaminas no armário. (+Saúde Família)");
-            } else {
-                logNarrative("Apenas bandagens velhas no armário.");
-            }
-        }
-        else if (name === "COUCH") {
-            STATE.familyMood = Math.min(100, STATE.familyMood + 10);
-            logNarrative("Sentou um pouco no sofá com a família. (+Humor)");
-        }
-        else if (name === "DOOR" || name === "PEEPHOLE") {
-            enterPeepholeMode();
-        }
-        
-        STATE.interactedObjects[name] = true;
-        setTimeout(() => STATE.interactedObjects[name] = false, 2000);
+        if (STATE.doorKnocking) { STATE.doorHealth -= 2.0 * dt; if (STATE.doorHealth <= 0) checkState(); }
+        if (STATE.dayTime <= 0) { STATE.dayTime = 0; startNextDay(); }
+        const min = Math.floor(STATE.dayTime / 60);
+        const sec = Math.floor(STATE.dayTime % 60);
+        document.getElementById('timer-display').innerText = `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+        if(STATE.doorKnocking) updateHUD();
     }
+    function checkState() {
+        if (STATE.day > STATE.maxDays) { document.body.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:#ffcc00;font-family:monospace;"><h1>DIA 8: RESGATE CHEGOU</h1><p>Você sobreviveu.</p><button onclick="location.reload()">REINICIAR</button></div>`; STATE.playing = false; }
+        else if (STATE.energy <= 0) triggerGameOver("Sem Energia.");
+        else if (STATE.sanity <= 0) triggerGameOver("Loucura Total.");
+        else if (STATE.doorHealth <= 0) triggerGameOver("Porta Destruída.");
+        else if (STATE.familyMood <= 0) triggerGameOver("Motim Familiar.");
+        else if (STATE.familyHealth <= 0) triggerGameOver("Família Pereceu."); 
+    }
+    function triggerGameOver(r) {
+        if (!STATE.revivalUsed) {
+            STATE.revivalUsed = true; STATE.revivalReason = r;
+            playSound('jumpscare'); STATE.lookingAtPeephole = false; document.exitPointerLock();
+            initPacman(true);
+            logNarrative("ERRO CRÍTICO! INICIANDO PROTOCOLO DE EMERGÊNCIA...");
+            return;
+        }
+        STATE.gameOver = true; 
+        playSound('jumpscare'); 
+        document.getElementById('vhs-overlay').style.background = 'red';
+        setTimeout(() => document.body.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:red;font-family:monospace;text-align:center;"><h1>FIM DE JOGO</h1><p>${r}</p><button onclick="location.reload()">REINICIAR</button></div>`, 2000);
+    }
+    function revivePlayer() {
+        STATE.sanity = Math.max(50, STATE.sanity); STATE.energy = Math.max(50, STATE.energy);
+        STATE.doorHealth = Math.max(50, STATE.doorHealth); STATE.familyMood = Math.max(50, STATE.familyMood);
+        STATE.familyHealth = Math.max(50, STATE.familyHealth);
+        STATE.doorKnocking = false; STATE.minigame.isRevival = false; STATE.screenView = 'DESKTOP';
+        playSound('trophy'); logNarrative("SISTEMA RESTAURADO."); document.body.requestPointerLock();
+    }
+    function triggerKnockEvent(forcedType = null) {
+        if (STATE.doorKnocking || STATE.currentLocation !== 'BUNKER' || STATE.isNarrativeMode) return;
+        STATE.doorKnocking = true;
+        STATE.visitor = VISITOR_TYPES[Math.floor(Math.random() * VISITOR_TYPES.length)];
+        STATE.interrogated = false; 
+        playSound('knock', {x: 3, y: 1, z: 0});
+        updateHUD();
+        logNarrative(`ALERTA DE PROXIMIDADE: Porta do ${ROOMS[STATE.currentRoomIndex].name}`);
+    }
+    function resolveDoor(open) {
+        STATE.doorKnocking = false; exitPeepholeMode();
+        if (open) {
+            if (STATE.visitor.type === 'good') {
+                if (STATE.visitor.reward.energy) STATE.energy += STATE.visitor.reward.energy;
+                if (STATE.visitor.reward.sanity) STATE.sanity += STATE.visitor.reward.sanity;
+                if (STATE.visitor.reward.door) STATE.doorHealth += STATE.visitor.reward.door;
+                STATE.dailySurvivorsLetIn++;
+                STATE.stats.humansSaved++; if (STATE.stats.humansSaved >= 3) unlockTrophy('SAVIOR');
+                playSound('click'); logNarrative("Acesso permitido.");
+            } else {
+                STATE.doorHealth -= STATE.visitor.damage.door; STATE.sanity -= STATE.visitor.damage.sanity;
+                playSound('shock'); logNarrative("ERRO! Intruso invadiu!");
+            }
+        } else {
+            playSound('shock', {x: 3, y: 1, z: 0}); unlockTrophy('FIRST_BLOOD');
+            if (STATE.visitor.type === 'good') { STATE.sanity -= 20; logNarrative("Inocente eletrocutado."); }
+            else { STATE.sanity += 10; STATE.stats.monstersKilled++; if (STATE.stats.monstersKilled >= 3) unlockTrophy('SLAYER'); logNarrative("Ameaça eliminada."); }
+        }
+        STATE.energy = Math.min(100, STATE.energy); STATE.sanity = Math.min(100, STATE.sanity);
+        STATE.doorHealth = Math.min(100, STATE.doorHealth);
+        checkState();
+    }
+    function enterPeepholeMode() {
+        if (!STATE.doorKnocking) { logNarrative("Ninguém na porta."); return; }
+        STATE.lookingAtPeephole = true; document.exitPointerLock();
+        document.getElementById('peephole-ui').style.display = 'block'; document.getElementById('dialogue-box').style.display = 'none';
+        document.getElementById('visitor-visual').innerText = STATE.visitor.visual;
+        const targetX = ROOMS[STATE.currentRoomIndex].x + 2.5;
+        camera.position.set(targetX, 1.6, 0); camera.lookAt(targetX + 2, 1.6, 0);
+    }
+    function exitPeepholeMode() {
+        STATE.lookingAtPeephole = false; document.getElementById('peephole-ui').style.display = 'none';
+        document.body.requestPointerLock(); 
+        camPitch = 0; camYaw = 0; targetPitch = 0; targetYaw = 0;
+        const targetX = ROOMS[STATE.currentRoomIndex].x;
+        camera.position.set(targetX, 1.2, 2); camera.lookAt(targetX, 1.2, 0);
+    }
+    function interrogateVisitor() { if (STATE.interrogated) return; STATE.interrogated = true; generateVisitorDialogue(STATE.visitor); }
+    async function generateVisitorDialogue(visitor) {
+        const txt = document.getElementById('dialogue-text');
+        document.getElementById('dialogue-box').style.display = 'block';
+        txt.innerText = "Analisando...";
+        if (!apiKey || apiKey === "") {
+            const lines = ["Por favor, preciso de ajuda.", "Eles estão vindo!", "Sou apenas um viajante.", "Tenho suprimentos para trocar."];
+            const line = lines[Math.floor(Math.random() * lines.length)];
+            setTimeout(() => { typeWriterEffect(`"${line}"\n\n(ANÁLISE: ${visitor.prompt})`, txt); }, 500);
+            return;
+        }
+        // AI Logic would go here
+        typeWriterEffect("Sinal fraco...", txt);
+    }
+    function startNextDay() {
+        document.getElementById('narrative-overlay').style.display = 'none';
+        document.body.requestPointerLock();
+        STATE.day++; STATE.dayTime = 300; STATE.dailySurvivorsLetIn = 0; checkState();
+        logNarrative(`DIA ${STATE.day} INICIADO.`);
+    }
+    function startExpedition(loc) { STATE.currentLocation = loc; STATE.screenView = 'LOCATION_QUIZ'; STATE.quiz = QUIZ_DATA[loc][0]; }
+    function handleQuizAnswer(i) { 
+        STATE.screenView = 'RESULT'; 
+        if (i === STATE.quiz.answer) {
+            STATE.quiz.resultMsg = "SUCESSO";
+            if (STATE.quiz.rewardType === 'energy') STATE.energy += STATE.quiz.rewardAmount;
+            if (STATE.quiz.rewardType === 'sanity') STATE.sanity += STATE.quiz.rewardAmount;
+        } else {
+            STATE.quiz.resultMsg = "FALHA";
+            STATE.sanity += STATE.quiz.failAmount;
+        }
+        setTimeout(() => STATE.screenView = 'DESKTOP', 1000); 
+    }
+    function handleMemoryClick(i) {}
+    function handleDecrypt(i) {}
+    function initSnake() { STATE.minigame.snake = { snake: [{x:10, y:10}], dir: {x:0, y:0}, food: {x:15, y:15}, score: 0, speed: 10, tick: 0 }; STATE.screenView = 'GAME_SNAKE'; }
+    function initPacman(isRevival = false) { STATE.minigame.isRevival = isRevival; STATE.minigame.pacman={player:{x:1,y:1}, ghost:{x:7,y:7,tick:0,speed:16}, score:0, totalDots:50, map:[], width:15, height:15}; STATE.screenView='GAME_PACMAN'; }
+    function checkPacmanWin() { return false; }
+    function initMemory() { STATE.screenView = 'GAME_MEMORY'; }
+    function initRadio() { STATE.screenView = 'RADIO'; STATE.radio.locked = false; }
 
-    function handleMonitorClick(uv) {
-        const x = uv.x * CANVAS_W, y = (1 - uv.y) * CANVAS_H; 
-        let clickedUI = false;
-        for (let btn of osButtons) {
-             if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
-                 if(btn.action === 'GO_MAP') STATE.screenView = 'MAP';
-                 else if(btn.action === 'GO_FAMILY') STATE.screenView = 'FAMILY';
-                 else if(btn.action === 'GO_REPAIR') STATE.screenView = 'REPAIR';
-                 else if(btn.action === 'GO_TROPHIES') STATE.screenView = 'TROPHIES';
-                 else if(btn.action === 'GO_GAMES') STATE.screenView = 'GAMES_MENU';
-                 else if(btn.action === 'GO_RADIO') initRadio();
-                 else if(btn.action === 'GO_ARCHIVES') STATE.screenView = 'ARCHIVES';
-                 else if(btn.action === 'GO_DECODER') STATE.screenView = 'DECODER';
-                 else if(btn.action === 'BACK') STATE.screenView = 'DESKTOP';
-                 else if(btn.action === 'BACK_GAME') STATE.screenView = 'GAMES_MENU';
-                 else if(btn.action === 'START_SNAKE') initSnake();
-                 else if(btn.action === 'START_MEMORY') initMemory();
-                 else if(btn.action === 'START_PACMAN') initPacman();
-                 else if(btn.action === 'FAM_FEED' && STATE.energy >= 20) { STATE.energy -= 20; STATE.familyMood += 30; }
-                 else if(btn.action === 'FAM_TALK' && STATE.energy >= 10) { STATE.energy -= 10; STATE.sanity += 10; }
-                 else if(btn.action === 'FAM_MEDIC' && STATE.energy >= 30) { STATE.energy -= 30; STATE.familyHealth += 30; }
-                 else if(btn.action === 'FAM_PLAY' && STATE.energy >= 15) { STATE.energy -= 15; STATE.familyMood += 20; }
-                 else if(btn.action === 'REP_DOOR' && STATE.energy >= 30) { STATE.energy -= 30; STATE.doorHealth += 40; }
-                 else if(btn.action === 'GO_MARKET') startExpedition('MARKET');
-                 else if(btn.action === 'GO_PHARMA') startExpedition('PHARMACY');
-                 else if(btn.action === 'GO_STREET') startExpedition('STREETS');
-                 else if(btn.action === 'RADIO_LURE' && STATE.energy >= 40) { STATE.energy -= 40; triggerKnockEvent('good'); }
-                 else if (btn.action.startsWith('ANS_')) handleQuizAnswer(parseInt(btn.action.split('_')[1]));
-                 else if (btn.action.startsWith('MEM_')) handleMemoryClick(parseInt(btn.action.split('_')[1]));
-                 else if (btn.action.startsWith('DECRYPT_')) handleDecrypt(parseInt(btn.action.split('_')[1]));
-                 
-                 playSound('click');
+    // --- DRAWING ---
+    function drawButton(ctx, x, y, w, h, text) {
+        ctx.strokeStyle = CRT_COLOR; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
+        ctx.fillStyle = CRT_COLOR; ctx.font = '18px monospace'; ctx.fillText(text, x + 10, y + 25);
+        return { x, y, w, h };
+    }
+    function updateAndDrawSnake(ctx) {
+        const s = STATE.minigame.snake; ctx.fillText(`SNAKE: ${s.score}`, 20, 30); s.tick++;
+        if (s.tick > s.speed) { s.tick = 0; const h={x:s.snake[0].x+s.dir.x, y:s.snake[0].y+s.dir.y}; s.snake.unshift(h); if(h.x===s.food.x && h.y===s.food.y) { s.score++; s.food={x:Math.floor(Math.random()*25),y:Math.floor(Math.random()*25)}; } else { s.snake.pop(); } }
+        s.snake.forEach(p => ctx.fillRect(20 + p.x * 18, 50 + p.y * 18, 16, 16));
+        ctx.fillStyle='red'; ctx.fillRect(20 + s.food.x * 18, 50 + s.food.y * 18, 16, 16);
+        osButtons.push({ action: 'BACK_GAME', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") });
+    }
+    function updateAndDrawPacman(ctx) { ctx.fillText("PACMAN (SIMULADO)", 20, 30); osButtons.push({ action: 'BACK_GAME', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") }); }
+    function drawMemory(ctx) { ctx.fillText("MEMORIA", 20, 30); osButtons.push({ action: 'BACK_GAME', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") }); }
+    function drawRadio(ctx) { ctx.fillText("RADIO", 20, 30); osButtons.push({ action: 'BACK', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") }); }
+    function drawArchives(ctx) { ctx.fillText("ARQUIVOS", 20, 30); osButtons.push({ action: 'BACK', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") }); }
+    function drawDecoder(ctx) { ctx.fillText("DECODER", 20, 30); osButtons.push({ action: 'BACK', ...drawButton(ctx, 380, 450, 100, 40, "SAIR") }); }
+
+    function drawOS() {
+        const ctx = monitorContext; if (!ctx) return;
+        ctx.fillStyle = '#110d00'; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+        ctx.shadowBlur = 4; ctx.shadowColor = CRT_COLOR; ctx.fillStyle = CRT_COLOR;
+        osButtons = [];
+
+        if (STATE.screenView === 'DESKTOP') {
+            ctx.font = '28px monospace'; ctx.fillText(`PLURIBUS OS`, 40, 50);
+            if (STATE.doorKnocking) { ctx.fillStyle = 'red'; ctx.fillText("ALERTA", 120, 450); ctx.fillStyle = CRT_COLOR; }
+            osButtons.push({ action: 'GO_MAP', ...drawButton(ctx, 40, 100, 430, 50, "EXPEDIÇÃO") });
+            osButtons.push({ action: 'GO_FAMILY', ...drawButton(ctx, 40, 170, 430, 50, "FAMÍLIA") });
+            osButtons.push({ action: 'GO_REPAIR', ...drawButton(ctx, 40, 240, 430, 50, "MANUTENÇÃO") });
+            osButtons.push({ action: 'GO_RADIO', ...drawButton(ctx, 40, 310, 430, 50, "RÁDIO") });
+        }
+        else if (STATE.screenView === 'PHONE_HOME') {
+            ctx.fillText("SMARTPHONE OS", 40, 50);
+            osButtons.push({ action: 'START_SNAKE', ...drawButton(ctx, 40, 100, 430, 50, "JOGO: SNAKE") });
+            osButtons.push({ action: 'MAIL', ...drawButton(ctx, 40, 170, 430, 50, "SMS (LORE)") });
+        }
+        else if (STATE.screenView === 'TV_HOME') {
+            ctx.fillText("CANAIS DE TV", 40, 50);
+            osButtons.push({ action: 'START_PACMAN', ...drawButton(ctx, 40, 100, 430, 50, "CANAL JOGOS (PACMAN)") });
+            osButtons.push({ action: 'NEWS', ...drawButton(ctx, 40, 170, 430, 50, "NOTÍCIAS") });
+        }
+        else if (STATE.screenView === 'NOTEBOOK_HOME') {
+            ctx.fillText("TERMINAL PESSOAL", 40, 50);
+            osButtons.push({ action: 'START_MEMORY', ...drawButton(ctx, 40, 100, 430, 50, "TREINO MEMÓRIA") });
+            osButtons.push({ action: 'GO_ARCHIVES', ...drawButton(ctx, 40, 170, 430, 50, "ARQUIVOS") });
+            osButtons.push({ action: 'GO_DECODER', ...drawButton(ctx, 40, 240, 430, 50, "DECODER") });
+        }
+        else if (STATE.screenView === 'GAME_SNAKE') updateAndDrawSnake(ctx);
+        else if (STATE.screenView === 'GAME_PACMAN') updateAndDrawPacman(ctx);
+        else if (STATE.screenView === 'GAME_MEMORY') drawMemory(ctx);
+        else if (STATE.screenView === 'RADIO') drawRadio(ctx);
+        else if (STATE.screenView === 'MAP') {
+            ctx.fillText("DESTINO DA EXPEDIÇÃO:", 40, 50);
+            osButtons.push({ action: 'GO_MARKET', ...drawButton(ctx, 40, 100, 430, 50, "MERCADO") });
+            osButtons.push({ action: 'GO_PHARMA', ...drawButton(ctx, 40, 170, 430, 50, "FARMÁCIA") });
+            osButtons.push({ action: 'GO_STREET', ...drawButton(ctx, 40, 240, 430, 50, "RUAS") });
+            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 400, 100, 40, "CANCELAR") });
+        }
+        else if (STATE.screenView === 'FAMILY') {
+            ctx.fillText("STATUS FAMÍLIA", 40, 50);
+            ctx.fillText(`HUMOR: ${Math.floor(STATE.familyMood)}%`, 40, 90);
+            osButtons.push({ action: 'FAM_FEED', ...drawButton(ctx, 40, 150, 430, 50, "DAR RAÇÃO") });
+            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 400, 100, 40, "VOLTAR") });
+        }
+        else if (STATE.screenView === 'REPAIR') {
+            ctx.fillText("MANUTENÇÃO", 40, 50);
+            ctx.fillText(`PORTA: ${STATE.doorHealth.toFixed(1)}%`, 40, 90);
+            osButtons.push({ action: 'REP_DOOR', ...drawButton(ctx, 40, 150, 430, 50, "REPARAR") });
+            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 400, 100, 40, "VOLTAR") });
+        }
+        else if (STATE.screenView === 'LOCATION_QUIZ') {
+             ctx.fillText("EVENTO:", 40, 50);
+             // Using STATE.quiz.question which is guaranteed by startExpedition setting it from QUIZ_DATA
+             if (STATE.quiz && STATE.quiz.question) {
+                const w = STATE.quiz.question.split(' '); let l = '', y = 80;
+                w.forEach(word => { if (ctx.measureText(l + word).width > 450) { ctx.fillText(l, 40, y); l = word + ' '; y += 25; } else l += word + ' '; });
+                ctx.fillText(l, 40, y);
+                STATE.quiz.options.forEach((opt, i) => osButtons.push({ action: `ANS_${i}`, ...drawButton(ctx, 40, 200 + (i * 70), 430, 50, `${i+1}. ${opt}`) }));
              }
         }
-    }
-    
-    function updateEnvironment3D() {
-        const t = LOCATIONS[STATE.currentLocation] || LOCATIONS.BUNKER; 
-        if (!t) return; 
-        pointLightPC.color.lerp(new THREE.Color(t.color), 0.05);
-        scene.fog.color.lerp(new THREE.Color(t.fog), 0.05);
-        scene.fog.density = THREE.MathUtils.lerp(scene.fog.density, t.fogDens, 0.02);
+        else if (STATE.screenView === 'RESULT') {
+             ctx.fillText(STATE.quiz.resultMsg, 40, 200);
+        }
+        else if (STATE.screenView === 'BOOT') {
+            ctx.fillText("INICIALIZANDO...", 40, 100); if (Math.random() > 0.9) STATE.screenView = 'DESKTOP';
+        }
+
+        ctx.fillStyle = "rgba(255, 200, 0, 0.1)"; for (let i = 0; i < CANVAS_H; i += 4) ctx.fillRect(0, i, CANVAS_W, 2);
+        monitorTexture.needsUpdate = true;
     }
 
-    function init3D() {
-        const c = document.getElementById('game-container');
-        scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x050505, 0.15);
-        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100); camera.position.set(0, 1.2, 2);
-        renderer = new THREE.WebGLRenderer({ antialias: false }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = true; c.appendChild(renderer.domElement);
-        initMonitorOS(); 
-        
-        createRoom(0, 0x444444, "MONITOR", false, false, false);
-        createRoom(ROOM_OFFSET, 0xdddddd, "PHONE", true, false, false); 
-        createRoom(ROOM_OFFSET * 2, 0x664422, "TV", false, true, true); 
+    // --- 3D & INIT ---
+    function initMonitorOS() {
+        const c = document.createElement('canvas'); c.width = CANVAS_W; c.height = CANVAS_H;
+        monitorContext = c.getContext('2d');
+        monitorTexture = new THREE.CanvasTexture(c);
+        monitorTexture.minFilter = THREE.LinearFilter; monitorTexture.magFilter = THREE.NearestFilter;
+    }
 
-        scene.add(new THREE.AmbientLight(0x111111));
-        pointLightPC = new THREE.PointLight(0xffcc00, 1, 4); pointLightPC.position.set(0,1.2,0.5); scene.add(pointLightPC);
-        pointLightEmergency = new THREE.PointLight(0xff0000, 0, 15); pointLightEmergency.position.set(2.5,2.8,0); scene.add(pointLightEmergency);
-        
-        window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
-        document.addEventListener('mousemove', onMouseMove);
-        
-        document.addEventListener('click', () => {
-            if(!STATE.playing || STATE.gameOver || STATE.lookingAtPeephole) return;
-            raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-            const h = raycaster.intersectObjects(scene.children, true);
-            if(h.length){ 
-                const obj = h[0].object;
-                const name = obj.name;
-                let roomX = 0;
-                if (obj.parent && obj.parent.type === 'Group') roomX = obj.parent.position.x;
-                if (Math.abs(roomX - ROOMS[STATE.currentRoomIndex].x) < 5) {
-                    if(name==="MONITOR" || name==="PHONE" || name==="TV" || name==="NOTEBOOK") {
-                         handleMonitorClick(h[0].uv); 
-                    }
-                    else {
-                        handleWorldClick(obj);
-                    }
-                }
-            }
-        });
+    function createNoiseMaterial(c) {
+        const cv = document.createElement('canvas'); cv.width=64; cv.height=64;
+        const x = cv.getContext('2d'); x.fillStyle = '#'+c.toString(16); x.fillRect(0,0,64,64);
+        for(let i=0;i<500;i++){ x.fillStyle=`rgba(0,0,0,${Math.random()*0.2})`; x.fillRect(Math.random()*64,Math.random()*64,2,2); }
+        return new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(cv), roughness:0.9});
     }
 
     function createRoom(offsetX, wallColor, deviceName, isBathroom, hasNotebook=false, isLiving=false) {
@@ -668,12 +695,9 @@
         const roomMesh = new THREE.Mesh(roomGeo, mat); roomMesh.material.side = THREE.BackSide; roomGroup.add(roomMesh);
 
         if (isBathroom) {
-            const sinkGeo = new THREE.BoxGeometry(1, 0.1, 0.6);
-            const sink = new THREE.Mesh(sinkGeo, new THREE.MeshStandardMaterial({color:0xaaaaaa})); sink.position.set(0, 0.9, -2); sink.name = "SINK"; roomGroup.add(sink);
-            const mirrorGeo = new THREE.PlaneGeometry(0.8, 1.0);
-            const mirror = new THREE.Mesh(mirrorGeo, new THREE.MeshStandardMaterial({color:0x88ccff, roughness: 0.1})); mirror.position.set(0, 1.6, -2.95); roomGroup.add(mirror);
-            const cabGeo = new THREE.BoxGeometry(0.6, 0.6, 0.2);
-            const cab = new THREE.Mesh(cabGeo, new THREE.MeshStandardMaterial({color:0xffffff})); cab.position.set(1.5, 1.5, -2.8); cab.name = "CABINET"; roomGroup.add(cab);
+            const sink = new THREE.Mesh(new THREE.BoxGeometry(1, 0.1, 0.6), new THREE.MeshStandardMaterial({color:0xaaaaaa})); sink.position.set(0, 0.9, -2); sink.name = "SINK"; roomGroup.add(sink);
+            const mirror = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.0), new THREE.MeshStandardMaterial({color:0x88ccff, roughness: 0.1})); mirror.position.set(0, 1.6, -2.95); roomGroup.add(mirror);
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.2), new THREE.MeshStandardMaterial({color:0xffffff})); cab.position.set(1.5, 1.5, -2.8); cab.name = "CABINET"; roomGroup.add(cab);
         } else if (isLiving) {
             const couchBase = new THREE.Mesh(new THREE.BoxGeometry(2, 0.5, 1), new THREE.MeshStandardMaterial({color:0x883322})); couchBase.position.set(0, 0.25, 1.5); couchBase.name = "COUCH"; roomGroup.add(couchBase);
             const couchBack = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 0.2), new THREE.MeshStandardMaterial({color:0x883322})); couchBack.position.set(0, 0.5, 2); roomGroup.add(couchBack);
@@ -681,7 +705,6 @@
             const stand = new THREE.Mesh(new THREE.BoxGeometry(2, 0.5, 0.6), new THREE.MeshStandardMaterial({color:0x222222})); stand.position.set(0, 0.25, -2.5); roomGroup.add(stand);
         } else {
             const bed = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 2.5), new THREE.MeshStandardMaterial({color:0x334433})); bed.position.set(-1.8, 0.2, -1); bed.name = "BED"; roomGroup.add(bed);
-            const pillow = new THREE.Mesh(new THREE.BoxGeometry(1, 0.1, 0.5), new THREE.MeshStandardMaterial({color:0xffffff})); pillow.position.set(-1.8, 0.45, -2); roomGroup.add(pillow);
             const d = new THREE.Mesh(new THREE.BoxGeometry(2.5,0.1,1.5), createNoiseMaterial(0x333333)); d.position.set(0,0.8,0); roomGroup.add(d);
         }
 
@@ -707,104 +730,59 @@
         scene.add(roomGroup);
     }
 
-    function createNoiseMaterial(c) {
-        const cv = document.createElement('canvas'); cv.width=64; cv.height=64;
-        const x = cv.getContext('2d'); x.fillStyle = '#'+c.toString(16); x.fillRect(0,0,64,64);
-        for(let i=0;i<500;i++){ x.fillStyle=`rgba(0,0,0,${Math.random()*0.2})`; x.fillRect(Math.random()*64,Math.random()*64,2,2); }
-        return new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(cv), roughness:0.9});
+    function updateEnvironment3D() {
+        const t = LOCATIONS[STATE.currentLocation] || LOCATIONS.BUNKER; 
+        if (!t) return; 
+        pointLightPC.color.lerp(new THREE.Color(t.color), 0.05);
+        scene.fog.color.lerp(new THREE.Color(t.fog), 0.05);
+        scene.fog.density = THREE.MathUtils.lerp(scene.fog.density, t.fogDens, 0.02);
+    }
+
+    function init3D() {
+        const c = document.getElementById('game-container');
+        scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x050505, 0.15);
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100); camera.position.set(0, 1.2, 2);
+        renderer = new THREE.WebGLRenderer({ antialias: false }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = true; c.appendChild(renderer.domElement);
+        initMonitorOS(); 
+        
+        createRoom(0, 0x444444, "MONITOR", false, false, false);
+        createRoom(ROOM_OFFSET, 0xdddddd, "PHONE", true, false, false); 
+        createRoom(ROOM_OFFSET * 2, 0x664422, "TV", false, true, true); 
+
+        scene.add(new THREE.AmbientLight(0x111111));
+        pointLightPC = new THREE.PointLight(0xffcc00, 1, 4); pointLightPC.position.set(0,1.2,0.5); scene.add(pointLightPC);
+        pointLightEmergency = new THREE.PointLight(0xff0000, 0, 15); pointLightEmergency.position.set(2.5,2.8,0); scene.add(pointLightEmergency);
+        
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+        
+        document.addEventListener('mousemove', onMouseMove);
+
+        document.addEventListener('click', (e) => {
+            if(!STATE.playing) return;
+            raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+            const h = raycaster.intersectObjects(scene.children, true);
+            if(h.length){ 
+                const obj = h[0].object;
+                if (['MONITOR', 'PHONE', 'TV', 'NOTEBOOK'].includes(obj.name)) handleMonitorClick(h[0].uv);
+                else handleWorldClick(obj);
+            }
+        });
     }
 
     function animate() {
         requestAnimationFrame(animate); 
-        if(!scene || !camera) return; 
-        if(!STATE.playing || STATE.gameOver) return;
+        if(!scene || !camera || !STATE.playing) return;
         const dt = clock.getDelta();
         updateTimer(dt);
         updateCameraSmooth();
         pointLightPC.position.x = camera.position.x;
         pointLightEmergency.position.x = ROOMS[STATE.currentRoomIndex].x + 2.5; 
-        updateEnvironment3D(); updateHUD(); drawOS();
+        updateEnvironment3D(); 
+        updateHUD(); 
+        drawOS();
         renderer.render(scene, camera);
     }
-    
-    function checkState() {
-        if (STATE.day > STATE.maxDays) { document.body.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:#ffcc00;font-family:monospace;"><h1>DIA 8: RESGATE CHEGOU</h1><p>Você sobreviveu.</p><button onclick="location.reload()">REINICIAR</button></div>`; STATE.playing = false; }
-        else if (STATE.energy <= 0) triggerGameOver("Sem Energia.");
-        else if (STATE.sanity <= 0) triggerGameOver("Loucura Total.");
-        else if (STATE.doorHealth <= 0) triggerGameOver("Porta Destruída.");
-        else if (STATE.familyMood <= 0) triggerGameOver("Motim Familiar.");
-        else if (STATE.familyHealth <= 0) triggerGameOver("Família Pereceu."); 
-    }
 
-    function triggerGameOver(r) {
-        if (!STATE.revivalUsed) {
-            STATE.revivalUsed = true;
-            STATE.revivalReason = r;
-            playSound('jumpscare');
-            STATE.lookingAtPeephole = false;
-            document.exitPointerLock();
-            initPacman(true);
-            logNarrative("ERRO CRÍTICO! INICIANDO PROTOCOLO DE EMERGÊNCIA...");
-            setTimeout(() => logNarrative("VENÇA O JOGO PARA SOBREVIVER"), 1500);
-            return;
-        }
-        STATE.gameOver = true; 
-        playSound('jumpscare'); 
-        document.getElementById('vhs-overlay').style.background = 'red';
-        setTimeout(() => document.body.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:red;font-family:monospace;text-align:center;"><h1>FIM DE JOGO</h1><p>${r}</p><button onclick="location.reload()">REINICIAR</button></div>`, 2000);
-    }
-    
-    function revivePlayer() {
-        STATE.sanity = Math.max(STATE.sanity, 50);
-        STATE.energy = Math.max(STATE.energy, 50);
-        STATE.doorHealth = Math.max(STATE.doorHealth, 50);
-        STATE.familyMood = Math.max(STATE.familyMood, 50);
-        STATE.familyHealth = Math.max(STATE.familyHealth, 50);
-        STATE.doorKnocking = false; 
-        STATE.minigame.isRevival = false;
-        STATE.screenView = 'DESKTOP';
-        playSound('trophy');
-        logNarrative("SISTEMA RESTAURADO. SEGUNDA CHANCE ATIVADA.");
-        document.body.requestPointerLock();
-    }
-
-    function updateTimer(dt) {
-        if (STATE.gameOver || STATE.isNarrativeMode || STATE.screenView === 'LOCATION_QUIZ' || STATE.screenView.startsWith('GAME_')) return;
-        
-        const TIME_SCALE = 2.5; 
-        const gameDt = dt * TIME_SCALE;
-        
-        STATE.dayTime -= gameDt;
-        
-        if (!STATE.doorKnocking && !STATE.isNarrativeMode) {
-            STATE.nextVisitorTimer -= gameDt;
-            if (STATE.nextVisitorTimer <= 0) {
-                triggerKnockEvent();
-                STATE.nextVisitorTimer = 60; 
-            }
-        }
-
-        if (STATE.doorKnocking) {
-            const decay = 2.0 * dt; 
-            STATE.doorHealth -= decay;
-            if (STATE.doorHealth <= 0) checkState();
-        }
-
-        if (STATE.dayTime <= 0) {
-            STATE.dayTime = 0;
-            triggerEndOfDay();
-        }
-        
-        const min = Math.floor(STATE.dayTime / 60);
-        const sec = Math.floor(STATE.dayTime % 60);
-        document.getElementById('timer-display').innerText = `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
-        
-        if(STATE.doorKnocking) updateHUD();
-        
-        document.getElementById('room-indicator').innerText = ROOMS[STATE.currentRoomIndex].name;
-    }
-    
-    // --- EVENT LISTENERS (START GAME) ---
     document.getElementById('overlay').addEventListener('click', () => {
         document.getElementById('overlay').style.display = 'none';
         document.body.requestPointerLock();
@@ -816,429 +794,6 @@
         animate();
         logNarrative("Iniciando sistemas... Bunker operacional.");
     });
-    
-    // --- GAME LOGIC HELPERS ---
-    function triggerKnockEvent(forcedType = null) {
-        if (STATE.doorKnocking || STATE.currentLocation !== 'BUNKER' || STATE.isNarrativeMode) return;
-        STATE.doorKnocking = true;
-        let pool = VISITOR_TYPES;
-        if (forcedType === 'good') pool = VISITOR_TYPES.filter(v => v.type === 'good');
-        if (forcedType === 'bad') pool = VISITOR_TYPES.filter(v => v.type === 'bad');
-        STATE.visitor = pool[Math.floor(Math.random() * pool.length)];
-        STATE.interrogated = false; 
-        playSound('knock', {x: 3, y: 1, z: 0});
-        updateHUD();
-        const b = setInterval(() => { if (!STATE.doorKnocking) { clearInterval(b); pointLightEmergency.intensity = 0; return; } pointLightEmergency.intensity = pointLightEmergency.intensity > 0 ? 0 : 3; }, 600);
-        logNarrative(`ALERTA DE PROXIMIDADE: Porta do ${ROOMS[STATE.currentRoomIndex].name}`);
-    }
-
-    function resolveDoor(open) {
-        STATE.doorKnocking = false; pointLightEmergency.intensity = 0; exitPeepholeMode();
-        if (open) {
-            if (STATE.visitor.type === 'good') {
-                if (STATE.visitor.reward.energy) STATE.energy += STATE.visitor.reward.energy;
-                if (STATE.visitor.reward.sanity) STATE.sanity += STATE.visitor.reward.sanity;
-                if (STATE.visitor.reward.door) STATE.doorHealth += STATE.visitor.reward.door;
-                STATE.dailySurvivorsLetIn++;
-                STATE.stats.humansSaved++; if (STATE.stats.humansSaved >= 3) unlockTrophy('SAVIOR');
-                playSound('click'); logNarrative("Acesso permitido. Visitante seguro.");
-            } else {
-                STATE.doorHealth -= STATE.visitor.damage.door; STATE.sanity -= STATE.visitor.damage.sanity;
-                playSound('shock'); logNarrative("ERRO! Intruso invadiu o perímetro!");
-            }
-        } else {
-            playSound('shock', {x: 3, y: 1, z: 0}); unlockTrophy('FIRST_BLOOD');
-            if (STATE.visitor.type === 'good') { STATE.sanity -= 20; logNarrative("Inocente eletrocutado. A culpa pesa."); }
-            else { STATE.sanity += 10; STATE.stats.monstersKilled++; if (STATE.stats.monstersKilled >= 3) unlockTrophy('SLAYER'); logNarrative("Ameaça eliminada com sucesso."); }
-        }
-        STATE.energy = Math.min(100, STATE.energy); STATE.sanity = Math.min(100, STATE.sanity);
-        STATE.doorHealth = Math.min(100, STATE.doorHealth);
-        checkState();
-    }
-    
-    function enterPeepholeMode() {
-        if (!STATE.doorKnocking) { logNarrative("Ninguém na porta."); return; }
-        STATE.lookingAtPeephole = true; document.exitPointerLock();
-        document.getElementById('peephole-ui').style.display = 'block'; document.getElementById('dialogue-box').style.display = 'none';
-        document.getElementById('visitor-visual').innerText = STATE.visitor.visual;
-        const targetX = ROOMS[STATE.currentRoomIndex].x + 2.5;
-        camera.position.set(targetX, 1.6, 0); camera.lookAt(targetX + 2, 1.6, 0);
-    }
-    
-    function exitPeepholeMode() {
-        STATE.lookingAtPeephole = false; document.getElementById('peephole-ui').style.display = 'none';
-        document.body.requestPointerLock(); 
-        camPitch = 0; camYaw = 0; targetPitch = 0; targetYaw = 0;
-        const targetX = ROOMS[STATE.currentRoomIndex].x;
-        camera.position.set(targetX, 1.2, 2); camera.lookAt(targetX, 1.2, 0);
-    }
-
-    function interrogateVisitor() {
-        if (STATE.interrogated) return; STATE.interrogated = true; generateVisitorDialogue(STATE.visitor);
-    }
-
-    function startNextDay() {
-        document.getElementById('narrative-overlay').style.display = 'none';
-        document.body.requestPointerLock();
-        STATE.day++;
-        STATE.dayTime = 300;
-        STATE.isNarrativeMode = false;
-        STATE.dailySurvivorsLetIn = 0;
-        STATE.survivorsQuota = Math.random() < 0.5 ? 1 : 2;
-        STATE.familyMood -= 10;
-        STATE.energy -= 10;
-        STATE.familyHealth -= 5; 
-        if(Math.random() < 0.2) {
-            STATE.familyHealth -= 15; 
-            logNarrative("ALERTA: Membro da família adoeceu durante a noite.");
-        }
-        checkState();
-        if (!STATE.gameOver) {
-            logNarrative(`DIA ${STATE.day} INICIADO. COTA: 0/${STATE.survivorsQuota}`);
-        }
-    }
-
-    function triggerEndOfDay() {
-        STATE.radio.target = (Math.random() * (107.0 - 89.0) + 89.0);
-        STATE.radio.locked = false;
-
-        if (STATE.dailySurvivorsLetIn < STATE.survivorsQuota) {
-            triggerGameOver(`COTA NÃO ATINGIDA (${STATE.dailySurvivorsLetIn}/${STATE.survivorsQuota}). O Comando Central isolou seu bunker.`);
-            return;
-        }
-        
-        if (STATE.day >= 8) {
-            STATE.isNarrativeMode = true;
-            document.exitPointerLock();
-            
-            const overlay = document.getElementById('narrative-overlay');
-            const title = document.getElementById('narrative-title');
-            const body = document.getElementById('narrative-body');
-            const choicesDiv = document.getElementById('narrative-choices');
-            const consq = document.getElementById('consequence-text');
-            
-            title.innerText = "DIA 8: A HORA DA VERDADE";
-            body.innerText = "O prazo acabou. O 'Resgate' está aqui. Drones de transporte cercam o bunker.";
-            consq.style.opacity = 0;
-            choicesDiv.innerHTML = '';
-
-            const btnA = document.createElement('button');
-            btnA.className = 'choice-btn';
-            btnA.innerText = "Aceitar Resgate (Final Padrão)";
-            btnA.onclick = () => triggerEnding("RESGATE", "Você e sua família embarcaram nas naves da Pluribus.");
-            choicesDiv.appendChild(btnA);
-
-            if (STATE.decodedLore.includes(6)) {
-                const btnB = document.createElement('button');
-                btnB.className = 'choice-btn';
-                btnB.innerText = "Fugir pelos Túneis (A Verdade)";
-                btnB.style.borderColor = "#00ffaa";
-                btnB.style.color = "#00ffaa";
-                btnB.onclick = () => { unlockTrophy('TRUTH_SEEKER'); triggerEnding("FUGA", "Você sabia que o resgate era uma armadilha. Liberdade real."); };
-                choicesDiv.appendChild(btnB);
-            }
-
-            if (STATE.decodedLore.includes(7) && STATE.sanity > 80) {
-                const btnC = document.createElement('button');
-                btnC.className = 'choice-btn';
-                btnC.innerText = "Reiniciar Simulação (O Arquiteto)";
-                btnC.style.borderColor = "#ff00ff";
-                btnC.style.color = "#ff00ff";
-                btnC.onclick = () => triggerEnding("ARQUITETO", "Você acessou o terminal mestre. 'Encerrar Iteração 404'.");
-                choicesDiv.appendChild(btnC);
-            }
-
-            if (STATE.sanity < 20) {
-                const btnD = document.createElement('button');
-                btnD.className = 'choice-btn';
-                btnD.innerText = "Aceitar a Junção (Render-se)";
-                btnD.style.borderColor = "#ff0000";
-                btnD.style.color = "#ff0000";
-                btnD.onclick = () => triggerEnding("ASSIMILAÇÃO", "Por que lutar? Somos todos um agora.");
-                choicesDiv.appendChild(btnD);
-            }
-
-            overlay.style.display = 'flex';
-            playSound('travel');
-            return;
-        }
-
-        STATE.isNarrativeMode = true;
-        document.exitPointerLock();
-        const eventIdx = Math.min(STATE.day - 1, NARRATIVE_EVENTS.length - 1);
-        const event = NARRATIVE_EVENTS[eventIdx] || NARRATIVE_EVENTS[NARRATIVE_EVENTS.length-1];
-        const overlay = document.getElementById('narrative-overlay');
-        const title = document.getElementById('narrative-title');
-        const body = document.getElementById('narrative-body');
-        const choicesDiv = document.getElementById('narrative-choices');
-        const consq = document.getElementById('consequence-text');
-        title.innerText = event.title;
-        body.innerText = event.body;
-        consq.style.opacity = 0;
-        choicesDiv.innerHTML = '';
-        event.choices.forEach(choice => {
-            const btn = document.createElement('button');
-            btn.className = 'choice-btn';
-            btn.innerText = choice.text;
-            btn.onclick = () => resolveNarrative(choice);
-            choicesDiv.appendChild(btn);
-        });
-        overlay.style.display = 'flex';
-        playSound('travel');
-    }
-
-    function triggerEnding(type, msg) {
-        unlockTrophy('VETERAN');
-        document.body.innerHTML = `
-            <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:black;color:#ffcc00;font-family:monospace;padding:40px;text-align:center;">
-                <h1 style="font-size:40px;margin-bottom:20px;">FINAL: ${type}</h1>
-                <p style="font-size:20px;line-height:1.6;max-width:800px;">${msg}</p>
-                <br><br>
-                <button style="background:transparent;border:2px solid #ffcc00;color:#ffcc00;padding:15px 30px;font-family:monospace;cursor:pointer;" onclick="location.reload()">REINICIAR SISTEMA</button>
-            </div>
-        `;
-    }
-
-    function resolveNarrative(choice) {
-        if (choice.effect.sanity) STATE.sanity += choice.effect.sanity;
-        if (choice.effect.energy) STATE.energy += choice.effect.energy;
-        if (choice.effect.family) STATE.familyMood += choice.effect.family;
-        if (choice.effect.door) STATE.doorHealth += choice.effect.door;
-        if (choice.effect.familyHealth) STATE.familyHealth += choice.effect.familyHealth;
-
-        STATE.sanity = Math.min(100, Math.max(0, STATE.sanity));
-        STATE.energy = Math.min(100, Math.max(0, STATE.energy));
-        STATE.familyMood = Math.min(100, Math.max(0, STATE.familyMood));
-        STATE.doorHealth = Math.min(100, Math.max(0, STATE.doorHealth));
-        STATE.familyHealth = Math.min(100, Math.max(0, STATE.familyHealth));
-
-        const consq = document.getElementById('consequence-text');
-        consq.innerText = choice.msg || "Sua família vai se lembrar disso.";
-        consq.style.opacity = 1;
-        document.getElementById('narrative-choices').innerHTML = '<button class="choice-btn" id="next-day-btn">INICIAR PRÓXIMO DIA</button>';
-        document.getElementById('next-day-btn').onclick = startNextDay;
-    }
-
-    function initMonitorOS() {
-        const c = document.createElement('canvas'); c.width = CANVAS_W; c.height = CANVAS_H;
-        monitorContext = c.getContext('2d');
-        monitorTexture = new THREE.CanvasTexture(c);
-        monitorTexture.minFilter = THREE.LinearFilter; monitorTexture.magFilter = THREE.NearestFilter;
-    }
-
-    function drawButton(ctx, x, y, w, h, text) {
-        ctx.strokeStyle = CRT_COLOR; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
-        ctx.fillStyle = CRT_COLOR; ctx.font = '18px monospace'; ctx.fillText(text, x + 10, y + 25);
-        return { x, y, w, h };
-    }
-
-    function initRadio() {
-        STATE.screenView = 'RADIO';
-        STATE.radio.target.freq = 2 + Math.random() * 10; 
-        STATE.radio.target.amp = 20 + Math.random() * 60; 
-        STATE.radio.current.freq = 5;
-        STATE.radio.current.amp = 50;
-        STATE.radio.locked = false;
-    }
-    
-    function drawOS() {
-        const ctx = monitorContext; if (!ctx) return;
-        ctx.fillStyle = '#110d00'; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-        ctx.shadowBlur = 4; ctx.shadowColor = CRT_COLOR; ctx.fillStyle = CRT_COLOR;
-        osButtons = [];
-
-        if (STATE.screenView === 'GAME_SNAKE') updateAndDrawSnake(ctx);
-        else if (STATE.screenView === 'GAME_MEMORY') drawMemory(ctx);
-        else if (STATE.screenView === 'GAME_PACMAN') updateAndDrawPacman(ctx);
-        else if (STATE.screenView === 'RADIO') drawRadio(ctx);
-        else if (STATE.screenView === 'ARCHIVES') drawArchives(ctx);
-        else if (STATE.screenView === 'DECODER') drawDecoder(ctx); 
-
-        else if (STATE.screenView === 'DESKTOP') {
-            ctx.font = '28px monospace'; ctx.fillText(`PLURIBUS OS v9.0`, 40, 50);
-            if (STATE.doorKnocking) { ctx.fillStyle = 'red'; ctx.shadowColor = 'red'; ctx.fillText("ALERTA DE SEGURANÇA", 120, 450); ctx.fillStyle = CRT_COLOR; ctx.shadowColor = CRT_COLOR; }
-            
-            osButtons.push({ action: 'GO_MAP', ...drawButton(ctx, 40, 100, 430, 50, "EXPEDIÇÃO") });
-            osButtons.push({ action: 'GO_FAMILY', ...drawButton(ctx, 40, 170, 200, 50, "FAMÍLIA") });
-            osButtons.push({ action: 'GO_ARCHIVES', ...drawButton(ctx, 270, 170, 200, 50, "ARQUIVOS") });
-            
-            osButtons.push({ action: 'GO_REPAIR', ...drawButton(ctx, 40, 240, 200, 50, "MANUTENÇÃO") });
-            osButtons.push({ action: 'GO_RADIO', ...drawButton(ctx, 270, 240, 200, 50, "RÁDIO") });
-            
-            osButtons.push({ action: 'GO_GAMES', ...drawButton(ctx, 40, 310, 200, 50, "JOGOS") }); 
-            osButtons.push({ action: 'GO_TROPHIES', ...drawButton(ctx, 270, 310, 200, 50, "TROFÉUS") });
-            osButtons.push({ action: 'GO_DECODER', ...drawButton(ctx, 40, 380, 200, 50, "DECODER") }); 
-            osButtons.push({ action: 'MAIL', ...drawButton(ctx, 270, 380, 200, 50, "DIÁRIO") });
-        }
-        else if (STATE.screenView === 'GAMES_MENU') {
-            ctx.fillText("JOGOS - RECUPERAR SANIDADE", 40, 50);
-            osButtons.push({ action: 'START_SNAKE', ...drawButton(ctx, 40, 100, 430, 50, "COBRINHA") });
-            osButtons.push({ action: 'START_MEMORY', ...drawButton(ctx, 40, 170, 430, 50, "MEMÓRIA") });
-            osButtons.push({ action: 'START_PACMAN', ...drawButton(ctx, 40, 240, 430, 50, "LABIRINTO") });
-            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
-        }
-        else if (STATE.screenView === 'TROPHIES') {
-            ctx.fillText("COLEÇÃO DE TROFÉUS", 40, 50); let y = 100;
-            Object.values(TROPHIES).forEach(t => {
-                const un = STATE.stats.unlockedTrophies.includes(t.id);
-                ctx.fillStyle = un ? CRT_COLOR : '#554400'; ctx.fillText(`${un ? `[X] ${t.icon}` : `[ ] 🔒`} ${t.title}`, 40, y); y += 30;
-            });
-            ctx.fillStyle = CRT_COLOR; osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
-        }
-        else if (STATE.screenView === 'FAMILY') {
-            ctx.fillText("STATUS DA FAMÍLIA", 40, 50);
-            ctx.fillStyle = STATE.familyMood < 30 ? '#ff3333' : CRT_COLOR;
-            ctx.fillText(`HUMOR: ${Math.floor(STATE.familyMood)}%`, 40, 90);
-            ctx.fillStyle = STATE.familyHealth < 30 ? '#ff3333' : CRT_COLOR;
-            ctx.fillText(`SAÚDE: ${Math.floor(STATE.familyHealth)}%`, 240, 90);
-            osButtons.push({ action: 'FAM_FEED', ...drawButton(ctx, 40, 130, 430, 40, "DAR RAÇÃO (20 EN)") });
-            osButtons.push({ action: 'FAM_TALK', ...drawButton(ctx, 40, 180, 430, 40, "CONVERSAR (10 EN)") });
-            osButtons.push({ action: 'FAM_MEDIC', ...drawButton(ctx, 40, 230, 430, 40, "MEDICAR (30 EN)") }); 
-            osButtons.push({ action: 'FAM_PLAY', ...drawButton(ctx, 40, 280, 430, 40, "JOGAR JUNTOS (15 EN)") });
-            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 350, 100, 40, "VOLTAR") });
-        }
-        else if (STATE.screenView === 'REPAIR') {
-            ctx.fillText("MANUTENÇÃO", 40, 50);
-            ctx.fillText(`INTEGRIDADE: ${STATE.doorHealth.toFixed(1)}%`, 40, 90);
-            osButtons.push({ action: 'REP_DOOR', ...drawButton(ctx, 40, 200, 430, 50, "REPARAR (30 EN)") });
-            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
-        }
-        else if (STATE.screenView === 'MAP') {
-            ctx.fillText("DESTINO DA EXPEDIÇÃO:", 40, 50);
-            osButtons.push({ action: 'GO_MARKET', ...drawButton(ctx, 40, 100, 430, 50, "MERCADO") });
-            osButtons.push({ action: 'GO_PHARMA', ...drawButton(ctx, 40, 170, 430, 50, "FARMÁCIA") });
-            osButtons.push({ action: 'GO_STREET', ...drawButton(ctx, 40, 240, 430, 50, "RUAS") });
-            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 400, 100, 40, "CANCELAR") });
-        }
-        else if (STATE.screenView === 'LOCATION_QUIZ') {
-            ctx.fillText(`LOCAL: ${STATE.currentLocation}`, 40, 40);
-            const w = STATE.quiz.question.split(' '); let l = '', y = 80;
-            w.forEach(word => { if (ctx.measureText(l + word).width > 450) { ctx.fillText(l, 40, y); l = word + ' '; y += 25; } else l += word + ' '; });
-            ctx.fillText(l, 40, y);
-            STATE.quiz.options.forEach((opt, i) => osButtons.push({ action: `ANS_${i}`, ...drawButton(ctx, 40, 200 + (i * 70), 430, 50, `${i+1}. ${opt}`) }));
-        }
-        else if (STATE.screenView === 'RESULT') {
-            ctx.fillText("RESULTADO:", 40, 100); ctx.fillText(STATE.quiz.resultMsg, 40, 150);
-        }
-        else if (STATE.screenView === 'BOOT') {
-            ctx.fillText("INICIALIZANDO...", 40, 100); if (Math.random() > 0.9) STATE.screenView = 'DESKTOP';
-        }
-        else if (STATE.screenView === 'MAIL') {
-            ctx.fillText("DIÁRIO:", 40, 50);
-            ctx.fillText("- Mímicos podem parecer humanos.", 40, 100);
-            osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
-        }
-
-        ctx.fillStyle = "rgba(255, 200, 0, 0.1)"; for (let i = 0; i < CANVAS_H; i += 4) ctx.fillRect(0, i, CANVAS_W, 2);
-        monitorTexture.needsUpdate = true;
-    }
-    
-    function drawRadio(ctx) {
-        ctx.fillText("SINTONIZADOR DE ONDAS CURTAS", 40, 30);
-        ctx.font = '14px monospace';
-        ctx.fillText("Use SETAS para alinhar as ondas.", 40, 50);
-        ctx.fillText("ESQ/DIR: Frequência | CIMA/BAIXO: Amplitude", 40, 70);
-        ctx.fillStyle = '#001100';
-        ctx.fillRect(40, 100, 430, 200);
-        ctx.strokeStyle = '#004400';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for(let i=40; i<470; i+=20) { ctx.moveTo(i, 100); ctx.lineTo(i, 300); }
-        for(let i=100; i<300; i+=20) { ctx.moveTo(40, i); ctx.lineTo(470, i); }
-        ctx.stroke();
-        function drawWave(freq, amp, color, opacity) {
-            ctx.beginPath();
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.globalAlpha = opacity;
-            for (let x = 0; x < 430; x++) {
-                const y = amp * Math.sin((x * freq * 0.05) + (Date.now() * 0.005));
-                if (x === 0) ctx.moveTo(40 + x, 200 + y);
-                else ctx.lineTo(40 + x, 200 + y);
-            }
-            ctx.stroke();
-            ctx.globalAlpha = 1.0;
-        }
-        drawWave(STATE.radio.target.freq, STATE.radio.target.amp, '#ff3333', 0.5);
-        drawWave(STATE.radio.current.freq, STATE.radio.current.amp, '#00ff00', 1.0);
-        const diffFreq = Math.abs(STATE.radio.target.freq - STATE.radio.current.freq);
-        const diffAmp = Math.abs(STATE.radio.target.amp - STATE.radio.current.amp);
-        const matchQuality = 100 - (diffFreq * 10 + diffAmp * 0.5);
-        const isMatched = diffFreq < 0.5 && diffAmp < 5;
-        ctx.font = '18px monospace';
-        ctx.fillStyle = CRT_COLOR;
-        ctx.fillText(`SINCRONIA: ${Math.max(0, Math.floor(matchQuality))}%`, 40, 330);
-        if (isMatched && !STATE.radio.locked) {
-            STATE.radio.locked = true;
-            playSound('click');
-            STATE.sanity = Math.min(100, STATE.sanity + 20);
-            STATE.stats.radioSignals++;
-            logNarrative("SINAL DECODIFICADO. SANIDADE +20.");
-        }
-        if (STATE.radio.locked) {
-            ctx.fillStyle = '#00ff00';
-            ctx.fillText("CONEXÃO ESTABELECIDA.", 250, 330);
-            osButtons.push({ action: 'RADIO_LURE', ...drawButton(ctx, 40, 350, 430, 40, "EMITIR SINAL DE RESGATE (40 EN)") });
-        }
-        osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
-    }
-
-    function drawArchives(ctx) {
-        ctx.fillText("ARQUIVOS RECUPERADOS", 40, 50);
-        let y = 100;
-        if (STATE.unlockedLore.length === 0) {
-            ctx.fillStyle = '#554400';
-            ctx.fillText("NENHUM DADO ENCONTRADO.", 40, 100);
-        } else {
-            STATE.unlockedLore.forEach(id => {
-                const log = LORE_DATABASE.find(l => l.id === id);
-                if (log) {
-                    ctx.fillStyle = CRT_COLOR;
-                    const isDecoded = STATE.decodedLore.includes(id);
-                    const displayText = (log.encrypted && !isDecoded) ? log.scrambled : log.text;
-                    const title = (log.encrypted && !isDecoded) ? "DADOS CORROMPIDOS" : log.title;
-                    const color = (log.encrypted && !isDecoded) ? "#ff3333" : CRT_COLOR;
-                    
-                    ctx.fillStyle = color;
-                    ctx.fillText(`[${title}]`, 40, y);
-                    ctx.font = '14px monospace';
-                    ctx.fillText(displayText, 40, y + 20);
-                    ctx.font = '18px monospace';
-                    y += 60;
-                }
-            });
-        }
-        osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
-    }
-
-    function drawDecoder(ctx) {
-        ctx.fillText("DECODIFICADOR DE DADOS", 40, 50);
-        const encryptedFiles = LORE_DATABASE.filter(l => STATE.unlockedLore.includes(l.id) && l.encrypted && !STATE.decodedLore.includes(l.id));
-        let y = 100;
-        if (encryptedFiles.length === 0) {
-            ctx.fillText("NENHUM ARQUIVO CRIPTOGRAFADO.", 40, 100);
-        } else {
-            encryptedFiles.forEach(file => {
-                ctx.fillStyle = '#ff3333';
-                ctx.fillText(`ARQUIVO: ID-${file.id}`, 40, y + 25);
-                osButtons.push({ action: `DECRYPT_${file.id}`, ...drawButton(ctx, 250, y, 220, 40, "DECODIFICAR (20 SAN)") });
-                y += 60;
-            });
-        }
-        osButtons.push({ action: 'BACK', ...drawButton(ctx, 40, 420, 100, 40, "VOLTAR") });
-    }
-    
-    function handleDecrypt(id) {
-        if (STATE.sanity >= 20) {
-            STATE.sanity -= 20;
-            STATE.decodedLore.push(id);
-            playSound('click');
-            logNarrative("ARQUIVO DECODIFICADO. A VERDADE DÓI.");
-        } else {
-            playSound('shock');
-            logNarrative("SANIDADE INSUFICIENTE.");
-        }
-    }
 </script>
 </body>
 </html>
